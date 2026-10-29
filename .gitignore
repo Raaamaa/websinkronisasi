@@ -7,8 +7,8 @@
 /storage/pail
 /vendor
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -21,3 +21,14 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Local agent definitions & skills
+/.agents/
+/.gemini/
+
+# Private uploads and storage data
+/storage/app/private/*
+!/storage/app/private/.gitignore
+
+# Database dumps & local overrides
+docker-compose.override.yml
