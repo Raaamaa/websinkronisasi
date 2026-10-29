@@ -1,0 +1,76 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      args:
+        PUID: 1000
+        PGID: 1000
+    container_name: websinkronisasi_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - websinkronisasi_net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: websinkronisasi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-websinkronisasi}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-YOUR_STRONG_POSTGRES_PASSWORD_PLACEHOLDER}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-websinkronisasi}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - websinkronisasi_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: websinkronisasi_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-YOUR_STRONG_REDIS_PASSWORD_PLACEHOLDER}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-YOUR_STRONG_REDIS_PASSWORD_PLACEHOLDER}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - websinkronisasi_net
+
+volumes:
+  postgres_data:
+    name: websinkronisasi_postgres_data
+  redis_data:
+    name: websinkronisasi_redis_data
+
+networks:
+  websinkronisasi_net:
+    name: websinkronisasi_net
+    driver: bridge
