@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "127.0.0.1:8082:80"
+    env_file:
+      - .env
+    volumes:
+      - ./:/var/www/html
+      - laravel_vendor:/var/www/html/vendor
+      - laravel_storage:/var/www/html/storage
+      - laravel_bootstrap_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - bash
+      - -lc
+      - mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache && chown -R www-data:www-data storage bootstrap/cache && apache2-foreground
+
+  db:
+    image: docker.io/library/postgres:16-alpine
+    env_file:
+      - .env
+    volumes:
+      - laravel_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  laravel_vendor:
+    name: sync-dashboard-laravel-vendor
+    external: true
+  laravel_storage:
+    name: sync-dashboard-laravel-storage
+  laravel_bootstrap_cache:
+    name: sync-dashboard-laravel-bootstrap-cache
+  laravel_postgres:
+    name: sync-dashboard-laravel-postgres
