@@ -69,4 +69,3 @@ class LembarKerja extends Model
         return $this->hasMany(LkImportLog::class, 'lk_id');
     }
 }
-

@@ -28,7 +28,7 @@ return new class extends Migration
         END $$;");
 
         // 2. Tabel lk_import_profiles (DATABASE.md Bagian 4.3)
-        DB::statement("CREATE TABLE lk_import_profiles (
+        DB::statement('CREATE TABLE lk_import_profiles (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR(100) NOT NULL,
             lk_code VARCHAR(32) NOT NULL,
@@ -41,10 +41,10 @@ return new class extends Migration
             updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
             CONSTRAINT chk_header_row_positive CHECK (header_row > 0)
-        );");
+        );');
 
         // 3. Tabel lembar_kerja (DATABASE.md Bagian 4.2)
-        DB::statement("CREATE TABLE lembar_kerja (
+        DB::statement('CREATE TABLE lembar_kerja (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             code VARCHAR(32) NOT NULL,
             name VARCHAR(255) NOT NULL,
@@ -59,9 +59,9 @@ return new class extends Migration
 
             CONSTRAINT uq_lk_code_period UNIQUE (code, period),
             CONSTRAINT chk_lk_period CHECK (period >= 2020 AND period <= 2099)
-        );");
+        );');
 
-        DB::statement("CREATE INDEX idx_lk_category_period ON lembar_kerja(category, period) WHERE deleted_at IS NULL;");
+        DB::statement('CREATE INDEX idx_lk_category_period ON lembar_kerja(category, period) WHERE deleted_at IS NULL;');
 
         // 4. Tabel lk_indicators (DATABASE.md Bagian 4.4)
         DB::statement("CREATE TABLE lk_indicators (
@@ -85,12 +85,12 @@ return new class extends Migration
             )
         );");
 
-        DB::statement("CREATE INDEX idx_indicators_lk_id ON lk_indicators(lk_id) WHERE deleted_at IS NULL;");
-        DB::statement("CREATE INDEX idx_indicators_parent_id ON lk_indicators(parent_id);");
-        DB::statement("CREATE INDEX idx_indicators_order ON lk_indicators(lk_id, order_index);");
+        DB::statement('CREATE INDEX idx_indicators_lk_id ON lk_indicators(lk_id) WHERE deleted_at IS NULL;');
+        DB::statement('CREATE INDEX idx_indicators_parent_id ON lk_indicators(parent_id);');
+        DB::statement('CREATE INDEX idx_indicators_order ON lk_indicators(lk_id, order_index);');
 
         // 5. Tabel lk_evidence_items (DATABASE.md Bagian 4.5)
-        DB::statement("CREATE TABLE lk_evidence_items (
+        DB::statement('CREATE TABLE lk_evidence_items (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             indicator_id UUID NOT NULL REFERENCES lk_indicators(id) ON DELETE CASCADE,
             raw_template_name TEXT NOT NULL,
@@ -100,10 +100,10 @@ return new class extends Migration
             updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
             CONSTRAINT uq_evidence_item_indicator_resolved UNIQUE (indicator_id, resolved_name)
-        );");
+        );');
 
-        DB::statement("CREATE INDEX idx_evidence_items_indicator_id ON lk_evidence_items(indicator_id);");
-        DB::statement("CREATE INDEX idx_evidence_items_trgm_resolved ON lk_evidence_items USING GIN (resolved_name gin_trgm_ops);");
+        DB::statement('CREATE INDEX idx_evidence_items_indicator_id ON lk_evidence_items(indicator_id);');
+        DB::statement('CREATE INDEX idx_evidence_items_trgm_resolved ON lk_evidence_items USING GIN (resolved_name gin_trgm_ops);');
     }
 
     /**
@@ -119,4 +119,3 @@ return new class extends Migration
         DB::statement('DROP TYPE IF EXISTS lk_category;');
     }
 };
-

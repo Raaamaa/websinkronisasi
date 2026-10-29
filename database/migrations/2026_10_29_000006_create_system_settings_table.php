@@ -14,13 +14,13 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Tabel system_settings (DATABASE.md Bagian 4.10)
-        DB::statement("CREATE TABLE system_settings (
+        DB::statement('CREATE TABLE system_settings (
             key VARCHAR(64) PRIMARY KEY,
             value JSONB NOT NULL,
             description TEXT NULL,
             updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL,
             updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );");
+        );');
 
         // 2. Data konfigurasi bawaan
         DB::statement("INSERT INTO system_settings (key, value, description) VALUES
@@ -38,4 +38,3 @@ return new class extends Migration
         Schema::dropIfExists('system_settings');
     }
 };
-

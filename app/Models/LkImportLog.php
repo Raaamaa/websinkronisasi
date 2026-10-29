@@ -60,4 +60,3 @@ class LkImportLog extends Model
         return $this->belongsTo(LkImportProfile::class, 'profile_id');
     }
 }
-

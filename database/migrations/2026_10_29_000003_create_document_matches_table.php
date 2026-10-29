@@ -56,7 +56,7 @@ return new class extends Migration
         DB::statement("CREATE INDEX idx_matches_verification_queue ON document_matches(status, created_at) 
         WHERE status = 'auto';");
 
-        DB::statement("CREATE INDEX idx_matches_indicator ON document_matches(indicator_id);");
+        DB::statement('CREATE INDEX idx_matches_indicator ON document_matches(indicator_id);');
     }
 
     /**
@@ -69,4 +69,3 @@ return new class extends Migration
         DB::statement('DROP TYPE IF EXISTS match_status;');
     }
 };
-

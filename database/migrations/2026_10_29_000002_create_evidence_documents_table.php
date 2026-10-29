@@ -54,13 +54,13 @@ return new class extends Migration
             )
         );");
 
-        DB::statement("CREATE INDEX idx_documents_year ON evidence_documents(year) WHERE deleted_at IS NULL;");
-        DB::statement("CREATE INDEX idx_documents_type ON evidence_documents(document_type) WHERE deleted_at IS NULL;");
-        DB::statement("CREATE INDEX idx_documents_status ON evidence_documents(processing_status) WHERE deleted_at IS NULL;");
-        DB::statement("CREATE INDEX idx_documents_uploaded_by ON evidence_documents(uploaded_by);");
+        DB::statement('CREATE INDEX idx_documents_year ON evidence_documents(year) WHERE deleted_at IS NULL;');
+        DB::statement('CREATE INDEX idx_documents_type ON evidence_documents(document_type) WHERE deleted_at IS NULL;');
+        DB::statement('CREATE INDEX idx_documents_status ON evidence_documents(processing_status) WHERE deleted_at IS NULL;');
+        DB::statement('CREATE INDEX idx_documents_uploaded_by ON evidence_documents(uploaded_by);');
 
-        DB::statement("CREATE INDEX idx_documents_trgm_name ON evidence_documents USING GIN (document_name gin_trgm_ops);");
-        DB::statement("CREATE INDEX idx_documents_trgm_number ON evidence_documents USING GIN (document_number gin_trgm_ops) WHERE document_number IS NOT NULL;");
+        DB::statement('CREATE INDEX idx_documents_trgm_name ON evidence_documents USING GIN (document_name gin_trgm_ops);');
+        DB::statement('CREATE INDEX idx_documents_trgm_number ON evidence_documents USING GIN (document_number gin_trgm_ops) WHERE document_number IS NOT NULL;');
 
         DB::statement("CREATE INDEX idx_documents_fts ON evidence_documents USING GIN (
             to_tsvector('indonesian', 
@@ -80,4 +80,3 @@ return new class extends Migration
         DB::statement('DROP TYPE IF EXISTS document_processing_status;');
     }
 };
-

@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Tabel audit_logs (DATABASE.md Bagian 4.9)
-        DB::statement("CREATE TABLE audit_logs (
+        DB::statement('CREATE TABLE audit_logs (
             id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
             action VARCHAR(64) NOT NULL,
@@ -25,12 +25,12 @@ return new class extends Migration
             ip_address INET NULL,
             user_agent TEXT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );");
+        );');
 
-        DB::statement("CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at DESC);");
-        DB::statement("CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);");
-        DB::statement("CREATE INDEX idx_audit_logs_action ON audit_logs(action, created_at DESC);");
-        DB::statement("CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);");
+        DB::statement('CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at DESC);');
+        DB::statement('CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);');
+        DB::statement('CREATE INDEX idx_audit_logs_action ON audit_logs(action, created_at DESC);');
+        DB::statement('CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);');
 
         // 2. Trigger anti-tampering (AUDIT-02)
         DB::statement("CREATE OR REPLACE FUNCTION trg_prevent_audit_tampering()
@@ -40,9 +40,9 @@ return new class extends Migration
         END;
         \$\$ LANGUAGE plpgsql;");
 
-        DB::statement("CREATE TRIGGER prevent_audit_logs_mutation
+        DB::statement('CREATE TRIGGER prevent_audit_logs_mutation
         BEFORE UPDATE OR DELETE ON audit_logs
-        FOR EACH ROW EXECUTE FUNCTION trg_prevent_audit_tampering();");
+        FOR EACH ROW EXECUTE FUNCTION trg_prevent_audit_tampering();');
     }
 
     /**
@@ -55,4 +55,3 @@ return new class extends Migration
         Schema::dropIfExists('audit_logs');
     }
 };
-

@@ -46,9 +46,9 @@ return new class extends Migration
             )
         );");
 
-        DB::statement("CREATE INDEX idx_users_email_active ON users(email, is_active) WHERE deleted_at IS NULL;");
-        DB::statement("CREATE INDEX idx_users_nip_active ON users(nip, is_active) WHERE deleted_at IS NULL AND nip IS NOT NULL;");
-        DB::statement("CREATE INDEX idx_users_role ON users(role) WHERE deleted_at IS NULL;");
+        DB::statement('CREATE INDEX idx_users_email_active ON users(email, is_active) WHERE deleted_at IS NULL;');
+        DB::statement('CREATE INDEX idx_users_nip_active ON users(nip, is_active) WHERE deleted_at IS NULL AND nip IS NOT NULL;');
+        DB::statement('CREATE INDEX idx_users_role ON users(role) WHERE deleted_at IS NULL;');
 
         // 3. Trigger proteksi Super Admin terakhir (AUTH-06, AC-04)
         DB::statement("CREATE OR REPLACE FUNCTION trg_prevent_last_super_admin_removal()
@@ -80,10 +80,10 @@ return new class extends Migration
         END;
         \$\$ LANGUAGE plpgsql;");
 
-        DB::statement("CREATE TRIGGER prevent_last_super_admin_removal
+        DB::statement('CREATE TRIGGER prevent_last_super_admin_removal
         BEFORE UPDATE OR DELETE ON users
         FOR EACH ROW
-        EXECUTE FUNCTION trg_prevent_last_super_admin_removal();");
+        EXECUTE FUNCTION trg_prevent_last_super_admin_removal();');
 
         // 4. Tabel password_reset_tokens
         Schema::create('password_reset_tokens', function (Blueprint $table): void {

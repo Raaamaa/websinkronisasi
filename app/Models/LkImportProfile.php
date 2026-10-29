@@ -50,4 +50,3 @@ class LkImportProfile extends Model
         return $this->hasMany(LembarKerja::class, 'default_profile_id');
     }
 }
-

@@ -49,4 +49,3 @@ class LkEvidenceItem extends Model
         return $this->hasMany(DocumentMatch::class, 'matched_item_id');
     }
 }
-

@@ -51,6 +51,11 @@ class LkIndicator extends Model
         return $this->belongsTo(LembarKerja::class, 'lk_id');
     }
 
+    public function lk(): BelongsTo
+    {
+        return $this->lembarKerja();
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
@@ -71,4 +76,3 @@ class LkIndicator extends Model
         return $this->hasMany(DocumentMatch::class, 'indicator_id');
     }
 }
-

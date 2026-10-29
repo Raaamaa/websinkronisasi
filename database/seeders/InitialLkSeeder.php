@@ -173,4 +173,3 @@ class InitialLkSeeder extends Seeder
         }
     }
 }
-

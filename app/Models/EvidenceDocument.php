@@ -62,4 +62,3 @@ class EvidenceDocument extends Model
         return $this->hasMany(DocumentMatch::class, 'document_id');
     }
 }
-

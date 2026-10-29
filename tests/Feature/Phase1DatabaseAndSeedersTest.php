@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
 use App\Models\LembarKerja;
 use App\Models\LkImportProfile;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -21,6 +21,8 @@ class Phase1DatabaseAndSeedersTest extends TestCase
      */
     public function test_super_admin_seeder_creates_expected_account(): void
     {
+        Artisan::call('db:seed', ['--class' => 'SuperAdminSeeder']);
+
         $expectedEmail = (string) env('SEEDER_SUPERADMIN_EMAIL', 'admin@kantor.go.id');
         $expectedPassword = (string) env('SEEDER_SUPERADMIN_PASSWORD', '123456789');
 

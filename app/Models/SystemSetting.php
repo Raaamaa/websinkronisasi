@@ -44,5 +44,14 @@ class SystemSetting extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
-}
 
+    /**
+     * Get system setting value by key with fallback default.
+     */
+    public static function get(string $key, mixed $default = null): mixed
+    {
+        $setting = static::query()->find($key);
+
+        return $setting !== null ? $setting->value : $default;
+    }
+}

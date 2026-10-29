@@ -21,7 +21,7 @@ return new class extends Migration
         END $$;");
 
         // 2. Tabel lk_import_logs (DATABASE.md Bagian 4.8)
-        DB::statement("CREATE TABLE lk_import_logs (
+        DB::statement('CREATE TABLE lk_import_logs (
             id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             lk_id UUID NOT NULL REFERENCES lembar_kerja(id) ON DELETE CASCADE,
             user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -35,9 +35,9 @@ return new class extends Migration
             skipped_rows INTEGER NOT NULL DEFAULT 0,
             summary_details JSONB NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );");
+        );');
 
-        DB::statement("CREATE INDEX idx_import_logs_lk ON lk_import_logs(lk_id, created_at DESC);");
+        DB::statement('CREATE INDEX idx_import_logs_lk ON lk_import_logs(lk_id, created_at DESC);');
     }
 
     /**
@@ -49,4 +49,3 @@ return new class extends Migration
         DB::statement('DROP TYPE IF EXISTS import_session_status;');
     }
 };
-
