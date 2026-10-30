@@ -7,6 +7,7 @@ namespace App\Services\Monitor;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
+use App\Services\Search\DocumentSearchService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -63,11 +64,9 @@ class MonitorMatrixService
         }
 
         if (! empty($filters['search'])) {
-            $search = '%'.trim((string) $filters['search']).'%';
-            $docQuery->where(function ($q) use ($search): void {
-                $q->where('document_name', 'ilike', $search)
-                    ->orWhere('document_number', 'ilike', $search);
-            });
+            /** @var DocumentSearchService $searchService */
+            $searchService = app(DocumentSearchService::class);
+            $searchService->applySearchFilter($docQuery, (string) $filters['search']);
         }
 
         $perPage = (int) ($filters['per_page'] ?? 25);

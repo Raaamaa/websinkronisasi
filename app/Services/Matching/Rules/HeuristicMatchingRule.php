@@ -43,7 +43,7 @@ class HeuristicMatchingRule
             $titleScore = $this->trigramSimilarity->compute($docNormalizedName, $targetTitle);
 
             // 2. Penalti Perbedaan Tahun (MATCH-03, MATCH-10)
-            $targetYear = $indicator->lk?->period ?? $document->year;
+            $targetYear = $indicator->lembarKerja?->period ?? $document->year;
             $hasYearPenalty = false;
             if ($document->year !== $targetYear) {
                 $titleScore = max(0.0, $titleScore - 20.0);

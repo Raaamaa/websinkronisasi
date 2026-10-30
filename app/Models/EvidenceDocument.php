@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\Search\DocumentSearchService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -60,5 +62,19 @@ class EvidenceDocument extends Model
     public function matches(): HasMany
     {
         return $this->hasMany(DocumentMatch::class, 'document_id');
+    }
+
+    /**
+     * Scope query to search documents via FTS, substring, and trigram fuzzy matching (SEARCH-01, SEARCH-02).
+     *
+     * @param  Builder<EvidenceDocument>  $query
+     * @return Builder<EvidenceDocument>
+     */
+    public function scopeSearchFullTextAndFuzzy(Builder $query, ?string $searchTerm): Builder
+    {
+        /** @var DocumentSearchService $searchService */
+        $searchService = app(DocumentSearchService::class);
+
+        return $searchService->applySearchFilter($query, $searchTerm);
     }
 }
