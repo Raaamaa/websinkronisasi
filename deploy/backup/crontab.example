@@ -1,0 +1,5 @@
+# Contoh Konfigurasi Crontab untuk Otomatisasi Backup Harian (NFR-08)
+# Pasang ke crontab root: crontab -e
+
+# Eksekusi setiap hari pukul 02:00 dini hari
+0 2 * * * /var/www/html/deploy/backup/backup.sh >> /var/backups/websinkronisasi/cron.log 2>&1
