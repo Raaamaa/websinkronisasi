@@ -3,3 +3,4 @@
 
 # Eksekusi setiap hari pukul 02:00 dini hari
 0 2 * * * /var/www/html/deploy/backup/backup.sh >> /var/backups/websinkronisasi/cron.log 2>&1
+

@@ -63,3 +63,4 @@ find "${DB_BACKUP_DIR}" -type f -name "*.sql.gz" -mtime +"${RETENTION_DAYS}" -de
 find "${FILES_BACKUP_DIR}" -type f -name "*.tar.gz" -mtime +"${RETENTION_DAYS}" -delete
 
 log "=== Prosedur Backup Selesai dengan Sukses ==="
+
