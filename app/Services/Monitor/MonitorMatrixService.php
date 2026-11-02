@@ -102,10 +102,22 @@ class MonitorMatrixService
         $rows = [];
         foreach ($paginator->items() as $doc) {
             $cells = [];
+            $matchedIndicatorsText = [];
 
             foreach ($lkCodes as $code) {
+                /** @var list<DocumentMatch> $lkMatches */
                 $lkMatches = $groupedMatches[$doc->id][$code] ?? [];
                 $hasMatch = ! empty($lkMatches);
+
+                $driveUrl = null;
+                if ($hasMatch) {
+                    $firstMatch = $lkMatches[0];
+                    $ind = $firstMatch->indicator;
+                    if ($ind !== null) {
+                        $driveUrl = $ind->evidence_link ?: ($doc->external_link ?: null);
+                        $matchedIndicatorsText[] = "[{$code}] " . ($firstMatch->matchedItem?->resolved_name ?? $ind->title);
+                    }
+                }
 
                 // MON-02, AC-08, AC-09: Jika ada match -> ✔, jika tidak ada -> KOSONG MURNI ""
                 $cells[$code] = [
@@ -113,6 +125,7 @@ class MonitorMatrixService
                     'symbol' => $hasMatch ? '✔' : '',
                     'count' => count($lkMatches),
                     'lk_id' => $allLks->firstWhere('code', $code)?->id,
+                    'drive_url' => $driveUrl,
                 ];
             }
 
@@ -123,6 +136,7 @@ class MonitorMatrixService
                 'year' => $doc->year,
                 'document_type' => $doc->document_type,
                 'external_link' => $doc->external_link,
+                'indicators_summary' => implode(' • ', array_unique($matchedIndicatorsText)),
                 'cells' => $cells,
             ];
         }

@@ -46,8 +46,8 @@ class EvidenceDocumentResource extends Resource
         /** @var User|null $user */
         $user = Auth::user();
 
-        // BD-01: Admin dan Super Admin dapat mengunggah dokumen
-        return $user !== null && in_array($user->role, ['super_admin', 'admin'], true) && $user->is_active;
+        // BD-01 & RBAC baru: Pegawai dan Admin dapat mengunggah dokumen matching; Super Admin dilarang
+        return $user !== null && in_array($user->role, ['admin', 'pegawai'], true) && $user->is_active;
     }
 
     public static function canEdit($record): bool

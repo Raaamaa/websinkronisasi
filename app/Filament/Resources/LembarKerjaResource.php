@@ -232,6 +232,15 @@ class LembarKerjaResource extends Resource
                         }
                     }),
 
+                // Kelola Tautan Drive LK Langsung
+                Tables\Actions\Action::make('manage_drive_links')
+                    ->label('Tautan Drive')
+                    ->icon('heroicon-o-link')
+                    ->color('info')
+                    ->url(fn (LembarKerja $record): string => LkIndicatorResource::getUrl('index', [
+                        'tableFilters' => ['lk_id' => ['value' => $record->id]],
+                    ])),
+
                 Tables\Actions\EditAction::make(),
 
                 // Protected Soft Delete Guard (AC-14)

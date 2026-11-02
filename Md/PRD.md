@@ -84,25 +84,23 @@ Catatan penting dari sampel:
 ## 5. Pengguna dan Role
 
 ### 5.1 Super Admin
-- Mengelola master LK (tambah, ubah, hapus), kategori LK, indikator, dan item bukti, termasuk impor LK dari Excel.
-- Mengelola master Bukti Dukung (tambah, hapus).
-- Mengelola **semua akun pegawai**: mengubah role (Pegawai ↔ Admin), menonaktifkan, dan mengaktifkan kembali **[D5]**. **Hanya Super Admin yang dapat mengubah role.**
-- Melihat audit log.
-- Semua kemampuan Admin.
+- Mengelola akun admin (tambah admin, nonaktifkan admin, kelola peran).
+- Menambah, mengubah, dan menghapus link Google Drive yang berisikan bukti dukung LK di database.
+- Mengelola master Lembar Kerja, melihat jejak audit, dan mengatur parameter sistem.
+- DILARANG mengunggah berkas SK/bukti untuk pencocokan dokumen (Super Admin fokus pada tata kelola akun & master link).
 - Akun awal dibuat lewat seeder sebagai akun dummy, memakai password lokal (di luar SSO), dan wajib ganti password saat login pertama **[D6]**.
 
 ### 5.2 Admin
-- Mengunggah dokumen untuk dicocokkan **[ASUMSI A4: admin boleh upload BD baru; hanya super admin yang boleh menghapus master BD]**.
-- Menambah dan menghapus relasi BD ↔ LK untuk mengoreksi salah upload atau salah match.
-- Memverifikasi hasil matching otomatis (konfirmasi atau tolak).
-- Menonaktifkan dan mengaktifkan kembali akun **Pegawai** (bukan akun Admin atau Super Admin) **[D5]**.
-- Mencari dokumen dan melihat monitor.
-- TIDAK dapat mengubah role siapa pun, master LK, indikator, impor LK, maupun akun Admin.
+- Menambah, mengubah, dan menghapus link Google Drive bukti dukung LK di database (seperti Super Admin).
+- Mengunggah berkas SK atau bukti dukung lainnya untuk mencari kesamaan dengan kebutuhan LK / link Drive.
+- Memverifikasi hasil matching otomatis.
+- TIDAK DAPAT menambahkan atau mengangkat orang lain untuk menjadi admin (hanya melalui Super Admin).
 
 ### 5.3 Pegawai
-- Mencari bukti dukung dan melihat monitor.
-- Membuka tautan bukti dari centang.
-- TIDAK dapat menambah, mengubah, atau menghapus data apa pun.
+- Mengunggah berkas SK atau bukti dukung untuk mencari kesamaan (matching) dengan indikator LK secara otomatis.
+- Melihat matriks monitor LK dan mengklik simbol centang (✔) untuk langsung membuka Google Drive bukti dukung.
+- TIDAK DAPAT mengunggah, menambah, atau menghapus link Google Drive LK di database.
+- TIDAK DAPAT mengelola akun pengguna lain.
 - Login memakai akun SSO kantor **[D7]**.
 
 ## 6. Matriks Hak Akses (ringkas)
@@ -112,14 +110,15 @@ Rincian lengkap ada di `RBAC.md`.
 | Aksi | Super Admin | Admin | Pegawai |
 |---|:---:|:---:|:---:|
 | Lihat/cari BD dan monitor | ✔ | ✔ | ✔ |
-| Buka tautan bukti | ✔ | ✔ | ✔ |
-| Upload dokumen untuk matching | ✔ | ✔ | ✘ |
-| Tambah/hapus relasi BD ↔ LK | ✔ | ✔ | ✘ |
+| Buka tautan Drive langsung dari centang | ✔ | ✔ | ✔ |
+| Upload dokumen untuk matching | ✘ | ✔ | ✔ |
+| Kelola link Drive LK di database (tambah/hapus) | ✔ | ✔ | ✘ |
+| Tambah/hapus relasi BD ↔ LK manual | ✔ | ✔ | ✘ |
 | Verifikasi hasil matching otomatis | ✔ | ✔ | ✘ |
 | Hapus master BD | ✔ | ✘ | ✘ |
 | Tambah/ubah/hapus master LK, indikator, item bukti | ✔ | ✘ | ✘ |
 | Impor LK dari Excel | ✔ | ✘ | ✘ |
-| Ubah role pengguna (Pegawai ↔ Admin) | ✔ | ✘ | ✘ |
+| Kelola & angkat role Admin | ✔ | ✘ | ✘ |
 | Nonaktifkan/aktifkan akun Pegawai | ✔ | ✔ | ✘ |
 | Nonaktifkan/aktifkan akun Admin | ✔ | ✘ | ✘ |
 | Lihat audit log | ✔ | ✘ | ✘ |
@@ -130,7 +129,7 @@ Prioritas: **M** = Must (wajib v1.1), **S** = Should, **C** = Could.
 
 ### 7.1 Autentikasi dan Akun (AUTH)
 
-Pegawai dan Admin login lewat SSO kantor. Protokol SSO belum diketahui (lihat Q1), sehingga lapisan SSO harus dibuat di balik satu antarmuka yang dapat diganti.
+Aplikasi menggunakan **1 Portal Terpadu (*Unified Single Portal*)** di rute `/login`. Seluruh Pegawai dan Admin BPS masuk lewat SSO Keycloak BPS (OIDC) yang diakses melalui FortiClient VPN bila di luar kantor BPS. Super Admin login via formulir pengelola lokal pada portal tunggal yang sama. Lapisan SSO dibuat di balik antarmuka `SSOProviderInterface` sehingga fleksibel, terabstraksi, dan dapat disimulasikan secara lokal (Mock SSO driver).
 
 | ID | Kebutuhan | Prio |
 |---|---|:---:|
@@ -214,12 +213,12 @@ Aturan detail ada di `MATCHING_ALGORITHM.md`. Di PRD ini hanya perilaku yang ter
 
 | ID | Kebutuhan | Prio |
 |---|---|:---:|
-| MON-01 | Baris = Bukti Dukung. Kolom = LK, dikelompokkan di bawah header Internal (KIP, SAKIP, ZI, PEKPPP) dan Eksternal (Data Sekunder, Data Sektoral) | M |
-| MON-02 | Sel diberi tanda ✔ jika ada match berstatus `auto` atau `confirmed` antara BD tersebut dan LK itu. Jika tidak ada kecocokan, sel DIKOSONGKAN, tanpa simbol, teks, atau warna apa pun **[D2]** | M |
-| MON-03 | Match `rejected` tidak pernah tampil. Tanda ✔ pada sel tidak dibedakan menurut status. Perbedaan status hanya terlihat saat sel diklik (MON-04) | M |
-| MON-04 | Sel ✔ dapat diklik: tampil daftar indikator LK yang cocok (kode dan uraian), item bukti yang cocok, status (Otomatis atau Terverifikasi), skor, dan tautan bukti | M |
-| MON-05 | Tautan bukti yang tampil adalah tautan milik indikator yang cocok (hasil impor LK), ditambah tautan BD bila ada. Bila sebuah LK cocok pada beberapa indikator, tautan ditampilkan per indikator **[D3]** | M |
-| MON-06 | Jika tautan belum tersedia, sistem menampilkan keterangan "tautan belum tersedia" dan tidak membuat tautan palsu atau rusak | M |
+| MON-01 | Baris = Indikator Kesamaan / Kebutuhan Bukti LK. Kolom = Lembar Kerja (LK KIP, ZI, PEKPPP, dll.), dikelompokkan di bawah header Internal dan Eksternal | M |
+| MON-02 | Sel diberi tanda ✔ jika ada match berstatus `auto` atau `confirmed` untuk indikator tersebut pada LK terkait. Jika tidak ada kecocokan, sel DIKOSONGKAN murni, tanpa simbol apa pun **[D2]** | M |
+| MON-03 | Match `rejected` tidak pernah tampil di monitor | M |
+| MON-04 | Sel ✔ dapat diklik: langsung membuka Google Drive bukti dukung di tab baru (`target="_blank" rel="noopener noreferrer"`) | M |
+| MON-05 | Tautan Google Drive disimpan dan dikelola langsung di database oleh Super Admin dan Admin | M |
+| MON-06 | Jika tautan belum tersedia atau belum ada bukti cocok, sel dikosongkan murni | M |
 | MON-07 | Monitor mendukung penyaringan berdasarkan kategori LK, LK tertentu, periode, dan jenis dokumen | M |
 | MON-08 | Monitor memakai paginasi di sisi server. Tidak memuat seluruh data sekaligus | M |
 | MON-09 | Ekspor monitor ke Excel atau CSV | C |
@@ -366,10 +365,10 @@ Dianggap berlaku kecuali ada keberatan. Setiap perubahan harus memperbarui dokum
 
 | ID | Pertanyaan | Menghalangi |
 |---|---|---|
-| Q1 | Protokol SSO (OIDC, SAML, atau lainnya), nama produk IdP, apakah aplikasi dapat didaftarkan sebagai client (redirect URI, client id/secret), dan atribut yang dikirim (email, NIP, nama). Pertanyaan ini perlu diajukan ke pengelola SSO atau IT | `RBAC.md`, `ARCHITECTURE.md` |
+| Q1 | **[RESOLVED - SELESAI]** Protokol SSO BPS adalah Keycloak OpenID Connect (OIDC 1.0) di `https://sso.bps.go.id`, realm `pegawai-bps`, client id format `{kode_satker}-elka-nv1`, scope `openid profile email`, pengayaan NIP & nama via endpoint `api-pegawai`, serta membutuhkan FortiClient VPN bila diakses dari luar kantor BPS. | Selesai diimplementasikan di `BpsKeycloakOidcProvider` |
 | Q2 | Spesifikasi server kantor: sistem operasi, apakah boleh memasang Docker/PostgreSQL/PHP, kapasitas disk, siapa yang mengelola akses dan sertifikat HTTPS | `ARCHITECTURE.md`, `DEPLOYMENT.md` |
 | Q3 | Format SAKIP, Data Sekunder, dan Data Sektoral belum ada sampelnya. Sementara dipakai profil impor generik (LKIMP-03) | `DATABASE.md` (pengaruh kecil), `TASKS.md` |
-| Q4 | Pilihan tech stack (rekomendasi: Laravel 11 + Filament + PostgreSQL) belum dikonfirmasi | `ARCHITECTURE.md` |
+| Q4 | **[RESOLVED - SELESAI]** Tech stack resmi terkonfirmasi: PHP 8.3 / Laravel 11 + Filament v3 + PostgreSQL 15 + Redis 7. Desain antarmuka login menggunakan skill Hallmark (tema Cobalt modern-minimal). | Selesai diimplementasikan |
 
 ## 12. Risiko
 

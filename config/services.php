@@ -37,11 +37,12 @@ return [
 
     'sso' => [
         'driver' => env('SSO_DRIVER', 'mock'),
-        'base_url' => env('SSO_BASE_URL', 'https://sso.bps.go.id'),
-        'realm' => env('SSO_REALM', 'pegawai-bps'),
-        'client_id' => env('SSO_CLIENT_ID', ''),
-        'client_secret' => env('SSO_CLIENT_SECRET', ''),
-        'redirect_uri' => env('SSO_REDIRECT_URI', env('APP_URL', 'http://localhost:8000').'/auth/sso/callback'),
+        'base_url' => env('BPS_SSO_BASE_URL', env('SSO_BASE_URL', 'https://sso.bps.go.id')),
+        'realm' => env('BPS_SSO_REALM', env('SSO_REALM', 'pegawai-bps')),
+        'client_id' => env('BPS_SSO_CLIENT_ID', env('SSO_CLIENT_ID', '13328-elka-nv1')),
+        'client_secret' => env('BPS_SSO_CLIENT_SECRET', env('SSO_CLIENT_SECRET', '')),
+        'redirect_uri' => env('BPS_SSO_REDIRECT_URI', env('SSO_REDIRECT_URI', env('APP_URL', 'http://localhost:8000').'/auth/sso/callback')),
+        'timeout' => (float) env('SSO_TIMEOUT', 10.0),
     ],
 
 ];

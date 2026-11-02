@@ -107,14 +107,14 @@ class Phase4EvidenceDocumentTest extends TestCase
     }
 
     /**
-     * 1. BD-01: Admin and Super Admin can upload evidence document.
+     * 1. BD-01 & RBAC Baru: Admin and Pegawai can upload evidence document for matching.
      */
     public function test_admin_and_super_admin_can_upload_evidence_document(): void
     {
         Queue::fake();
 
-        $admin = User::factory()->create([
-            'role' => 'admin',
+        $pegawai = User::factory()->create([
+            'role' => 'pegawai',
             'is_active' => true,
         ]);
 
@@ -128,14 +128,14 @@ class Phase4EvidenceDocumentTest extends TestCase
             'year' => 2026,
             'document_type' => 'SK',
             'external_link' => 'https://bps.go.id/docs/sk-rb-2026.pdf',
-        ], $admin);
+        ], $pegawai);
 
         $this->assertInstanceOf(EvidenceDocument::class, $document);
         $this->assertSame('SK Tim Reformasi Birokrasi BPS 2026', $document->document_name);
         $this->assertSame('01/BPS/2026', $document->document_number);
         $this->assertSame(2026, $document->year);
         $this->assertSame('memproses', $document->processing_status);
-        $this->assertSame($admin->id, $document->uploaded_by);
+        $this->assertSame($pegawai->id, $document->uploaded_by);
 
         Queue::assertPushed(ProcessEvidenceDocumentJob::class, function ($job) use ($document) {
             return $job->documentId === $document->id;
@@ -143,20 +143,17 @@ class Phase4EvidenceDocumentTest extends TestCase
     }
 
     /**
-     * 2. NFR-01, AC-01: Pegawai cannot upload evidence document.
+     * 2. RBAC Baru: Super Admin is strictly prevented from uploading evidence documents for matching.
      */
     public function test_pegawai_cannot_upload_evidence_document_returns_403(): void
     {
-        $pegawai = User::factory()->create([
-            'role' => 'pegawai',
-            'is_active' => true,
-        ]);
+        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
 
-        $pdfContent = $this->createDigitalPdfContent('Dokumen Pegawai');
+        $pdfContent = $this->createDigitalPdfContent('Dokumen Super Admin');
         $file = UploadedFile::fake()->createWithContent('laporan.pdf', $pdfContent);
 
-        $response = $this->actingAs($pegawai)->postJson('/evidence/upload', [
-            'document_name' => 'Laporan Pegawai',
+        $response = $this->actingAs($superAdmin)->postJson('/evidence/upload', [
+            'document_name' => 'Laporan Super Admin',
             'year' => 2026,
             'file' => $file,
         ]);
@@ -527,26 +524,26 @@ class Phase4EvidenceDocumentTest extends TestCase
     }
 
     /**
-     * 14. Filament UI: Super Admin and Admin can access EvidenceDocument Filament pages.
+     * 14. Filament UI: Admin and Pegawai can access EvidenceDocument Filament pages.
      */
     public function test_super_admin_and_admin_can_access_evidence_document_filament_page(): void
     {
-        $superAdmin = User::firstOrCreate(
-            ['email' => 'admin@kantor.go.id'],
+        $admin = User::firstOrCreate(
+            ['email' => 'admin.uploader@bps.go.id'],
             [
-                'name' => 'Super Admin Inisial',
-                'password' => bcrypt('123456789'),
-                'role' => 'super_admin',
+                'name' => 'Admin Uploader',
+                'password' => bcrypt('password'),
+                'role' => 'admin',
                 'is_active' => true,
                 'must_change_password' => false,
             ]
         );
-        $superAdmin->update(['must_change_password' => false, 'is_active' => true]);
+        $admin->update(['must_change_password' => false, 'is_active' => true]);
 
-        $response = $this->actingAs($superAdmin)->get('/admin/evidence-documents');
+        $response = $this->actingAs($admin)->get('/admin/evidence-documents');
         $response->assertOk();
 
-        $createResponse = $this->actingAs($superAdmin)->get('/admin/evidence-documents/create');
+        $createResponse = $this->actingAs($admin)->get('/admin/evidence-documents/create');
         $createResponse->assertOk();
     }
 }

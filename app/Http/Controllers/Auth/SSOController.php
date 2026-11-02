@@ -7,10 +7,16 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\Contracts\SSOProviderInterface;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class SSOController extends Controller
 {
@@ -62,11 +68,29 @@ class SSOController extends Controller
      */
     public function callback(Request $request, SSOProviderInterface $provider): Response
     {
-        $ssoUser = $provider->handleCallback($request);
+        try {
+            $ssoUser = $provider->handleCallback($request);
+        } catch (ConnectException | ConnectionException | RequestException $e) {
+            Log::warning('Koneksi SSO BPS gagal / timeout: '.$e->getMessage());
+
+            return redirect()->route('login')->with(
+                'error',
+                'Gagal terhubung ke server SSO BPS. Jika Anda mengakses dari luar kantor BPS, pastikan aplikasi FortiClient VPN Anda sudah terhubung (Connected) sebelum mencoba kembali.'
+            );
+        } catch (RuntimeException $e) {
+            Log::warning('Kesalahan otorisasi SSO BPS: '.$e->getMessage());
+
+            return redirect()->route('login')->with('error', $e->getMessage());
+        } catch (Throwable $e) {
+            Log::error('Error tidak terduga pada callback SSO: '.$e->getMessage());
+
+            return redirect()->route('login')->with('error', 'Terjadi kesalahan teknis saat menghubungi SSO BPS. Silakan coba kembali.');
+        }
 
         // Cari user yang sudah ada berdasarkan email atau NIP
+        $normalizedEmail = strtolower(trim($ssoUser->email));
         $user = User::withTrashed()
-            ->where('email', $ssoUser->email)
+            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
             ->orWhere(function ($query) use ($ssoUser): void {
                 if ($ssoUser->nip !== null && $ssoUser->nip !== '') {
                     $query->where('nip', $ssoUser->nip);
@@ -93,17 +117,26 @@ class SSOController extends Controller
 
         // Auto-provisioning jika user belum pernah ada (AUTH-10, AC-21)
         if ($user === null) {
-            $user = User::create([
-                'name' => $ssoUser->name,
-                'email' => $ssoUser->email,
-                'nip' => $ssoUser->nip,
-                'role' => 'pegawai',
-                'is_active' => true,
-                'auth_provider' => 'sso',
-                'auth_provider_id' => $ssoUser->id,
-                'must_change_password' => false,
-                'password_hash' => null,
-            ]);
+            try {
+                $user = User::create([
+                    'name' => $ssoUser->name,
+                    'email' => $normalizedEmail,
+                    'nip' => $ssoUser->nip,
+                    'role' => 'pegawai',
+                    'is_active' => true,
+                    'auth_provider' => 'sso',
+                    'auth_provider_id' => $ssoUser->id,
+                    'must_change_password' => false,
+                    'password_hash' => null,
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Tangani potensi race condition jika request paralel telah membuat user secara bersamaan
+                /** @var User|null $user */
+                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+                if ($user === null) {
+                    throw $e;
+                }
+            }
         }
 
         // Catat jejak audit login sukses (AUDIT-01)

@@ -44,7 +44,11 @@ class UserResource extends Resource
 
     public static function canCreate(): bool
     {
-        return false; // Pengguna baru dibuat otomatis via SSO (AUTH-10)
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        // Super Admin dapat menambahkan akun admin/pengguna baru secara manual
+        return $user !== null && $user->isSuperAdmin() && $user->is_active;
     }
 
     public static function form(Form $form): Form
@@ -53,20 +57,34 @@ class UserResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->label('Nama Lengkap')
-                    ->disabled(),
+                    ->required()
+                    ->maxLength(255)
+                    ->disabled(fn (string $context): bool => $context !== 'create'),
                 Forms\Components\TextInput::make('email')
                     ->label('Alamat Email')
-                    ->disabled(),
+                    ->email()
+                    ->required()
+                    ->maxLength(255)
+                    ->disabled(fn (string $context): bool => $context !== 'create'),
                 Forms\Components\TextInput::make('nip')
                     ->label('NIP')
-                    ->disabled(),
+                    ->maxLength(64)
+                    ->disabled(fn (string $context): bool => $context !== 'create'),
                 Forms\Components\Select::make('role')
                     ->label('Peran (Role)')
                     ->options([
-                        'admin' => 'Admin (Operasional)',
-                        'pegawai' => 'Pegawai (Read-Only)',
+                        'admin' => 'Admin (Operasional & Kelola Link Drive)',
+                        'pegawai' => 'Pegawai (Matching & Monitor)',
                     ])
+                    ->required()
+                    ->default('admin')
                     ->disabled(fn (): bool => ! Auth::user()?->isSuperAdmin()),
+                Forms\Components\TextInput::make('password')
+                    ->label('Kata Sandi Awal')
+                    ->password()
+                    ->visible(fn (string $context): bool => $context === 'create')
+                    ->required(fn (string $context): bool => $context === 'create')
+                    ->minLength(8),
             ]);
     }
 

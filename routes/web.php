@@ -3,12 +3,23 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\ForceChangePasswordController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SSOController;
 use App\Http\Controllers\Evidence\EvidenceController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+// Halaman Utama: Redirect ke Dashboard jika sudah login, atau tampilkan Login jika tamu
 Route::get('/', function () {
-    return view('welcome');
+    return Auth::check() ? redirect('/admin') : view('auth.login');
+});
+
+// Jalur Login Mandiri Modern ala Web GUCI
+Route::middleware('web')->group(function (): void {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/admin/login', fn () => redirect()->route('login'))->name('filament.admin.auth.login');
 });
 
 // Jalur Autentikasi SSO BPS (AUTH-01, AUTH-02)
@@ -27,7 +38,7 @@ Route::middleware(['web', 'auth'])->prefix('auth/password')->name('auth.password
 // Jalur Proteksi & Pengujian Middleware (AC-01, AC-15)
 Route::middleware(['web', 'auth'])->group(function (): void {
     Route::get('/test-protected-route', fn () => response('OK', 200));
-    Route::post('/test-admin-only-action', fn () => response('OK', 200))->middleware('permission:evidence.upload');
+    Route::post('/test-admin-only-action', fn () => response('OK', 200))->middleware('permission:lk.manage_drive_links');
 });
 
 // Jalur Bukti Dukung (BD-01, BD-09, BD-10)

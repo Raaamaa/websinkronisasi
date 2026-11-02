@@ -114,4 +114,41 @@ class UserManagerService
             'created_at' => now(),
         ]);
     }
+
+    /**
+     * Create a user account manually (Super Admin only).
+     *
+     * @param array<string, mixed> $data
+     */
+    public function createUser(User $actor, array $data): User
+    {
+        if (! $actor->isSuperAdmin()) {
+            abort(403, 'Hanya Super Admin yang berwenang menambahkan pengguna baru secara manual.');
+        }
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'nip' => $data['nip'] ?? null,
+            'role' => $data['role'] ?? 'admin',
+            'auth_provider' => $data['auth_provider'] ?? (! empty($data['password']) ? 'local' : 'sso'),
+            'password_hash' => ! empty($data['password']) ? \Illuminate\Support\Facades\Hash::make((string) $data['password']) : null,
+            'is_active' => $data['is_active'] ?? true,
+            'must_change_password' => false,
+        ]);
+
+        DB::table('audit_logs')->insert([
+            'user_id' => $actor->id,
+            'action' => 'user.created',
+            'entity_type' => 'users',
+            'entity_id' => (string) $user->id,
+            'old_values' => null,
+            'new_values' => json_encode(['email' => $user->email, 'role' => $user->role, 'name' => $user->name]),
+            'ip_address' => request()->ip() ?? '127.0.0.1',
+            'user_agent' => request()->userAgent(),
+            'created_at' => now(),
+        ]);
+
+        return $user;
+    }
 }

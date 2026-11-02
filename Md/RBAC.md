@@ -18,9 +18,11 @@ Dokumen ini mengatur arsitektur Autentikasi dan Otorisasi (RBAC) untuk aplikasi 
 ### 1.1 Prinsip-Prinsip Desain RBAC:
 1. **Least Privilege (Hak Akses Terkecil):** Pengguna hanya diberi wewenang terkecil yang dibutuhkan untuk menjalankan tugasnya. Peran `pegawai` bersifat *read-only* mutlak.
 2. **Server-Side Active Session Check (AUTH-07, AC-15, AC-18):** Status keaktifan akun (`is_active`) wajib diperiksa di sisi server pada setiap permintaan, bukan hanya saat proses *handshake* login awal. Akun yang dinonaktifkan akan segera diputus sesinya seketika.
-3. **Pemisahan Jalur Login (AUTH-01, AUTH-03, AUTH-11, D6, D7):**
-   * Pegawai dan Admin **hanya** dapat login melalui SSO kantor. Tidak ada form/kredensial lokal untuk pegawai/admin.
-   * Super Admin awal (dummy) menggunakan autentikasi lokal terisolasi di luar SSO dengan kewajiban ganti password pada saat login pertama (`must_change_password = true`).
+3. **Portal Tunggal Terpadu (*Unified Single Portal* — AUTH-01, AUTH-03, AUTH-11, D6, D7):**
+   * Aplikasi menggunakan satu portal login bersama di rute `/login` dengan desain antarmuka berbasis Hallmark (tema Cobalt).
+   * **Opsi 1 (SSO BPS):** Pegawai dan Admin BPS masuk via SSO Keycloak BPS (`https://sso.bps.go.id`). Jika diakses dari luar kantor, memerlukan koneksi aktif FortiClient VPN.
+   * **Opsi 2 (Formulir Lokal):** Khusus Super Admin awal masuk via kredensial lokal dengan kewajiban ganti password saat login pertama (`must_change_password = true`).
+   * **Penegakan AUTH-11:** Pegawai dilarang keras login melalui formulir lokal; akun ber-role pegawai atau ber-provider `sso` yang mencoba form lokal ditolak otomatis oleh sistem.
 4. **Pencegahan Kunci Diri / Self-Lockout (AUTH-06, AC-04):** Sistem secara absolut menolak penonaktifan atau penurunan role dari Super Admin terakhir yang aktif, serta menolak pengguna menonaktifkan akunnya sendiri.
 5. **Auditability (AUDIT-01):** Setiap peristiwa yang berkaitan dengan keamanan (login, logout, pergantian role, aktivasi/penonaktifan akun, kegagalan otorisasi) wajib dicatat dalam tabel `audit_logs`.
 
@@ -56,9 +58,9 @@ graph TD
 
 | Peran (`role`) | Deskripsi & Batas Kewenangan | Metode Autentikasi | Sumber Pembuatan Akun |
 |---|---|---|---|
-| **Super Admin** | Tingkat akses tertinggi. Berwenang mengelola master LK, indikator, profil impor, eksekusi impor Excel, menghapus master Bukti Dukung (BD), mengubah role pengguna (Pegawai ↔ Admin), mengelola status aktif seluruh akun, dan melihat audit log. | Kredensial lokal (dummy seeder) / Ditugaskan oleh Super Admin lain via SSO | Seeder awal (lokal) atau promosi akun SSO oleh Super Admin |
-| **Admin** | Pengelola operasional harian. Berwenang mengunggah Bukti Dukung baru (A4), memverifikasi hasil matching otomatis (konfirmasi/tolak), menambah/menghapus relasi matching secara manual, serta menonaktifkan/mengaktifkan kembali akun **Pegawai** saja. Tidak dapat mengubah role, master LK, maupun akun Admin/Super Admin. | SSO Kantor | Dipromosikan dari role Pegawai oleh Super Admin |
-| **Pegawai** | Pengguna umum / pembaca. Berwenang melakukan pencarian Bukti Dukung, melihat matriks centang pada monitor, dan membuka tautan bukti pendukung. Bersifat *read-only* mutlak. | SSO Kantor | *Auto-provisioning* otomatis saat login pertama via SSO (AUTH-10, A11) |
+| **Super Admin** | Pengelola sistem dan hak akses admin. Berwenang mengelola admin (tambah, nonaktifkan, ubah peran), mengelola (menambah, mengubah, menghapus) tautan Google Drive LK di database, mengelola master LK, dan melihat jejak audit. **Dilarang keras mengunggah berkas SK/bukti untuk pencocokan dokumen.** | Kredensial lokal (dummy seeder) / Ditugaskan oleh Super Admin lain via SSO | Seeder awal (lokal) atau promosi akun SSO oleh Super Admin |
+| **Admin** | Pengelola operasional LK dan link drive. Berwenang mengunggah berkas SK/bukti dukung untuk mencari kesamaan pada LK, mengelola (menambah, mengubah, menghapus) tautan Google Drive LK di database, serta memverifikasi kecocokan. Tidak dapat mengangkat/mengubah akun orang lain menjadi admin. | SSO Kantor | Dipromosikan dari role Pegawai oleh Super Admin |
+| **Pegawai** | Pengguna operasional pencocokan. Berwenang mengunggah berkas SK/bukti dukung untuk mencari kesamaan dengan indikator LK secara otomatis, melihat matriks monitor indikator, dan mengklik simbol centang untuk langsung membuka Google Drive. Tidak dapat mengelola link drive LK maupun akun pengguna. | SSO Kantor | *Auto-provisioning* otomatis saat login pertama via SSO (AUTH-10, A11) |
 | **Akun Nonaktif** (`is_active = false`) | Bukan sebuah peran, melainkan status pembekuan akun. Tidak dapat login, sesi yang sedang berjalan diputus seketika, dan seluruh pemanggilan API ditolak dengan respons HTTP 403 (AUTH-07, D4). | - | Dibekukan oleh Admin (untuk Pegawai) atau Super Admin (untuk semua) |
 
 ---
@@ -75,11 +77,12 @@ Untuk menjaga modularitas kode dan mempermudah pengujian otorisasi, hak akses di
 
 | Kode Permission | Deskripsi Aksi | Super Admin | Admin | Pegawai |
 |---|---|:---:|:---:|:---:|
-| `monitor.view` | Melihat tabel matriks centang bukti dukung ke LK | ✔ | ✔ | ✔ |
+| `monitor.view` | Melihat tabel matriks centang indikator LK | ✔ | ✔ | ✔ |
 | `evidence.search` | Melakukan pencarian (FTS/fuzzy) bukti dukung | ✔ | ✔ | ✔ |
-| `evidence.view_link` | Membuka tautan eksternal bukti dukung / indikator | ✔ | ✔ | ✔ |
-| `evidence.upload` | Mengunggah file bukti dukung baru (PDF/DOCX/Scan) | ✔ | ✔ | ✘ |
+| `evidence.view_link` | Membuka tautan eksternal / Google Drive langsung dari centang | ✔ | ✔ | ✔ |
+| `evidence.upload` | Mengunggah berkas SK/bukti untuk mencari kesamaan (matching) | ✘ | ✔ | ✔ |
 | `evidence.delete` | Melakukan soft-delete master dokumen bukti dukung | ✔ | ✘ | ✘ |
+| `lk.manage_drive_links` | Menambah, mengubah, dan menghapus link Google Drive LK di database | ✔ | ✔ | ✘ |
 | `match.verify` | Mengonfirmasi atau menolak match hasil otomatis (`auto`) | ✔ | ✔ | ✘ |
 | `match.manual_create` | Menambahkan relasi BD ↔ LK secara manual | ✔ | ✔ | ✘ |
 | `match.manual_delete` | Menghapus relasi BD ↔ LK secara manual | ✔ | ✔ | ✘ |
@@ -87,7 +90,7 @@ Untuk menjaga modularitas kode dan mempermudah pengujian otorisasi, hak akses di
 | `lk.manage` | Tambah, ubah, dan soft-delete master Lembar Kerja | ✔ | ✘ | ✘ |
 | `lk.indicator_manage` | Tambah, ubah, dan soft-delete indikator & item bukti | ✔ | ✘ | ✘ |
 | `lk.import_excel` | Mengunggah & mengimpor file Excel LK dengan Profil Impor | ✔ | ✘ | ✘ |
-| `user.change_role` | Mengubah role pengguna (Pegawai ↔ Admin) | ✔ | ✘ | ✘ |
+| `user.change_role` | Mengubah role pengguna (Pegawai ↔ Admin) / Angkat Admin | ✔ | ✘ | ✘ |
 | `user.toggle_pegawai` | Mengaktifkan / menonaktifkan akun role Pegawai | ✔ | ✔ | ✘ |
 | `user.toggle_admin` | Mengaktifkan / menonaktifkan akun role Admin | ✔ | ✘ | ✘ |
 | `audit.view` | Melihat riwayat jejak audit sistem (`audit_logs`) | ✔ | ✘ | ✘ |
@@ -265,11 +268,12 @@ Tabel ini menjadi panduan mutlak bagi implementasi rute backend:
 
 | Method | Endpoint URI | Required Permission | Role yang Diizinkan | Audit Log Action |
 |---|---|---|---|---|
-| **GET** | `/auth/sso/login` | *Public* | Semua | - |
-| **GET** | `/auth/sso/callback` | *Public* | Semua | `auth.login` |
-| **POST** | `/auth/local/login` | *Public (Rate Limited)* | Dummy Super Admin | `auth.local_login` |
-| **POST** | `/auth/logout` | `authenticated` | Super Admin, Admin, Pegawai | `auth.logout` |
-| **POST** | `/auth/change-password` | `authenticated` | Super Admin (dummy) | `auth.change_password` |
+| **GET** | `/login` | *Public* | Semua | - |
+| **POST** | `/login` | *Public (Rate Limited)* | Dummy Super Admin / Admin Lokal | `auth.login_local` |
+| **POST** | `/logout` | `authenticated` | Super Admin, Admin, Pegawai | `auth.logout` |
+| **GET** | `/auth/sso/login` | *Public* | Semua (Opsi 1 SSO BPS) | - |
+| **GET** | `/auth/sso/callback` | *Public* | Semua (Opsi 1 SSO BPS) | `auth.login_sso` |
+| **GET/POST**| `/auth/password/change` | `authenticated` | Super Admin (Karantina) | `auth.password_changed` |
 | **GET** | `/api/v1/monitor` | `monitor.view` | Super Admin, Admin, Pegawai | - |
 | **GET** | `/api/v1/evidence` | `evidence.search` | Super Admin, Admin, Pegawai | - |
 | **GET** | `/api/v1/evidence/{id}` | `evidence.search` | Super Admin, Admin, Pegawai | - |

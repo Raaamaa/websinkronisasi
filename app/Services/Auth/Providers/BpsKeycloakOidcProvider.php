@@ -28,9 +28,12 @@ class BpsKeycloakOidcProvider implements SSOProviderInterface
 
     private string $userinfoUrl;
 
+    private string $apiPegawaiUrl;
+
     public function __construct(?Client $client = null)
     {
-        $this->httpClient = $client ?? new Client(['timeout' => 15.0]);
+        $timeout = (float) config('services.sso.timeout', 10.0);
+        $this->httpClient = $client ?? new Client(['timeout' => $timeout]);
         $this->clientId = (string) config('services.sso.client_id', '');
         $this->clientSecret = (string) config('services.sso.client_secret', '');
         $this->redirectUri = (string) config('services.sso.redirect_uri', '');
@@ -41,6 +44,27 @@ class BpsKeycloakOidcProvider implements SSOProviderInterface
         $this->authUrl = $baseUrl."/auth/realms/{$realm}/protocol/openid-connect/auth";
         $this->tokenUrl = $baseUrl."/auth/realms/{$realm}/protocol/openid-connect/token";
         $this->userinfoUrl = $baseUrl."/auth/realms/{$realm}/protocol/openid-connect/userinfo";
+        $this->apiPegawaiUrl = $baseUrl."/auth/realms/{$realm}/api-pegawai/username/";
+    }
+
+    public function getAuthUrl(): string
+    {
+        return $this->authUrl;
+    }
+
+    public function getTokenUrl(): string
+    {
+        return $this->tokenUrl;
+    }
+
+    public function getUserinfoUrl(): string
+    {
+        return $this->userinfoUrl;
+    }
+
+    public function getApiPegawaiUrl(): string
+    {
+        return $this->apiPegawaiUrl;
     }
 
     /**
@@ -48,14 +72,20 @@ class BpsKeycloakOidcProvider implements SSOProviderInterface
      */
     public function getRedirectResponse(): Response
     {
+        if ($this->clientId === '') {
+            throw new RuntimeException('Client ID SSO BPS belum dikonfigurasi. Pastikan BPS_SSO_CLIENT_ID sudah diisi di file .env.');
+        }
+
         $state = bin2hex(random_bytes(16));
         session(['sso_state' => $state]);
+
+        $scope = (string) config('services.sso.scope', 'openid profile email');
 
         $query = http_build_query([
             'client_id' => $this->clientId,
             'redirect_uri' => $this->redirectUri,
             'response_type' => 'code',
-            'scope' => 'openid profile email profile-pegawai',
+            'scope' => $scope,
             'state' => $state,
         ]);
 
@@ -71,13 +101,20 @@ class BpsKeycloakOidcProvider implements SSOProviderInterface
         $state = (string) $request->input('state', '');
         $expectedState = (string) session('sso_state', '');
 
+        if ($request->has('error')) {
+            $errorDesc = (string) $request->input('error_description', $request->input('error'));
+            throw new RuntimeException('Otorisasi SSO BPS dibatalkan atau gagal: '.$errorDesc);
+        }
+
         if ($code === '') {
             throw new RuntimeException('Kode otorisasi dari SSO BPS tidak ditemukan.');
         }
 
-        if ($expectedState !== '' && $state !== $expectedState) {
+        if ($expectedState === '' || ! hash_equals($expectedState, $state)) {
             throw new RuntimeException('State CSRF SSO BPS tidak cocok.');
         }
+
+        session()->forget('sso_state');
 
         // 1. Exchange authorization code for tokens
         $response = $this->httpClient->post($this->tokenUrl, [
@@ -109,12 +146,68 @@ class BpsKeycloakOidcProvider implements SSOProviderInterface
         ]);
 
         $profile = json_decode((string) $userinfoResponse->getBody(), true);
+        if (! is_array($profile)) {
+            $profile = [];
+        }
+
+        $username = $profile['preferred_username'] ?? null;
+        $nip = is_string($username) && $username !== '' ? $username : null;
+        $name = (string) ($profile['name'] ?? '');
+        $email = (string) ($profile['email'] ?? '');
+
+        // 3. Integrasi API Pegawai BPS (Pola GUCI) untuk pengayaan NIP & Nama
+        if ($username !== null && $username !== '') {
+            try {
+                $apiResponse = $this->httpClient->get($this->apiPegawaiUrl.(string) $username, [
+                    'headers' => [
+                        'Authorization' => 'Bearer '.$accessToken,
+                        'Accept' => 'application/json',
+                    ],
+                ]);
+
+                if ($apiResponse->getStatusCode() === 200) {
+                    $pegawaiData = json_decode((string) $apiResponse->getBody(), true);
+                    if (is_array($pegawaiData) && count($pegawaiData) > 0) {
+                        /** @var array<string, mixed> $pegawai */
+                        $pegawai = $pegawaiData[0];
+                        if (isset($pegawai['nama']) && is_string($pegawai['nama']) && $pegawai['nama'] !== '') {
+                            $name = $pegawai['nama'];
+                        } elseif (isset($pegawai['name']) && is_string($pegawai['name']) && $pegawai['name'] !== '') {
+                            $name = $pegawai['name'];
+                        }
+                        if (isset($pegawai['nip']) && is_string($pegawai['nip']) && $pegawai['nip'] !== '') {
+                            $nip = $pegawai['nip'];
+                        } elseif (isset($pegawai['nipBaru']) && is_string($pegawai['nipBaru']) && $pegawai['nipBaru'] !== '') {
+                            $nip = $pegawai['nipBaru'];
+                        }
+                        if ($email === '') {
+                            if (isset($pegawai['email']) && is_string($pegawai['email']) && $pegawai['email'] !== '') {
+                                $email = $pegawai['email'];
+                            } elseif (isset($pegawai['emailBps']) && is_string($pegawai['emailBps']) && $pegawai['emailBps'] !== '') {
+                                $email = $pegawai['emailBps'];
+                            }
+                        }
+                        $profile['pegawai_data'] = $pegawai;
+                    }
+                }
+            } catch (\Throwable) {
+                // Graceful degradation: jika API pegawai gagal/timeout, lanjutkan dengan data dasar userinfo
+            }
+        }
+
+        if ($email === '' && $nip !== null) {
+            $email = $nip.'@bps.go.id';
+        }
+
+        if ($email === '') {
+            throw new RuntimeException('Alamat email tidak ditemukan pada profil SSO BPS Anda. Silakan hubungi administrator IT BPS.');
+        }
 
         return new SSOUserData(
-            id: (string) ($profile['sub'] ?? ''),
-            email: (string) ($profile['email'] ?? ''),
-            name: (string) ($profile['name'] ?? ''),
-            nip: isset($profile['preferred_username']) ? (string) $profile['preferred_username'] : null,
+            id: (string) ($profile['sub'] ?? ($nip ?? $email)),
+            email: $email,
+            name: $name !== '' ? $name : 'Pegawai BPS',
+            nip: $nip,
             rawAttributes: $profile
         );
     }

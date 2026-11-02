@@ -136,7 +136,12 @@ class User extends Authenticatable implements FilamentUser, HasName
             return false;
         }
 
+        // Super Admin memiliki semua akses KECUALI mengunggah dokumen matching (RBAC.md)
         if ($this->isSuperAdmin()) {
+            if ($permission === 'evidence.upload') {
+                return false;
+            }
+
             return true;
         }
 
@@ -145,6 +150,7 @@ class User extends Authenticatable implements FilamentUser, HasName
             'evidence.search',
             'evidence.view_link',
             'evidence.upload',
+            'lk.manage_drive_links',
             'match.verify',
             'match.manual_create',
             'match.manual_delete',
@@ -156,6 +162,7 @@ class User extends Authenticatable implements FilamentUser, HasName
             'monitor.view',
             'evidence.search',
             'evidence.view_link',
+            'evidence.upload',
         ];
 
         if ($this->isAdmin()) {

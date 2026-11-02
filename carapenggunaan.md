@@ -14,12 +14,13 @@ Buku panduan ini disusun khusus menggunakan bahasa yang sederhana dan ramah bagi
 3. [Cara Masuk (Login) ke Aplikasi](#3-cara-masuk-login-ke-aplikasi)
 4. [Menggunakan Matriks Monitor (Layar Utama Centang)](#4-menggunakan-matriks-monitor-layar-utama-centang)
 5. [Mencari Dokumen dengan Cepat & Pintar](#5-mencari-dokumen-dengan-cepat--pintar)
-6. [Mengunggah Berkas Bukti Dukung Baru (Untuk Admin)](#6-mengunggah-berkas-bukti-dukung-baru-untuk-admin)
+6. [Mengunggah Berkas Bukti Dukung Baru (Untuk Pegawai & Admin)](#6-mengunggah-berkas-bukti-dukung-baru-untuk-pegawai--admin)
 7. [Memeriksa & Menyetujui Kecocokan di Antrean Verifikasi (Untuk Admin)](#7-memeriksa--menyetujui-kecocokan-di-antrean-verifikasi-untuk-admin)
-8. [Menambah atau Mencabut Hubungan Dokumen Manual (Untuk Admin)](#8-menambah-atau-mencabut-hubungan-dokumen-manual-untuk-admin)
-9. [Mengimpor Lembar Kerja dari File Excel (Untuk Super Admin)](#9-mengimpor-lembar-kerja-dari-file-excel-untuk-super-admin)
-10. [Melihat Jejak Audit & Pengaturan Sistem (Untuk Super Admin)](#10-melihat-jejak-audit--pengaturan-sistem-untuk-super-admin)
-11. [Tips Penamaan File agar Otomatis Cocok 100%](#11-tips-penamaan-file-agar-otomatis-cocok-100)
+8. [Mengelola Tautan Google Drive LK di Database (Untuk Super Admin & Admin)](#8-mengelola-tautan-google-drive-lk-di-database-untuk-super-admin--admin)
+9. [Menambah atau Mencabut Hubungan Dokumen Manual (Untuk Admin)](#9-menambah-atau-mencabut-hubungan-dokumen-manual-untuk-admin)
+10. [Mengimpor Lembar Kerja dari File Excel (Untuk Super Admin)](#10-mengimpor-lembar-kerja-dari-file-excel-untuk-super-admin)
+11. [Melihat Jejak Audit & Pengaturan Sistem (Untuk Super Admin)](#11-melihat-jejak-audit--pengaturan-sistem-untuk-super-admin)
+12. [Tips Penamaan File agar Otomatis Cocok 100%](#12-tips-penamaan-file-agar-otomatis-cocok-100)
 
 ---
 
@@ -56,65 +57,98 @@ Aplikasi ELKA membagi pengguna menjadi 3 tingkat peran demi menjaga keamanan dat
 
 | Peran | Siapa Penggunanya? | Apa Saja yang Boleh Dilakukan? |
 |---|---|---|
-| **Pegawai** | Seluruh staf & pegawai kantor | • Melihat tabel Matriks Monitor (tanda centang dokumen).<br>• Mencari berkas dokumen berdasarkan nama, nomor surat, atau isinya.<br>• Mengklik tanda centang untuk melihat detail indikator dan membuka tautan bukti.<br>• *Sifat akses: Hanya melihat (Read-Only) sehingga aman dari ketidaksengajaan.* |
-| **Admin** | Tim penilai, operator LK, atau PIC dokumen | • Memiliki semua hak akses Pegawai.<br>• Mengunggah berkas bukti dukung baru (PDF, Word, Gambar).<br>• Membuka **Antrean Verifikasi** untuk menyetujui atau menolak saran kecocokan dari sistem.<br>• Menambah atau menghapus centang bukti secara manual.<br>• Mengaktifkan atau menonaktifkan akun Pegawai. |
-| **Super Admin** | Pengelola sistem TI utama kantor | • Memiliki semua hak akses Admin dan Pegawai.<br>• Menambah, mengubah, dan menghapus master Lembar Kerja.<br>• Mengimpor ribuan butir indikator langsung dari file Excel LKE.<br>• Mengubah peran pengguna (misal: mengangkat Pegawai menjadi Admin).<br>• Mengubah pengaturan sensitivitas pencocokan sistem.<br>• Melihat **Jejak Audit** (rekaman siapa yang mengubah data apa). |
+| **Pegawai** | Seluruh staf & pegawai kantor | • Melihat tabel Matriks Monitor (tanda centang indikator kesamaan).<br>• Mengunggah berkas dokumen (SK, SOP, dll.) untuk mencocokkan kesamaan secara otomatis.<br>• Mengklik tanda centang (✔) untuk **langsung membuka Google Drive** bukti dukung.<br>• Mencari berkas dokumen berdasarkan nama, nomor surat, atau isinya. |
+| **Admin** | Tim penilai, operator LK, atau PIC dokumen | • Memiliki semua hak akses Pegawai (termasuk mengunggah berkas bukti dukung untuk mencocokkan).<br>• Menambah, mengubah, dan menghapus tautan Google Drive LK di database.<br>• Membuka **Antrean Verifikasi** untuk menyetujui atau menolak saran kecocokan dari sistem.<br>• Menambah atau menghapus centang bukti secara manual.<br>• Mengaktifkan atau menonaktifkan akun Pegawai biasa. |
+| **Super Admin** | Pengelola sistem TI utama kantor | • Mengelola akun Admin (menambah admin, menonaktifkan, atau mengubah peran).<br>• Menambah, mengubah, dan menghapus tautan Google Drive LK di database.<br>• Menambah, mengubah, dan menghapus master Lembar Kerja & impor Excel LKE.<br>• Melihat **Jejak Audit** (rekaman siapa yang mengubah data apa) dan Pengaturan Sistem.<br>• *Catatan: Super Admin tidak mengunggah dokumen SK pencocokan.* |
 
 ---
 
 ## 3. Cara Masuk (Login) ke Aplikasi
 
-### Cara 1: Masuk Melalui SSO Kantor (Untuk Pegawai & Admin)
-1. Buka browser dan kunjungi alamat: `http://localhost:8000/auth/sso/login` (atau pilih menu **Masuk via SSO**).
-2. Anda akan diarahkan ke halaman login tunggal kantor.
-3. Masukkan identitas Anda (Username/NIP dan Kata Sandi).
-4. Setelah berhasil, Anda akan otomatis masuk ke halaman utama ELKA. Jika ini pertama kali Anda login, sistem akan otomatis mendaftarkan Anda sebagai **Pegawai**.
+Aplikasi ELKA kini menggunakan **1 Portal Tunggal Terpadu (*Unified Single Portal*)**. Seluruh pengguna kantor—baik Pegawai, Admin operasional, maupun Super Administrator—cukup mengakses satu tautan utama yang sama di peramban:
 
-### Cara 2: Masuk Menggunakan Akun Khusus (Untuk Super Administrator)
-1. Buka browser dan kunjungi alamat: `http://localhost:8000/admin/login`.
-2. Masukkan email: `admin@kantor.go.id` dan kata sandi Anda.
-3. Klik tombol **Sign in**.
+👉 **`http://localhost:8000/login`** (atau cukup buka alamat utama `http://localhost:8000/`)
 
-> [!TIP]
-> **Khusus Login Pertama Kali Super Admin:** Jika Anda baru pertama kali login menggunakan akun bawaan, sistem akan menampilkan layar **Karantina Ganti Kata Sandi**. Anda wajib memasukkan kata sandi baru yang kuat (minimal 8 karakter) sebelum dapat mengakses menu lainnya.
+Halaman portal akan menampilkan antarmuka modern dua bilah yang sangat jelas dan mudah digunakan:
+
+```text
++---------------------------------------------------------------------------------------------------+
+|  [LOGO BPS]  BPS KABUPATEN TEGAL — SISTEM ELKA                                                   |
++----------------------------------------------------+----------------------------------------------+
+| BILAH KIRI: OPSI 1 — SSO PEGAWAI & ADMIN BPS       | BILAH KANAN: OPSI 2 — AKUN PENGELOLA LOKAL   |
++----------------------------------------------------+----------------------------------------------+
+|                                                    |                                              |
+|  [Tag] SSO Terintegrasi                            |  [Tag] Pengelola Sistem                      |
+|  Login SSO BPS                                     |  Masuk Akun Pengelola                        |
+|                                                    |                                              |
+|  Otentikasi terpusat untuk Pegawai dan Admin       |  Khusus Super Admin dan pemeliharaan teknis  |
+|  operasional satuan kerja BPS Kabupaten Tegal.     |  sistem Websinkronisasi kantor.              |
+|                                                    |                                              |
+|  [ TOMBOL BESAR: MASUK DENGAN SSO BPS ]            |  [ Formulir Masuk ]                          |
+|                                                    |  * Alamat Email atau NIP                     |
+|  [ Peringatan Penting VPN FortiClient ]            |  * Kata Sandi (Dilengkapi Tombol Intip)      |
+|  Jika Anda berada di luar jaringan kantor BPS,     |  [x] Ingat sesi saya di peramban ini         |
+|  pastikan aplikasi FortiClient VPN BPS telah       |                                              |
+|  terhubung (Connected) sebelum menekan tombol.     |  [ TOMBOL HITAM: MASUK KE APLIKASI ]         |
+|                                                    |                                              |
+|  [ Tautan Simulasi Mode Mandiri / Mock ]           |  [ Catatan Akun Bawaan Seeder Awal ]         |
+|  -> Mode Simulasi SSO (Uji Coba Mandiri)           |  Super Admin: admin@kantor.go.id             |
++----------------------------------------------------+----------------------------------------------+
+|  © 2026 BPS Kabupaten Tegal • ELKA: Sistem Websinkronisasi Bukti Dukung                          |
++---------------------------------------------------------------------------------------------------+
+```
+
+### Opsi 1: Masuk via SSO BPS (Untuk Seluruh Pegawai & Admin Operasional)
+1. Buka portal di `http://localhost:8000/login`.
+2. Pada **Bilah Kiri (Opsi 1)**, klik tombol biru **Masuk dengan SSO BPS**.
+3. Sistem akan mengarahkan Anda ke layar SSO resmi BPS (`https://sso.bps.go.id`).
+4. Masukkan username SSO kantor dan kata sandi Anda.
+5. Setelah berhasil, Anda akan otomatis masuk ke dalam sistem ELKA. Bila ini pertama kali login, akun Anda otomatis terdaftar sebagai **Pegawai**.
+6. > [!IMPORTANT]
+   > **Akses dari Luar Kantor BPS (Work from Home / Dinas Luar):** Pastikan aplikasi **FortiClient VPN BPS** pada komputer/laptop Anda sudah berstatus **Connected** sebelum menekan tombol SSO. Jika VPN belum terhubung, sistem akan menampilkan notifikasi ramah untuk menyalakan VPN terlebih dahulu.
+
+### Opsi 2: Masuk Akun Pengelola Lokal (Khusus Super Administrator)
+1. Buka portal di `http://localhost:8000/login`.
+2. Pada **Bilah Kanan (Opsi 2)**, masukkan email atau NIP pengelola (contoh akun bawaan seeder: `admin@kantor.go.id`) dan kata sandi.
+3. Anda dapat menekan ikon **mata** di samping kolom kata sandi untuk memeriksa ketepatan ketikan.
+4. Klik tombol **Masuk ke Aplikasi**.
+5. > [!TIP]
+   > **Khusus Login Pertama Kali Super Admin:** Jika Anda baru pertama kali login menggunakan akun bawaan, sistem akan menampilkan layar **Karantina Ganti Kata Sandi**. Anda wajib memasukkan kata sandi baru (minimal 8 karakter) sebelum dapat mengakses menu lainnya. Jika ingin membatalkan, tersedia tombol **Batal dan Keluar** yang aman.
 
 ---
 
 ## 4. Menggunakan Matriks Monitor (Layar Utama Centang)
 
-Menu **Matriks Monitor** adalah menu favorit yang paling sering digunakan oleh seluruh pegawai kantor.
+Menu **Matriks Monitor** adalah layar utama yang digunakan oleh seluruh pegawai dan pimpinan kantor untuk melihat pemenuhan bukti dukung di setiap Lembar Kerja.
 
 ### Cara Membuka:
 Pada bilah menu sebelah kiri, klik menu **Operasional** ➔ pilih **Matriks Monitor**.
 
 ```text
 ========================================================================================
-                               MATRIKS SINKRONISASI BUKTI DUKUNG
+                              MATRIKS SINKRONISASI INDIKATOR LK
 ========================================================================================
-[Filter Tahun: 2026 ▼]   [Jenis Dokumen: Semua ▼]   [Cari Dokumen: _________________ 🔍]
+[Filter Periode: 2026 ▼]    [Cari Indikator / Dokumen: _________________ 🔍]
 ----------------------------------------------------------------------------------------
                                           │     INTERNAL BPS      │    EKSTERNAL
-NAMA DOKUMEN BUKTI DUKUNG                 │  ZI  │ PEKPPP │  KIP  │ SEKUNDER │ SEKTORAL
+INDIKATOR KESAMAAN / KEBUTUHAN BUKTI      │  KIP │   ZI   │ PEKPPP│ SEKUNDER │ SEKTORAL
 ------------------------------------------┼──────┼────────┼───────┼──────────┼──────────
-1. SK Tim Reformasi Birokrasi 2026        │  ✔   │   ✔    │       │          │
-2. SOP Pelayanan Statistik Terpadu        │  ✔   │   ✔    │   ✔   │          │
-3. Buku Pedoman Tata Kelola Data          │      │        │       │    ✔     │    ✔
+1. SK Pengelola Informasi Publik (PPID)   │  ✔   │        │       │          │
+2. SOP Pelayanan Informasi & Pengaduan    │  ✔   │   ✔    │   ✔   │          │
+3. Laporan Evaluasi & Monev Triwulanan    │      │   ✔    │   ✔   │    ✔     │
 ========================================================================================
 ```
 
-### Memahami Tanda pada Tabel:
-* **Tanda Centang Hijau (✔):** Menandakan bahwa dokumen bukti dukung pada baris tersebut **sudah cocok dan diakui** untuk Lembar Kerja pada kolom tersebut.
-* **Kotak Kosong Bersih:** Menandakan dokumen tersebut belum atau tidak berhubungan dengan Lembar Kerja terkait. Di ELKA, kotak yang tidak cocok sengaja dikosongkan murni tanpa simbol membingungkan agar mata pembaca nyaman dan tidak lelah.
 
-### Melihat Detail dan Tautan Bukti (Fitur Drill-Down):
+
+### Memahami Tanda pada Tabel:
+* **Tanda Centang Hijau (✔):** Menandakan bahwa indikator tersebut **sudah terpenuhi kecocokan dokumennya** pada Lembar Kerja di kolom terkait.
+* **Kotak Kosong Bersih:** Menandakan indikator tersebut belum memiliki bukti dukung pada Lembar Kerja terkait. Di ELKA, kotak yang belum terpenuhi dikosongkan murni tanpa simbol agar bersih dan nyaman dibaca.
+
+### Membuka Berkas di Google Drive:
 1. Arahkan mouse Anda ke salah satu tanda **✔** pada tabel.
 2. **Klik tanda ✔ tersebut.**
-3. Sebuah jendela sembulan (*modal*) akan muncul menampilkan:
-   * Nama dan nomor lengkap dokumen.
-   * Daftar indikator Lembar Kerja yang cocok.
-   * Tingkat persentase kecocokan (misalnya: *100% Cocok*).
-   * Status verifikasi (*Otomatis* atau *Terverifikasi oleh Admin*).
-   * **Tombol Buka Tautan Bukti:** Jika indikator memiliki tautan (misal Google Drive kantor atau web resmi), Anda dapat langsung mengkliknya. Tautan ini dijamin aman dan akan terbuka di tab baru.
+3. Sistem akan **langsung membuka tab baru ke Google Drive** tempat berkas bukti dukung LK tersebut tersimpan. Cepat, praktis, dan tanpa jendela pop-up perantara!
 
 ---
 
@@ -133,9 +167,9 @@ Tidak perlu khawatir jika Anda tidak sengaja salah mengetik, misalnya mengetik `
 
 ---
 
-## 6. Mengunggah Berkas Bukti Dukung Baru (Untuk Admin)
+## 6. Mengunggah Berkas Bukti Dukung Baru (Untuk Pegawai & Admin)
 
-Sebagai Admin, Anda dapat menambahkan berkas dokumen baru ke dalam sistem:
+Sebagai Pegawai atau Admin, Anda dapat menambahkan berkas dokumen baru ke dalam sistem untuk mencari kesesuaian (matching) dengan Lembar Kerja:
 
 1. Pada menu sebelah kiri, klik **Bukti Dukung** ➔ pilih **Daftar Bukti Dukung**.
 2. Klik tombol kuning di kanan atas: **+ Bukti Dukung Baru**.
@@ -173,7 +207,21 @@ Ketika dokumen selesai diunggah, mesin cerdas ELKA akan langsung menganalisis te
 
 ---
 
-## 8. Menambah atau Mencabut Hubungan Dokumen Manual (Untuk Admin)
+## 8. Mengelola Tautan Google Drive LK di Database (Untuk Super Admin & Admin)
+
+Agar pengguna yang mengklik tanda centang (✔) langsung terhubung ke folder atau berkas resmi bukti dukung di Google Drive, Super Admin dan Admin dapat mengatur tautan Drive indikator:
+
+1. Pada menu sebelah kiri, buka **Master Data** ➔ pilih **Tautan Drive LK**.
+2. Anda akan melihat daftar seluruh indikator Lembar Kerja berserta status link Drive-nya.
+3. Anda dapat menyaring indikator yang **Belum Ada Link Drive** untuk melengkapinya.
+4. Klik tombol **Atur Link Drive** pada baris indikator yang diinginkan.
+5. Masukkan tautan lengkap Google Drive (wajib diawali `https://` atau `http://`, contoh: `https://drive.google.com/drive/folders/abcdef...`).
+6. Klik **Simpan**. Tautan tersebut akan langsung aktif di database, dan setiap kali bukti dukung indikator ini cocok di Matriks Monitor, klik centang (✔) akan langsung membawa pengguna ke Google Drive tersebut.
+7. Anda juga dapat menghapus tautan sewaktu-waktu dengan tombol **Hapus Link**.
+
+---
+
+## 9. Menambah atau Mencabut Hubungan Dokumen Manual (Untuk Admin)
 
 Terkadang, ada dokumen yang secara tata bahasa berbeda namun sebenarnya merupakan bukti yang sah:
 
@@ -190,7 +238,7 @@ Terkadang, ada dokumen yang secara tata bahasa berbeda namun sebenarnya merupaka
 
 ---
 
-## 9. Mengimpor Lembar Kerja dari File Excel (Untuk Super Admin)
+## 10. Mengimpor Lembar Kerja dari File Excel (Untuk Super Admin)
 
 Jika kantor memiliki Lembar Kerja evaluasi baru dari kementerian atau pusat (berupa file Excel dengan ratusan/ribuan butir):
 
@@ -207,7 +255,7 @@ Jika kantor memiliki Lembar Kerja evaluasi baru dari kementerian atau pusat (ber
 
 ---
 
-## 10. Melihat Jejak Audit & Pengaturan Sistem (Untuk Super Admin)
+## 11. Melihat Jejak Audit & Pengaturan Sistem (Untuk Super Admin)
 
 ### 1. Memeriksa Jejak Audit (Audit Log)
 Untuk menjamin keterbukaan dan mencegah penyalahgunaan, semua tindakan penting di ELKA terekam secara otomatis:
@@ -221,7 +269,7 @@ Untuk menjamin keterbukaan dan mencegah penyalahgunaan, semua tindakan penting d
 
 ---
 
-## 11. Tips Penamaan File agar Otomatis Cocok 100%
+## 12. Tips Penamaan File agar Otomatis Cocok 100%
 
 Agar mesin cerdas ELKA dapat langsung mencocokkan dokumen Anda dengan status **100% Cocok Pasti** tanpa perlu verifikasi rumit, gunakan salah satu dari dua tips praktis berikut saat menyimpan nama berkas PDF:
 
@@ -235,3 +283,4 @@ Agar mesin cerdas ELKA dapat langsung mencocokkan dokumen Anda dengan status **1
 ---
 
 *Selamat bekerja dan menyinkronkan bukti dukung kantor dengan lebih mudah, cepat, dan rapi bersama **ELKA**!*
+

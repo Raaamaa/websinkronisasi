@@ -25,9 +25,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(SSOProviderInterface::class, function (): SSOProviderInterface {
-            $driver = (string) config('services.sso.driver', 'mock');
+            $driver = strtolower((string) config('services.sso.driver', 'mock'));
 
-            if ($driver === 'oidc') {
+            if (in_array($driver, ['keycloak', 'oidc', 'bps'], true)) {
                 return new BpsKeycloakOidcProvider;
             }
 

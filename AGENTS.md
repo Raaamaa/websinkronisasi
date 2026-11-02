@@ -72,6 +72,7 @@ Repositori ini telah dilengkapi dengan 72 skill profesional di [`.agents/skills/
 | **Menulis Kode Minimal & Efisien** | `/ponytail` | Mencegah *over-engineering* atau penambahan dependensi yang tidak perlu. Tulis perubahan kode terkecil yang sepenuhnya menyelesaikan masalah dengan aman. |
 | **Review & Verifikasi Kode** | `/code-review` / `/ponytail-review` | Sebelum melakukan commit, jalankan review 2 sumbu: kepatuhan standar (*standards*) dan kesesuaian spesifikasi PRD (*spec*). |
 | **Pembangunan UI & Tampilan** | `/antislop-ui` & `/antislop-human` | Mencegah tampilan generik buatan AI. Pastikan kontras warna terbaca, tata letak responsif, dan interaksi kontrol ramah pengguna nyata. |
+| **Pembangunan UI & Desain Frontend** | `/hallmark` | Menjamin antarmuka dibuat berstandar desain tinggi (The Floor, typography, no AI slop, responsive, 1 ide per layar). |
 | **Diagnosis Bug / Kegagalan Queue** | `/diagnosing-bugs` | Gunakan siklus terstruktur: feedback loop yang gagal ➔ minimalkan kasus ➔ hipotesis ➔ instrumentasi ➔ perbaikan ➔ regression test. |
 | **Komunikasi Ringkas & Hemat Token** | `/caveman` | Gunakan mode ini bila diminta respons padat, langsung ke jawaban inti tanpa basa-basi seremonial. |
 

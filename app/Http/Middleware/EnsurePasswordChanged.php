@@ -21,12 +21,13 @@ class EnsurePasswordChanged
             $exemptRoutes = [
                 'auth.password.change',
                 'auth.password.change.update',
+                'logout',
                 'filament.admin.auth.logout',
             ];
 
             $currentRoute = (string) $request->route()?->getName();
 
-            if (! in_array($currentRoute, $exemptRoutes, true) && ! $request->is('auth/password/change*') && ! $request->is('admin/logout')) {
+            if (! in_array($currentRoute, $exemptRoutes, true) && ! $request->is('auth/password/change*') && ! $request->is('admin/logout') && ! $request->is('logout')) {
                 return redirect()->route('auth.password.change');
             }
         }

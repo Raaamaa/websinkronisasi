@@ -75,6 +75,7 @@ graph TD
 | **TSK-301** | Manajemen Master LK (CRUD) | Buat halaman Filament untuk kelola LK, kategori internal/eksternal, periode tahun, dan soft delete dengan konfirmasi relasi terdampak. | LK-02, LK-03, LK-06, AC-14 |
 | **TSK-302** | Mesin Profil Impor Excel | Bangun konfigurasi profil dinamis (nama sheet, header row, pemetaan kolom, dan parsing strategy: single cell numbered list, checklist sheet, single item). | LKIMP-02, LKIMP-03 |
 | **TSK-303** | Parser Excel & Filter Sanitasi | Gunakan `PhpSpreadsheet` mode *read data only* (tolak `.xlsm`). Filter baris narasi, judul, rekap, rumus, dan sheet pivot. Validasi skema tautan hanya `http/https`. | LKIMP-05, LKIMP-09, LKIMP-10, LK-09, AC-24, AC-25 |
+| **TSK-304** | Pengelolaan Tautan Drive LK di Database | Sediakan antarmuka bagi Super Admin dan Admin untuk menambah, mengubah, dan menghapus URL Google Drive (`evidence_link`) pada indikator LK secara langsung di database. | LK-04, MON-05, RBAC.md |
 | **TSK-304** | Year Placeholder Resolver | Implementasikan resolusi `[t]`, `[t-1]`, `[t-2]` menjadi tahun terhitung berdasarkan periode LK ke kolom `resolved_name`. | LK-05, AC-26 |
 | **TSK-305** | Layar Pratinjau Impor (Preview Gate) | Tampilkan pratinjau data indikator, item bukti, dan daftar baris yang dilewati sebelum committed. | LKIMP-04 |
 | **TSK-306** | Eksekusi Impor Idempoten | Simpan data ke `lk_indicators` dan `lk_evidence_items` menggunakan pola upsert idempoten berdasarkan `(lk_id, code)` agar file yang sama tidak membuat data ganda. | LKIMP-07, AC-23 |
@@ -91,7 +92,7 @@ graph TD
 
 | ID Task | Judul Tugas | Deskripsi Teknis | Referensi Kebutuhan |
 |---|---|---|---|
-| **TSK-401** | Form Upload & Validasi Keamanan | Buat form upload dokumen (PDF, DOCX, JPG, PNG). Validasi ukuran maks 20MB dan validasi MIME Sniffing berdasarkan magic bytes. | BD-01, BD-02, BD-03, AC-06 |
+| **TSK-401** | Form Upload & Validasi Keamanan | Buat form upload dokumen (PDF, DOCX, JPG, PNG) yang dapat diakses oleh Pegawai dan Admin (Super Admin dilarang upload matching). Validasi ukuran maks 20MB dan MIME Sniffing magic bytes. | BD-01, BD-02, BD-03, AC-06, RBAC.md |
 | **TSK-402** | Deduplikasi SHA-256 | Hitung hash SHA-256 saat upload. Jika hash sudah ada di database, tolak upload dan tampilkan record BD yang sudah ada. | BD-04, BD-05, AC-05 |
 | **TSK-403** | Penyimpanan Terisolasi (Private Storage) | Simpan berkas fisik di direktori privat server dengan nama file acak UUID untuk mencegah *path traversal*. | BD-10, NFR-04 |
 | **TSK-404** | Queue Worker & Job Pemrosesan | Buat job `ProcessEvidenceDocumentJob` yang berjalan di Redis queue. | MATCH-01, NFR-06 |
@@ -128,9 +129,9 @@ graph TD
 
 | ID Task | Judul Tugas | Deskripsi Teknis | Referensi Kebutuhan |
 |---|---|---|---|
-| **TSK-601** | Halaman Monitor Matriks (MON) | Bangun tabel matriks Filament: Baris = Bukti Dukung, Kolom = LK (grup Internal & Eksternal). Render ✔ jika match `auto` atau `confirmed`. Kosongkan murni jika tidak cocok. | MON-01, MON-02, MON-03, AC-08, AC-09 |
+| **TSK-601** | Halaman Monitor Matriks (MON) | Bangun tabel matriks Filament: Baris = Indikator Kesamaan / Kebutuhan Bukti LK, Kolom = LK (Internal & Eksternal). Render ✔ jika ada bukti cocok untuk LK tersebut. Kosongkan murni jika tidak cocok. | MON-01, MON-02, MON-03, AC-08, AC-09 |
 | **TSK-602** | Kueri Pivot Server-Side & Paginasi | Terapkan kueri agregasi JSON PostgreSQL di sisi server dengan paginasi agar merespons ≤ 2 detik untuk 10.000 dokumen. | MON-08, NFR-05 |
-| **TSK-603** | Modal Detail Centang (Drill-Down) | Saat tanda ✔ diklik, buka modal menampilkan daftar indikator cocok, skor, status (Otomatis / Terverifikasi), dan tautan bukti http/https yang dapat diklik (`rel="noopener noreferrer"`). | MON-04, MON-05, MON-06, MON-10, AC-12 |
+| **TSK-603** | Tautan Langsung Google Drive | Saat tanda ✔ diklik, langsung buka tab baru ke URL Google Drive tempat bukti dukung tersimpan (`rel="noopener noreferrer"`). | MON-04, MON-05, MON-06, MON-10, AC-12 |
 | **TSK-604** | Antrean Verifikasi Admin | Buat halaman khusus admin untuk melihat daftar match berstatus `auto` beserta skor dan alasan kecocokan (`match_reasons`). Sediakan aksi satu klik: Konfirmasi (menjadi `confirmed`) atau Tolak (menjadi `rejected`). | MATCH-04, MATCH-10 |
 | **TSK-605** | Koreksi Manual Relasi (Tambah/Hapus) | Sediakan tombol bagi Admin untuk menambah match manual (menjadi `confirmed`) atau menghapus match (menjadi `rejected`) langsung dari UI. | MATCH-05, AC-16 |
 
