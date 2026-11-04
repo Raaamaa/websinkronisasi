@@ -103,38 +103,51 @@ class Phase2RbacAndAuthTest extends TestCase
     public function test_super_admin_can_access_change_password_form(): void
     {
         $superAdmin = User::where('role', 'super_admin')->firstOrFail();
-        $superAdmin->update(['must_change_password' => true]);
+        try {
+            $superAdmin->update(['must_change_password' => true]);
 
-        $response = $this->actingAs($superAdmin)->get('/auth/password/change');
-        $response->assertStatus(200);
-        $response->assertSee('Ganti Kata Sandi');
+            $response = $this->actingAs($superAdmin)->get('/auth/password/change');
+            $response->assertStatus(200);
+            $response->assertSee('Ganti Kata Sandi');
+        } finally {
+            $superAdmin->update(['must_change_password' => false]);
+        }
     }
 
     public function test_super_admin_can_successfully_change_password_and_clears_quarantine_flag(): void
     {
         $superAdmin = User::where('role', 'super_admin')->firstOrFail();
-        $superAdmin->update(['must_change_password' => true]);
+        $origHash = $superAdmin->password_hash;
 
-        $newPassword = 'NewSecret2026!'.bin2hex(random_bytes(4));
+        try {
+            $superAdmin->update(['must_change_password' => true]);
 
-        $response = $this->actingAs($superAdmin)->post('/auth/password/change', [
-            'new_password' => $newPassword,
-            'new_password_confirmation' => $newPassword,
-        ]);
+            $newPassword = 'NewSecret2026!'.bin2hex(random_bytes(4));
 
-        $response->assertRedirect('/admin');
+            $response = $this->actingAs($superAdmin)->post('/auth/password/change', [
+                'new_password' => $newPassword,
+                'new_password_confirmation' => $newPassword,
+            ]);
 
-        $superAdmin->refresh();
-        $this->assertFalse($superAdmin->must_change_password);
-        $this->assertTrue(Hash::check($newPassword, $superAdmin->password_hash));
+            $response->assertRedirect('/admin');
 
-        // Verify audit log
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $superAdmin->id,
-            'action' => 'auth.password_changed',
-            'entity_type' => 'users',
-            'entity_id' => $superAdmin->id,
-        ]);
+            $superAdmin->refresh();
+            $this->assertFalse($superAdmin->must_change_password);
+            $this->assertTrue(Hash::check($newPassword, $superAdmin->password_hash));
+
+            // Verify audit log
+            $this->assertDatabaseHas('audit_logs', [
+                'user_id' => $superAdmin->id,
+                'action' => 'auth.password_changed',
+                'entity_type' => 'users',
+                'entity_id' => $superAdmin->id,
+            ]);
+        } finally {
+            $superAdmin->update([
+                'password_hash' => $origHash,
+                'must_change_password' => false,
+            ]);
+        }
     }
 
     /**
@@ -143,10 +156,14 @@ class Phase2RbacAndAuthTest extends TestCase
     public function test_user_with_must_change_password_is_redirected_when_accessing_admin(): void
     {
         $superAdmin = User::where('role', 'super_admin')->firstOrFail();
-        $superAdmin->update(['must_change_password' => true]);
+        try {
+            $superAdmin->update(['must_change_password' => true]);
 
-        $response = $this->actingAs($superAdmin)->get('/admin');
-        $response->assertRedirect('/auth/password/change');
+            $response = $this->actingAs($superAdmin)->get('/admin');
+            $response->assertRedirect('/auth/password/change');
+        } finally {
+            $superAdmin->update(['must_change_password' => false]);
+        }
     }
 
     /**

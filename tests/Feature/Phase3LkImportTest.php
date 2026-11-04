@@ -466,18 +466,23 @@ class Phase3LkImportTest extends TestCase
      */
     public function test_super_admin_can_access_lembar_kerja_and_profiles_filament_pages(): void
     {
-        $superAdmin = User::firstOrCreate(
-            ['email' => 'admin@kantor.go.id'],
-            [
+        $superAdmin = User::withTrashed()->where('email', 'admin@kantor.go.id')->first();
+        if ($superAdmin) {
+            if ($superAdmin->trashed()) {
+                $superAdmin->restore();
+            }
+        } else {
+            $superAdmin = User::create([
                 'name' => 'Super Admin Inisial',
-                'password' => bcrypt('123456789'),
+                'email' => 'admin@kantor.go.id',
+                'password_hash' => bcrypt('123456789'),
                 'role' => 'super_admin',
                 'is_active' => true,
                 'must_change_password' => false,
-            ]
-        );
+            ]);
+        }
 
-        $superAdmin->update(['must_change_password' => false]);
+        $superAdmin->update(['must_change_password' => false, 'is_active' => true]);
 
         $responseLk = $this->actingAs($superAdmin)->get('/admin/lembar-kerjas');
         $responseLk->assertOk();

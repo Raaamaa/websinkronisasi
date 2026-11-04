@@ -73,7 +73,7 @@ class LoginController extends Controller
             ->first();
 
         // 2. Penegakan Aturan Invarian AUTH-11: Pegawai Dilarang Login via Form Lokal
-        if ($user !== null && ($user->isPegawai() || $user->auth_provider === 'sso' || $user->password_hash === null)) {
+        if ($user !== null && $user->isPegawai()) {
             RateLimiter::hit($throttleKey, 900);
 
             AuditLog::create([
@@ -91,6 +91,15 @@ class LoginController extends Controller
             return back()
                 ->withInput($request->only('email'))
                 ->with('error', 'Akun Pegawai wajib masuk menggunakan tombol Login SSO BPS (Opsi 1).');
+        }
+
+        // Akun tanpa kata sandi lokal wajib menggunakan SSO
+        if ($user !== null && $user->password_hash === null) {
+            RateLimiter::hit($throttleKey, 900);
+
+            return back()
+                ->withInput($request->only('email'))
+                ->with('error', 'Akun ini belum memiliki kata sandi lokal. Silakan masuk menggunakan tombol Login SSO BPS (Opsi 1).');
         }
 
         // 3. Validasi Password

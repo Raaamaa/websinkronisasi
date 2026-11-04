@@ -24,17 +24,17 @@ class LembarKerjaResource extends Resource
 {
     protected static ?string $model = LembarKerja::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static ?string $navigationIcon = 'heroicon-o-folder';
 
-    protected static ?string $navigationLabel = 'Lembar Kerja';
+    protected static ?string $navigationLabel = 'Master Lembar Kerja';
 
     protected static ?string $modelLabel = 'Lembar Kerja';
 
     protected static ?string $pluralModelLabel = 'Daftar Lembar Kerja';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 4;
 
     public static function canViewAny(): bool
     {

@@ -22,6 +22,8 @@ class LkIndicatorResource extends Resource
 {
     protected static ?string $model = LkIndicator::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationIcon = 'heroicon-o-link';
 
     protected static ?string $navigationLabel = 'Tautan Drive LK';
@@ -30,9 +32,9 @@ class LkIndicatorResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Kelola Tautan Drive LK';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 8;
 
     public static function canViewAny(): bool
     {

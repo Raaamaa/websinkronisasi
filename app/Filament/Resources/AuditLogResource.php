@@ -29,9 +29,9 @@ class AuditLogResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Catatan Jejak Audit';
 
-    protected static ?string $navigationGroup = 'Manajemen Sistem';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 7;
 
     /**
      * Jejak audit HANYA dapat diakses oleh Super Admin (AUDIT-03, RBAC.md).

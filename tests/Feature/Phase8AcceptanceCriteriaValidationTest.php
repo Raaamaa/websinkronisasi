@@ -50,7 +50,13 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         DocumentMatch::query()->forceDelete();
         EvidenceDocument::query()->forceDelete();
 
-        $this->superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $this->superAdmin = User::withTrashed()->where('email', 'admin@kantor.go.id')->first()
+            ?? User::where('role', 'super_admin')->firstOrFail();
+
+        if ($this->superAdmin->trashed()) {
+            $this->superAdmin->restore();
+        }
+
         $this->superAdmin->update(['must_change_password' => false, 'is_active' => true]);
 
         $this->admin = User::firstOrCreate(
@@ -118,22 +124,32 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_03_super_admin_seeder_quarantined_until_password_changed(): void
     {
-        $this->superAdmin->update(['must_change_password' => true]);
+        $originalHash = $this->superAdmin->password_hash;
+        $originalMustChange = $this->superAdmin->must_change_password;
 
-        $response = $this->actingAs($this->superAdmin)->get('/admin/evidence-documents');
-        $response->assertRedirect('/auth/password/change');
+        try {
+            $this->superAdmin->update(['must_change_password' => true]);
 
-        // Ganti password berhasil dengan password baru
-        $newPass = 'NewSecurePass_'.uniqid().'!@#';
-        $updateResponse = $this->actingAs($this->superAdmin)->post('/auth/password/change', [
-            'new_password' => $newPass,
-            'new_password_confirmation' => $newPass,
-        ]);
-        $updateResponse->assertRedirect();
+            $response = $this->actingAs($this->superAdmin)->get('/admin/evidence-documents');
+            $response->assertRedirect('/auth/password/change');
 
-        $this->superAdmin->refresh();
-        $this->assertFalse($this->superAdmin->must_change_password);
-        $this->assertTrue(Hash::check($newPass, $this->superAdmin->password_hash));
+            // Ganti password berhasil dengan password baru
+            $newPass = 'NewSecurePass_'.uniqid().'!@#';
+            $updateResponse = $this->actingAs($this->superAdmin)->post('/auth/password/change', [
+                'new_password' => $newPass,
+                'new_password_confirmation' => $newPass,
+            ]);
+            $updateResponse->assertRedirect();
+
+            $this->superAdmin->refresh();
+            $this->assertFalse($this->superAdmin->must_change_password);
+            $this->assertTrue(Hash::check($newPass, $this->superAdmin->password_hash));
+        } finally {
+            $this->superAdmin->update([
+                'password_hash' => $originalHash,
+                'must_change_password' => $originalMustChange,
+            ]);
+        }
     }
 
     /**
@@ -141,6 +157,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_04_last_active_super_admin_cannot_be_deactivated_or_deleted(): void
     {
+        $otherSuperAdmins = User::where('role', 'super_admin')->where('id', '!=', $this->superAdmin->id)->get();
         User::where('role', 'super_admin')->where('id', '!=', $this->superAdmin->id)->delete();
 
         /** @var UserManagerService $manager */
@@ -156,6 +173,11 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
 
         $this->superAdmin->refresh();
         $this->assertTrue($this->superAdmin->is_active);
+
+        // Restore other super admins so subsequent tests or live sessions are unaffected
+        foreach ($otherSuperAdmins as $other) {
+            User::withTrashed()->where('id', $other->id)->restore();
+        }
     }
 
     /**

@@ -7,6 +7,7 @@ namespace App\Services\Monitor;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
+use App\Models\LkIndicator;
 use App\Services\Search\DocumentSearchService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -14,18 +15,78 @@ use Illuminate\Support\Collection;
 class MonitorMatrixService
 {
     /**
+     * Get aggregate KPI statistics for the monitor dashboard (Total, Terpenuhi, Belum, Perlu Verifikasi).
+     *
+     * @return array{
+     *     total_indicators: int,
+     *     fulfilled_indicators: int,
+     *     fulfilled_percentage: float,
+     *     unfulfilled_indicators: int,
+     *     unfulfilled_percentage: float,
+     *     pending_verification: int
+     * }
+     */
+    public function getMatrixStats(int $period = 2026): array
+    {
+        $totalIndicators = LkIndicator::query()
+            ->whereHas('lembarKerja', function ($q) use ($period): void {
+                $q->where('period', $period)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at');
+            })
+            ->count();
+
+        $fulfilledIndicators = DocumentMatch::query()
+            ->whereIn('status', ['auto', 'confirmed'])
+            ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {
+                $q->where('period', $period)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at');
+            })
+            ->distinct('indicator_id')
+            ->count('indicator_id');
+
+        $fulfilledPercentage = $totalIndicators > 0 ? round(($fulfilledIndicators / $totalIndicators) * 100, 1) : 0.0;
+        $unfulfilledIndicators = max(0, $totalIndicators - $fulfilledIndicators);
+        $unfulfilledPercentage = $totalIndicators > 0 ? round(($unfulfilledIndicators / $totalIndicators) * 100, 1) : 0.0;
+
+        $pendingVerification = DocumentMatch::query()
+            ->where('status', 'auto')
+            ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {
+                $q->where('period', $period)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at');
+            })
+            ->count();
+
+        return [
+            'total_indicators' => $totalIndicators,
+            'fulfilled_indicators' => $fulfilledIndicators,
+            'fulfilled_percentage' => $fulfilledPercentage,
+            'unfulfilled_indicators' => $unfulfilledIndicators,
+            'unfulfilled_percentage' => $unfulfilledPercentage,
+            'pending_verification' => $pendingVerification,
+        ];
+    }
+
+    /**
      * Get active Lembar Kerja grouped by internal and external categories (MON-01).
      *
      * @return array{internal: Collection<int, LembarKerja>, eksternal: Collection<int, LembarKerja>}
      */
-    public function getColumnGroups(int $period = 2026): array
+    public function getColumnGroups(int $period = 2026, ?string $category = null): array
     {
-        $lks = LembarKerja::query()
+        $query = LembarKerja::query()
             ->where('period', $period)
             ->where('is_active', true)
             ->whereNull('deleted_at')
-            ->orderBy('code')
-            ->get();
+            ->orderBy('code');
+
+        if (! empty($category) && in_array($category, ['internal', 'eksternal'], true)) {
+            $query->where('category', $category);
+        }
+
+        $lks = $query->get();
 
         return [
             'internal' => $lks->where('category', 'internal')->values(),
@@ -46,7 +107,8 @@ class MonitorMatrixService
     public function getMatrixData(array $filters = []): array
     {
         $period = (int) ($filters['period'] ?? date('Y'));
-        $columnGroups = $this->getColumnGroups($period);
+        $category = ! empty($filters['category']) ? (string) $filters['category'] : null;
+        $columnGroups = $this->getColumnGroups($period, $category);
 
         $allLks = $columnGroups['internal']->merge($columnGroups['eksternal']);
         $lkCodes = $allLks->pluck('code')->toArray();
@@ -69,7 +131,7 @@ class MonitorMatrixService
             $searchService->applySearchFilter($docQuery, (string) $filters['search']);
         }
 
-        $perPage = (int) ($filters['per_page'] ?? 25);
+        $perPage = (int) ($filters['per_page'] ?? 15);
         $page = (int) ($filters['page'] ?? 1);
 
         /** @var LengthAwarePaginator $paginator */
@@ -103,6 +165,8 @@ class MonitorMatrixService
         foreach ($paginator->items() as $doc) {
             $cells = [];
             $matchedIndicatorsText = [];
+            $firstPic = null;
+            $firstCode = null;
 
             foreach ($lkCodes as $code) {
                 /** @var list<DocumentMatch> $lkMatches */
@@ -116,6 +180,12 @@ class MonitorMatrixService
                     if ($ind !== null) {
                         $driveUrl = $ind->evidence_link ?: ($doc->external_link ?: null);
                         $matchedIndicatorsText[] = "[{$code}] " . ($firstMatch->matchedItem?->resolved_name ?? $ind->title);
+                        if ($firstPic === null && ! empty($ind->pic)) {
+                            $firstPic = $ind->pic;
+                        }
+                        if ($firstCode === null && ! empty($ind->code)) {
+                            $firstCode = $ind->code;
+                        }
                     }
                 }
 
@@ -129,8 +199,21 @@ class MonitorMatrixService
                 ];
             }
 
+            if ($firstPic === null) {
+                $firstPic = match ($doc->document_type) {
+                    'SOP' => 'Humas / IPDS',
+                    'Laporan' => 'IPDS',
+                    'Data' => 'Nerwilis',
+                    default => 'Bagian Umum',
+                };
+            }
+
+            $displayCode = $doc->document_number ?: ($firstCode ?: 'DOK-' . substr($doc->id, 0, 6));
+
             $rows[] = [
                 'document_id' => $doc->id,
+                'code' => $displayCode,
+                'pic' => $firstPic,
                 'document_name' => $doc->document_name,
                 'document_number' => $doc->document_number,
                 'year' => $doc->year,

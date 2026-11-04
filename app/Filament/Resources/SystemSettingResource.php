@@ -18,6 +18,8 @@ class SystemSettingResource extends Resource
 {
     protected static ?string $model = SystemSetting::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static ?string $navigationLabel = 'Pengaturan Sistem';
@@ -26,9 +28,9 @@ class SystemSettingResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Pengaturan Sistem';
 
-    protected static ?string $navigationGroup = 'Manajemen Sistem';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 9;
 
     public static function canViewAny(): bool
     {

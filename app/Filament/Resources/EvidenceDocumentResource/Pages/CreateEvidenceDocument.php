@@ -21,6 +21,32 @@ class CreateEvidenceDocument extends CreateRecord
 {
     protected static string $resource = EvidenceDocumentResource::class;
 
+    protected static string $view = 'filament.resources.evidence-document-resource.pages.create-evidence-document';
+
+    public function getTitle(): string
+    {
+        return 'Unggah Dokumen Bukti Dukung';
+    }
+
+    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        return '';
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, \App\Models\EvidenceDocument>
+     */
+    public function getRecentUploads(): \Illuminate\Support\Collection
+    {
+        return \App\Models\EvidenceDocument::query()
+            ->withCount(['matches as active_matches_count' => function ($q): void {
+                $q->whereIn('status', ['auto', 'confirmed']);
+            }])
+            ->orderByDesc('created_at')
+            ->take(3)
+            ->get();
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

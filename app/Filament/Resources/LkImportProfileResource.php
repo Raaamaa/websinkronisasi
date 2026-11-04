@@ -18,17 +18,17 @@ class LkImportProfileResource extends Resource
 {
     protected static ?string $model = LkImportProfile::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
 
-    protected static ?string $navigationLabel = 'Profil Impor';
+    protected static ?string $navigationLabel = 'Impor Excel (Wizard)';
 
     protected static ?string $modelLabel = 'Profil Impor';
 
     protected static ?string $pluralModelLabel = 'Daftar Profil Impor';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 5;
 
     public static function canViewAny(): bool
     {

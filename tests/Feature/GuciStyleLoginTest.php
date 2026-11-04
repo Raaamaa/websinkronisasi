@@ -161,21 +161,30 @@ class GuciStyleLoginTest extends TestCase
     public function test_superadmin_quarantined_when_must_change_password_is_true(): void
     {
         $superAdmin = User::where('email', 'admin@kantor.go.id')->firstOrFail();
-        $superAdmin->update([
-            'password_hash' => bcrypt('123456789'),
-            'must_change_password' => true,
-            'is_active' => true,
-        ]);
+        $origHash = $superAdmin->password_hash;
 
-        $this->flushSession();
+        try {
+            $superAdmin->update([
+                'password_hash' => bcrypt('123456789'),
+                'must_change_password' => true,
+                'is_active' => true,
+            ]);
 
-        $response = $this->post('/login', [
-            'email' => 'admin@kantor.go.id',
-            'password' => '123456789',
-        ]);
+            $this->flushSession();
 
-        $response->assertRedirect(route('auth.password.change'));
-        $this->assertTrue(Auth::check());
+            $response = $this->post('/login', [
+                'email' => 'admin@kantor.go.id',
+                'password' => '123456789',
+            ]);
+
+            $response->assertRedirect(route('auth.password.change'));
+            $this->assertTrue(Auth::check());
+        } finally {
+            $superAdmin->update([
+                'password_hash' => $origHash,
+                'must_change_password' => false,
+            ]);
+        }
     }
 
     /**

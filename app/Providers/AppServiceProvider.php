@@ -14,7 +14,10 @@ use App\Observers\SystemSettingObserver;
 use App\Services\Auth\Contracts\SSOProviderInterface;
 use App\Services\Auth\Providers\BpsKeycloakOidcProvider;
 use App\Services\Auth\Providers\MockSSOProvider;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -45,5 +48,13 @@ class AppServiceProvider extends ServiceProvider
         SystemSetting::observe(SystemSettingObserver::class);
 
         Event::subscribe(AuditAuthEventsListener::class);
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_END,
+            fn (): HtmlString => new HtmlString('
+                <link rel="stylesheet" href="' . asset('css/tailwind-compiled.css') . '?v=' . (file_exists(public_path('css/tailwind-compiled.css')) ? filemtime(public_path('css/tailwind-compiled.css')) : time()) . '">
+                <link rel="stylesheet" href="' . asset('css/filament-custom.css') . '?v=' . (file_exists(public_path('css/filament-custom.css')) ? filemtime(public_path('css/filament-custom.css')) : time()) . '">
+            ')
+        );
     }
 }

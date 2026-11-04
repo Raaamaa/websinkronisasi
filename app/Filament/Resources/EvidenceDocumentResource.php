@@ -21,17 +21,17 @@ class EvidenceDocumentResource extends Resource
 {
     protected static ?string $model = EvidenceDocument::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
+    protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
 
-    protected static ?string $navigationLabel = 'Bukti Dukung';
+    protected static ?string $navigationLabel = 'Unggah Bukti Dukung';
 
     protected static ?string $modelLabel = 'Bukti Dukung';
 
     protected static ?string $pluralModelLabel = 'Daftar Bukti Dukung';
 
-    protected static ?string $navigationGroup = 'Bukti Dukung';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     public static function canViewAny(): bool
     {
@@ -68,22 +68,45 @@ class EvidenceDocumentResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Metadata Dokumen')
-                    ->description('Lengkapi identitas bukti dukung resmi.')
+                Forms\Components\Section::make('Pilih Berkas Dokumen Fisik / Digital')
+                    ->description('Maksimal 1 file per unggahan • Format: PDF, DOCX, JPG, PNG (Maks. 20 MB)')
+                    ->schema([
+                        Forms\Components\FileUpload::make('attachment')
+                            ->label('Unggah Berkas Bukti')
+                            ->disk('private')
+                            ->directory('evidence_temp')
+                            ->maxSize(20480)
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'image/jpeg',
+                                'image/png',
+                            ])
+                            ->required()
+                            ->helperText('Validasi otomatis MIME-sniffing & SHA-256 Hash anti-duplikasi aktif.')
+                            ->columnSpanFull(),
+                    ]),
+
+                Forms\Components\Section::make('Atribut Metadata Dokumen')
+                    ->description('Lengkapi identitas bukti dukung resmi (* Wajib diisi).')
                     ->schema([
                         Forms\Components\TextInput::make('document_name')
                             ->label('Nama Dokumen')
-                            ->placeholder('Contoh: SK Tim Reformasi Birokrasi BPS')
+                            ->placeholder('Contoh: SK Tim Kerja Pembangunan Zona Integritas Tahun 2026')
+                            ->helperText('Nama deskriptif resmi yang akan dicantumkan dalam lembar kerja evaluasi.')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('document_number')
-                            ->label('Nomor Dokumen / Surat')
-                            ->placeholder('Contoh: 01/BPS/2026')
-                            ->maxLength(128),
+                            ->label('Nomor Dokumen / Nomor SK (Opsional)')
+                            ->placeholder('Contoh: B-104/0200/KP.010/2026')
+                            ->helperText('Membantu pencocokan deterministik instan 100% terhadap butir instrumen ZI & PEKPPP.')
+                            ->maxLength(128)
+                            ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('year')
-                            ->label('Tahun Dokumen')
+                            ->label('Tahun / Periode')
                             ->numeric()
                             ->default((int) date('Y'))
                             ->minValue(2000)
@@ -100,33 +123,18 @@ class EvidenceDocumentResource extends Resource
                                 'Data' => 'Data / Statistik / Matriks',
                                 'Lainnya' => 'Lainnya',
                             ])
+                            ->default('SK')
+                            ->required()
                             ->searchable(),
 
                         Forms\Components\TextInput::make('external_link')
-                            ->label('Tautan Sumber Dokumen (Opsional)')
-                            ->placeholder('https://bps.go.id/docs/sk.pdf')
+                            ->label('Tautan Google Drive (Opsional)')
+                            ->placeholder('https://drive.google.com/drive/folders/...')
+                            ->helperText('Hanya menerima protokol resmi https:// (Akses izin diset BPS Domain Internal)')
                             ->url()
                             ->regex('/^https?:\/\/.+/i')
                             ->columnSpanFull(),
                     ])->columns(2),
-
-                Forms\Components\Section::make('Berkas Fisik Dokumen')
-                    ->description('Format diizinkan: PDF, DOCX, JPG, PNG (Maks. 20 MB).')
-                    ->schema([
-                        Forms\Components\FileUpload::make('attachment')
-                            ->label('Pilih Berkas')
-                            ->disk('private')
-                            ->directory('evidence_temp')
-                            ->maxSize(20480)
-                            ->acceptedFileTypes([
-                                'application/pdf',
-                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                'image/jpeg',
-                                'image/png',
-                            ])
-                            ->required()
-                            ->columnSpanFull(),
-                    ]),
             ]);
     }
 

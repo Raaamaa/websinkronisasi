@@ -21,15 +21,15 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationLabel = 'Pengguna';
+    protected static ?string $navigationLabel = 'Manajemen Pengguna';
 
     protected static ?string $modelLabel = 'Pengguna';
 
     protected static ?string $pluralModelLabel = 'Daftar Pengguna';
 
-    protected static ?string $navigationGroup = 'Manajemen Sistem';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 6;
 
     /**
      * Pegawai tidak berwenang melihat menu Pengguna (RBAC.md).

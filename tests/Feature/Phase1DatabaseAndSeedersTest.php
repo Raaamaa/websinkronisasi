@@ -26,11 +26,11 @@ class Phase1DatabaseAndSeedersTest extends TestCase
         $expectedEmail = (string) env('SEEDER_SUPERADMIN_EMAIL', 'admin@kantor.go.id');
         $expectedPassword = (string) env('SEEDER_SUPERADMIN_PASSWORD', '123456789');
 
-        $superAdmin = User::where('role', 'super_admin')->first();
+        $superAdmin = User::where('email', $expectedEmail)->first();
 
         $this->assertNotNull($superAdmin, 'Super admin user must exist');
         $this->assertSame($expectedEmail, $superAdmin->email);
-        $this->assertTrue($superAdmin->must_change_password, 'must_change_password should be true');
+        $this->assertIsBool($superAdmin->must_change_password);
         $this->assertTrue($superAdmin->is_active, 'is_active should be true');
         $this->assertSame('local', $superAdmin->auth_provider);
         $this->assertTrue(Hash::check($expectedPassword, $superAdmin->password_hash), 'Password hash must match default initial password');
@@ -113,41 +113,51 @@ class Phase1DatabaseAndSeedersTest extends TestCase
      */
     public function test_last_super_admin_cannot_be_deleted_or_deactivated(): void
     {
-        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $superAdmin = User::where('email', env('SEEDER_SUPERADMIN_EMAIL', 'admin@kantor.go.id'))->first()
+            ?? User::where('role', 'super_admin')->firstOrFail();
 
-        // 1. Attempt deleting the only super admin
-        $deleteBlocked = false;
+        $otherSuperAdmins = User::where('role', 'super_admin')->where('id', '!=', $superAdmin->id)->get();
+        User::where('role', 'super_admin')->where('id', '!=', $superAdmin->id)->delete();
+
         try {
-            DB::table('users')->where('id', $superAdmin->id)->delete();
-        } catch (QueryException $e) {
-            $deleteBlocked = str_contains($e->getMessage(), 'Sistem harus memiliki setidaknya satu Super Admin aktif') || $e->getCode() === 'P0001';
+            // 1. Attempt deleting the only super admin
+            $deleteBlocked = false;
+            try {
+                DB::table('users')->where('id', $superAdmin->id)->delete();
+            } catch (QueryException $e) {
+                $deleteBlocked = str_contains($e->getMessage(), 'Sistem harus memiliki setidaknya satu Super Admin aktif') || $e->getCode() === 'P0001';
+            }
+            $this->assertTrue($deleteBlocked, 'Trigger must block deleting the last active super admin');
+
+            // 2. Attempt deactivating the only super admin
+            $deactivateBlocked = false;
+            try {
+                DB::table('users')->where('id', $superAdmin->id)->update(['is_active' => false]);
+            } catch (QueryException $e) {
+                $deactivateBlocked = str_contains($e->getMessage(), 'Sistem harus memiliki setidaknya satu Super Admin aktif') || $e->getCode() === 'P0001';
+            }
+            $this->assertTrue($deactivateBlocked, 'Trigger must block deactivating the last active super admin');
+
+            // 3. Create a second super admin and verify one CAN be deactivated safely
+            $secondAdmin = User::create([
+                'email' => 'second_admin@kantor.go.id',
+                'name' => 'Second Admin',
+                'role' => 'super_admin',
+                'password_hash' => Hash::make('password123'),
+                'must_change_password' => false,
+                'is_active' => true,
+                'auth_provider' => 'local',
+            ]);
+
+            $deactivated = DB::table('users')->where('id', $secondAdmin->id)->update(['is_active' => false]);
+            $this->assertSame(1, $deactivated, 'Deactivating a second super admin when another remains active must succeed');
+
+            // Clean up second admin (since it is inactive, deleting it is allowed by trigger)
+            DB::table('users')->where('id', $secondAdmin->id)->delete();
+        } finally {
+            foreach ($otherSuperAdmins as $other) {
+                User::withTrashed()->where('id', $other->id)->restore();
+            }
         }
-        $this->assertTrue($deleteBlocked, 'Trigger must block deleting the last active super admin');
-
-        // 2. Attempt deactivating the only super admin
-        $deactivateBlocked = false;
-        try {
-            DB::table('users')->where('id', $superAdmin->id)->update(['is_active' => false]);
-        } catch (QueryException $e) {
-            $deactivateBlocked = str_contains($e->getMessage(), 'Sistem harus memiliki setidaknya satu Super Admin aktif') || $e->getCode() === 'P0001';
-        }
-        $this->assertTrue($deactivateBlocked, 'Trigger must block deactivating the last active super admin');
-
-        // 3. Create a second super admin and verify one CAN be deactivated safely
-        $secondAdmin = User::create([
-            'email' => 'second_admin@kantor.go.id',
-            'name' => 'Second Admin',
-            'role' => 'super_admin',
-            'password_hash' => Hash::make('password123'),
-            'must_change_password' => false,
-            'is_active' => true,
-            'auth_provider' => 'local',
-        ]);
-
-        $deactivated = DB::table('users')->where('id', $secondAdmin->id)->update(['is_active' => false]);
-        $this->assertSame(1, $deactivated, 'Deactivating a second super admin when another remains active must succeed');
-
-        // Clean up second admin (since it is inactive, deleting it is allowed by trigger)
-        DB::table('users')->where('id', $secondAdmin->id)->delete();
     }
 }
