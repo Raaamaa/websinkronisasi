@@ -271,8 +271,8 @@ html.dark header.fi-topbar .fi-btn {
 .gov-metric-card {
     background-color: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
-    border-radius: 0.5rem !important;
-    padding: 1.125rem 1.25rem !important;
+    border-radius: 0.75rem !important;
+    padding: 1rem 1.25rem !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
@@ -474,4 +474,102 @@ html.dark .fi-ta-empty-state-description {
 html.dark .fi-ta-empty-state-icon {
     color: #64748b !important;
 }
+
+/* --- 8. SENIOR UX ENHANCEMENTS FOR TESTING & MONITORING --- */
+.gov-metric-card {
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease !important;
+}
+
+.gov-metric-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06) !important;
+}
+
+.gov-metric-card.is-active {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 1.5px #0284c7 !important;
+}
+
+html.dark .gov-metric-card.is-active {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 1.5px #38bdf8 !important;
+}
+
+.gov-metric-card.is-active-emerald {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 1.5px #059669 !important;
+}
+
+html.dark .gov-metric-card.is-active-emerald {
+    border-color: #34d399 !important;
+    box-shadow: 0 0 0 1.5px #34d399 !important;
+}
+
+.gov-metric-card.is-active-amber {
+    border-color: #d97706 !important;
+    box-shadow: 0 0 0 1.5px #d97706 !important;
+}
+
+html.dark .gov-metric-card.is-active-amber {
+    border-color: #fbbf24 !important;
+    box-shadow: 0 0 0 1.5px #fbbf24 !important;
+}
+
+.gov-matrix-check-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.25rem !important;
+    padding: 0.25rem 0.625rem !important;
+    width: auto !important;
+    min-width: 2.25rem !important;
+    height: 2rem !important;
+    border-radius: 0.5rem !important;
+    background-color: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
+    font-size: 0.8125rem !important;
+    font-weight: 800 !important;
+    text-decoration: none !important;
+    box-shadow: 0 1px 2px rgba(4, 120, 87, 0.08) !important;
+    transition: all 0.12s ease !important;
+}
+
+.gov-matrix-check-btn:hover {
+    background-color: #059669 !important;
+    border-color: #047857 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(4, 120, 87, 0.25) !important;
+    transform: translateY(-1px);
+}
+
+.gov-matrix-check-btn:hover svg {
+    color: #ffffff !important;
+}
+
+html.dark .gov-matrix-check-btn {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+    color: #34d399 !important;
+}
+
+html.dark .gov-matrix-check-btn:hover {
+    background-color: #10b981 !important;
+    border-color: #059669 !important;
+    color: #ffffff !important;
+}
+
+.cell-unfulfilled-interactive {
+    transition: background-color 0.12s ease !important;
+    cursor: pointer !important;
+}
+
+.cell-unfulfilled-interactive:hover {
+    background-color: #f1f5f9 !important;
+}
+
+html.dark .cell-unfulfilled-interactive:hover {
+    background-color: #334155 !important;
+}
+
 

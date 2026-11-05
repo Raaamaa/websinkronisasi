@@ -17,7 +17,8 @@ class ListEvidenceDocuments extends ListRecords
         return [
             Actions\CreateAction::make()
                 ->label('Unggah Bukti Dukung')
-                ->icon('heroicon-o-arrow-up-tray'),
+                ->icon('heroicon-o-arrow-up-tray')
+                ->button(),
         ];
     }
 }

@@ -225,7 +225,7 @@ class ListAuditLogs extends ListRecords
             ),
 
             'user.activated' => sprintf(
-                'Mengaktifkan kembali izin akses portal Websinkronisasi untuk akun <span class="font-bold text-gray-900">"%s"</span>',
+                'Mengaktifkan kembali izin akses portal ELKA untuk akun <span class="font-bold text-gray-900">"%s"</span>',
                 e($new['target_name'] ?? 'Pengguna BPS')
             ),
 
@@ -254,7 +254,7 @@ class ListAuditLogs extends ListRecords
                 e($new['email'] ?? $log->user?->email ?? 'pengguna@bps.go.id')
             ),
 
-            'auth.logout' => 'Mengakhiri sesi masuk secara aman (secure logout) dari portal Websinkronisasi',
+            'auth.logout' => 'Mengakhiri sesi masuk secara aman (secure logout) dari portal ELKA',
 
             default => sprintf(
                 'Aktivitas %s pada entitas <span class="font-bold text-gray-800">%s</span>',

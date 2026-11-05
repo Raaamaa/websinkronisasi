@@ -7,7 +7,7 @@ services:
         PUID: 1000
         PGID: 1000
     container_name: websinkronisasi_app
-    restart: unless-stopped
+    restart: always
     working_dir: /var/www/html
     volumes:
       - .:/var/www/html
@@ -29,7 +29,7 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: websinkronisasi_postgres
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_DB: ${DB_DATABASE:-websinkronisasi}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
@@ -50,7 +50,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: websinkronisasi_redis
-    restart: unless-stopped
+    restart: always
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-YOUR_STRONG_REDIS_PASSWORD_PLACEHOLDER}
     ports:
       - "${REDIS_PORT:-6379}:6379"

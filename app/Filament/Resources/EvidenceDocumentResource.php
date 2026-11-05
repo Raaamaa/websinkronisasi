@@ -46,8 +46,8 @@ class EvidenceDocumentResource extends Resource
         /** @var User|null $user */
         $user = Auth::user();
 
-        // BD-01 & RBAC baru: Pegawai dan Admin dapat mengunggah dokumen matching; Super Admin dilarang
-        return $user !== null && in_array($user->role, ['admin', 'pegawai'], true) && $user->is_active;
+        // Seluruh peran aktif (super_admin, admin, pegawai) dapat mengunggah bukti dukung
+        return $user !== null && in_array($user->role, ['super_admin', 'admin', 'pegawai'], true) && $user->is_active;
     }
 
     public static function canEdit($record): bool
@@ -75,6 +75,7 @@ class EvidenceDocumentResource extends Resource
                             ->label('Unggah Berkas Bukti')
                             ->disk('private')
                             ->directory('evidence_temp')
+                            ->preserveFilenames()
                             ->maxSize(20480)
                             ->acceptedFileTypes([
                                 'application/pdf',
@@ -241,6 +242,15 @@ class EvidenceDocumentResource extends Resource
                     })
                     ->modalHeading('Hapus Bukti Dukung')
                     ->modalDescription('Dokumen akan dihapus secara soft-delete. Seluruh relasi kecocokan indikator yang terkait dokumen ini akan disembunyikan.'),
+            ])
+            ->emptyStateHeading('Belum Ada Bukti Dukung Terunggah')
+            ->emptyStateDescription('Mulai unggah dokumen SK, Laporan, atau Data resmi untuk memicu pencocokan otomatis ke Lembar Kerja.')
+            ->emptyStateIcon('heroicon-o-arrow-up-tray')
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Unggah Bukti Dukung Sekarang')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->button(),
             ])
             ->bulkActions([]);
     }

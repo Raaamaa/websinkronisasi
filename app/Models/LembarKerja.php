@@ -37,7 +37,7 @@ class LembarKerja extends Model
     protected function casts(): array
     {
         return [
-            'period' => 'integer',
+            'period' => 'string',
             'is_active' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

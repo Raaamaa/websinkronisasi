@@ -19,7 +19,7 @@ class NumberedListSingleCellStrategy implements ParsingStrategyInterface
     public function parse(
         Spreadsheet $spreadsheet,
         LkImportProfile $profile,
-        int $period,
+        int|string $period,
         YearPlaceholderResolver $yearResolver,
         ExcelParserService $parserService
     ): ParsedImportResult {
@@ -136,7 +136,7 @@ class NumberedListSingleCellStrategy implements ParsingStrategyInterface
      */
     private function extractNumberedItems(
         string $text,
-        int $period,
+        int|string $period,
         YearPlaceholderResolver $yearResolver,
         ?string $defaultLink
     ): array {

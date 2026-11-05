@@ -544,7 +544,7 @@
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-slate-500 dark:text-slate-400">
-                                    Izinkan akun masuk ke portal Websinkronisasi
+                                    Izinkan akun masuk ke portal ELKA
                                 </span>
                                 <button
                                     type="button"
@@ -617,7 +617,7 @@
                                 Tambah Pengguna Baru
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                Daftarkan akun pengguna ke dalam portal Websinkronisasi.
+                                Daftarkan akun pengguna ke dalam portal ELKA.
                             </p>
                         </div>
                         <button

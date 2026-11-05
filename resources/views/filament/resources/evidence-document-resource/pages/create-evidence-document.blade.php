@@ -30,6 +30,66 @@
             </div>
         </div>
 
+        {{-- BANNER SAMPEL DOKUMEN UJI --}}
+        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-50 via-slate-50 to-indigo-50 dark:from-slate-800/90 dark:via-slate-800/80 dark:to-slate-800/90 border border-sky-200/80 dark:border-sky-900/60 shadow-2xs">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center font-bold text-sm shadow-xs flex-shrink-0">
+                        📁
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">
+                            Berkas Sampel Siap Uji (Langsung Unduh &amp; Unggah)
+                        </h2>
+                        <p class="text-xs text-slate-600 dark:text-slate-400">
+                            Klik tombol di bawah untuk mengunduh dokumen contoh resmi BPS, lalu pilih berkas tersebut pada formulir unggah di bawah ini:
+                        </p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 self-start md:self-auto">
+                    4 Berkas Contoh Tersedia
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                <a href="/sample-documents/SK_Tim_Pembangunan_Zona_Integritas_2026.pdf" download class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 hover:shadow-xs transition group">
+                    <span class="text-rose-500 font-bold text-xs bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900">PDF</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 truncate">SK Tim ZI 2026</div>
+                        <div class="text-[10px] text-slate-500 truncate">Target: LK ZI (ZI-1.1)</div>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-400 group-hover:text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                </a>
+
+                <a href="/sample-documents/Standar_Pelayanan_Publik_BPS_2026.pdf" download class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 hover:shadow-xs transition group">
+                    <span class="text-rose-500 font-bold text-xs bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900">PDF</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 truncate">Standar Pelayanan PST</div>
+                        <div class="text-[10px] text-slate-500 truncate">Target: LK PEKPPP</div>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-400 group-hover:text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                </a>
+
+                <a href="/sample-documents/Laporan_Kinerja_Instansi_Pemerintah_LKjIP_2026.pdf" download class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 hover:shadow-xs transition group">
+                    <span class="text-rose-500 font-bold text-xs bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900">PDF</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 truncate">Laporan LKjIP 2026</div>
+                        <div class="text-[10px] text-slate-500 truncate">Target: LK SAKIP</div>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-400 group-hover:text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                </a>
+
+                <a href="/sample-documents/Daftar_Informasi_Publik_DIP_PPID_2026.docx" download class="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 hover:shadow-xs transition group">
+                    <span class="text-blue-500 font-bold text-xs bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-900">DOCX</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 truncate">Daftar Informasi DIP</div>
+                        <div class="text-[10px] text-slate-500 truncate">Target: LK KIP</div>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-400 group-hover:text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                </a>
+            </div>
+        </div>
+
         {{-- 2-Column Responsive Layout --}}
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {{-- Kolom Kiri: Form Upload & Metadata (65%) --}}
@@ -209,7 +269,7 @@
 
                     <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-700 text-center">
                         <span class="text-[11px] text-slate-400 dark:text-slate-500">
-                            Sistem Ingesti Websinkronisasi BPS RI Terpadu
+                            Sistem Ingesti ELKA BPS RI Terpadu
                         </span>
                     </div>
                 </div>

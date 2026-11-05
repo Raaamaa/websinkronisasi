@@ -88,12 +88,15 @@ class LembarKerjaResource extends Resource
                             ])
                             ->required(),
 
-                        Forms\Components\TextInput::make('period')
-                            ->label('Periode Tahun')
-                            ->numeric()
-                            ->default((int) date('Y'))
-                            ->minValue(2020)
-                            ->maxValue(2099)
+                        Forms\Components\Select::make('period')
+                            ->label('Periode Evaluasi')
+                            ->options([
+                                '1 Bulan' => '1 Bulan (Bulanan)',
+                                '3 Bulan' => '3 Bulan (Triwulanan)',
+                                '6 Bulan' => '6 Bulan (Semesteran)',
+                                '12 Bulan' => '12 Bulan (Tahunan)',
+                            ])
+                            ->default('12 Bulan')
                             ->required(),
 
                         Forms\Components\Select::make('default_profile_id')

@@ -198,7 +198,7 @@
             </div>
 
             <div class="text-xs text-slate-500 dark:text-slate-400 font-semibold pb-1 flex items-center gap-2">
-                <span>Periode Aktif: <strong class="text-slate-800 dark:text-slate-200">TA {{ $period }}</strong></span>
+                <span>Periode: <strong class="text-slate-800 dark:text-slate-200">{{ $period ? $period : 'Semua Periode' }}</strong></span>
             </div>
         </div>
 

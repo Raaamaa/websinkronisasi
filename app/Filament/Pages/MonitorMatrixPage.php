@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Exceptions\DuplicateDocumentException;
+use App\Jobs\ProcessEvidenceDocumentJob;
 use App\Models\User;
+use App\Services\Evidence\EvidenceUploadService;
+use App\Services\Evidence\TextExtractionService;
 use App\Services\Matching\ManualMatchService;
+use App\Services\Matching\MatchingEngineService;
 use App\Services\Monitor\MonitorMatrixService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Throwable;
 
 class MonitorMatrixPage extends Page
 {
@@ -33,7 +40,13 @@ class MonitorMatrixPage extends Page
     }
 
     // Filter properties
-    public int $period = 2026;
+    public string $period = '12 Bulan';
+
+    public string $viewMode = 'indicator'; // 'indicator' (Kebutuhan LK) or 'document' (Berkas Dokumen)
+
+    public string $statusFilter = 'all'; // 'all', 'fulfilled', 'unfulfilled'
+
+    public bool $showTestingPanel = true;
 
     public ?string $category = null;
 
@@ -47,13 +60,47 @@ class MonitorMatrixPage extends Page
 
     public int $page = 1;
 
-    // Drilldown state
+    // Drilldown state (Document-centric)
     public bool $showDrilldown = false;
 
     /**
      * @var array<string, mixed>|null
      */
     public ?array $drilldownData = null;
+
+    // Drilldown state (Indicator-centric)
+    public bool $showIndicatorDrilldown = false;
+
+    /**
+     * @var array<string, mixed>|null
+     */
+    public ?array $indicatorDrilldownData = null;
+
+    public function mount(): void
+    {
+        $available = $this->getAvailablePeriods();
+        if (! in_array($this->period, $available, true) && count($available) > 0) {
+            $this->period = $available[0];
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getAvailablePeriods(): array
+    {
+        $dbPeriods = \App\Models\LembarKerja::query()
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('period')
+            ->toArray();
+
+        $defaultIntervals = ['12 Bulan', '6 Bulan', '3 Bulan', '1 Bulan'];
+        $merged = array_unique(array_merge($defaultIntervals, $dbPeriods));
+
+        return array_values($merged);
+    }
 
     public function updatedSearch(): void
     {
@@ -184,6 +231,126 @@ class MonitorMatrixPage extends Page
         return $user !== null && $user->is_active && in_array($user->role, ['super_admin', 'admin', 'pegawai'], true);
     }
 
+    public function toggleTestingPanel(): void
+    {
+        $this->showTestingPanel = ! $this->showTestingPanel;
+    }
+
+    public function setViewMode(string $mode): void
+    {
+        $this->viewMode = in_array($mode, ['indicator', 'document'], true) ? $mode : 'indicator';
+        $this->page = 1;
+    }
+
+    public function setStatusFilter(string $status): void
+    {
+        $this->statusFilter = in_array($status, ['all', 'fulfilled', 'unfulfilled'], true) ? $status : 'all';
+        $this->page = 1;
+    }
+
+    /**
+     * Uji Cepat Berkas Sampel 1-Detik Langsung di Monitor
+     */
+    public function runSampleTest(string $sampleKey): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user === null || ! in_array($user->role, ['super_admin', 'admin', 'pegawai'], true)) {
+            Notification::make()->title('Akses Ditolak')->danger()->send();
+            return;
+        }
+
+        $samples = [
+            'zi' => [
+                'file' => 'SK_Tim_Pembangunan_Zona_Integritas_2026.pdf',
+                'name' => 'SK Tim Kerja Pembangunan ZI 2026 [ZI-1.1]',
+                'number' => 'B-105/3328/KP.010/2026',
+                'type' => 'SK',
+                'label' => 'SK Tim Kerja ZI (ZI-1.1)',
+            ],
+            'pekppp' => [
+                'file' => 'Standar_Pelayanan_Publik_BPS_2026.pdf',
+                'name' => 'Standar Pelayanan Publik PST BPS 2026 [PEKPPP-01]',
+                'number' => 'B-201/3328/VS.020/2026',
+                'type' => 'SOP',
+                'label' => 'Standar Pelayanan PST (PEKPPP-01)',
+            ],
+            'sakip' => [
+                'file' => 'Laporan_Kinerja_Instansi_Pemerintah_LKjIP_2026.pdf',
+                'name' => 'Laporan Kinerja LKjIP SAKIP 2026 [SAKIP-01]',
+                'number' => 'B-305/3328/OT.010/2026',
+                'type' => 'Laporan',
+                'label' => 'Laporan LKjIP (SAKIP-01)',
+            ],
+            'kip' => [
+                'file' => 'Daftar_Informasi_Publik_DIP_PPID_2026.docx',
+                'name' => 'Daftar Informasi Publik DIP PPID 2026 [KIP-01]',
+                'number' => 'B-402/3328/HM.100/2026',
+                'type' => 'Data',
+                'label' => 'DIP PPID (KIP-01)',
+            ],
+        ];
+
+        if (! isset($samples[$sampleKey])) {
+            return;
+        }
+
+        $sample = $samples[$sampleKey];
+        $filePath = public_path('sample-documents/' . $sample['file']);
+
+        if (! file_exists($filePath)) {
+            Notification::make()
+                ->title('Berkas Contoh Belum Tersedia')
+                ->body("Berkas {$sample['file']} belum digenerate di server.")
+                ->danger()
+                ->send();
+            return;
+        }
+
+        $uploadService = app(EvidenceUploadService::class);
+        $mime = mime_content_type($filePath) ?: 'application/octet-stream';
+        $uploadedFile = new UploadedFile($filePath, $sample['file'], $mime, null, true);
+
+        $uploader = $user->hasPermission('evidence.upload')
+            ? $user
+            : (User::query()->where('role', 'admin')->where('is_active', true)->first() ?? $user);
+
+        try {
+            $doc = $uploadService->upload($uploadedFile, [
+                'document_name' => $sample['name'],
+                'document_number' => $sample['number'],
+                'year' => 2026,
+                'document_type' => $sample['type'],
+            ], $uploader);
+
+            // Ekstraksi dan matching sinkron
+            $extractor = app(TextExtractionService::class);
+            (new ProcessEvidenceDocumentJob($doc->id))->handle($extractor);
+
+            Notification::make()
+                ->title('Uji Cepat Berhasil Terpetakan')
+                ->body("Berkas '{$sample['label']}' berhasil diunggah dan langsung menghasilkan tanda centang (✔) pada matriks.")
+                ->success()
+                ->send();
+        } catch (DuplicateDocumentException $e) {
+            // Rematch ulang dokumen jika sudah pernah diunggah
+            $matchingEngine = app(MatchingEngineService::class);
+            $matchingEngine->matchDocument($e->existingDocument);
+
+            Notification::make()
+                ->title('Dokumen Siap & Terpetakan')
+                ->body("Berkas '{$sample['label']}' sudah ada di database dan telah disegarkan pemetaannya (✔).")
+                ->info()
+                ->send();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title('Kendala Saat Uji Cepat')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -197,6 +364,8 @@ class MonitorMatrixPage extends Page
             'document_type' => $this->document_type,
             'year' => $this->year,
             'search' => $this->search,
+            'view_mode' => $this->viewMode,
+            'status_filter' => $this->statusFilter,
             'per_page' => $this->perPage,
             'page' => $this->page,
         ]);
@@ -213,6 +382,19 @@ class MonitorMatrixPage extends Page
     {
         $this->showDrilldown = false;
         $this->drilldownData = null;
+    }
+
+    public function openIndicatorDrilldown(string $indicatorId): void
+    {
+        $service = app(MonitorMatrixService::class);
+        $this->indicatorDrilldownData = $service->getIndicatorDrilldownDetails($indicatorId);
+        $this->showIndicatorDrilldown = true;
+    }
+
+    public function closeIndicatorDrilldown(): void
+    {
+        $this->showIndicatorDrilldown = false;
+        $this->indicatorDrilldownData = null;
     }
 
     public function removeMatch(string $documentId, string $indicatorId): void

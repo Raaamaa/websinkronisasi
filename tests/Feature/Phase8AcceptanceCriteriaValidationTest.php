@@ -263,8 +263,8 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_08_monitor_renders_checkmark_for_matched_lks_only(): void
     {
-        $lk1 = LembarKerja::where('code', 'ZI')->firstOrFail();
-        $lk2 = LembarKerja::where('code', 'PEKPPP')->firstOrFail();
+        $lk1 = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
+        $lk2 = LembarKerja::where('code', 'PEKPPP')->where('period', '2026')->first() ?? LembarKerja::where('code', 'PEKPPP')->firstOrFail();
 
         $ind1 = LkIndicator::firstOrCreate(['lk_id' => $lk1->id, 'code' => 'ZI-AC08'], ['title' => 'Indikator ZI AC08', 'order_index' => 1]);
         $ind2 = LkIndicator::firstOrCreate(['lk_id' => $lk2->id, 'code' => 'PEKPPP-AC08'], ['title' => 'Indikator PEKPPP AC08', 'order_index' => 1]);
@@ -325,7 +325,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_10_auto_match_immediately_shows_checkmark_on_monitor_and_appears_in_verification_queue(): void
     {
-        $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
+        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
         $ind = LkIndicator::firstOrCreate(['lk_id' => $lk->id, 'code' => 'ZI-AC10'], ['title' => 'Indikator AC10', 'order_index' => 1]);
 
         $doc = EvidenceDocument::create([
@@ -362,7 +362,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_11_rejected_match_is_never_resurrected_by_rematching_and_removed_from_monitor(): void
     {
-        $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
+        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
         $ind = LkIndicator::firstOrCreate(['lk_id' => $lk->id, 'code' => 'ZI-AC11'], ['title' => 'Indikator AC11', 'order_index' => 1]);
 
         $doc = EvidenceDocument::create([
@@ -411,7 +411,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_12_checkmark_drilldown_modal_returns_valid_safe_links(): void
     {
-        $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
+        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
         $ind = LkIndicator::firstOrCreate([
             'lk_id' => $lk->id,
             'code' => 'ZI-AC12',
@@ -529,7 +529,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_16_concurrent_manual_match_creation_does_not_duplicate_or_fail(): void
     {
-        $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
+        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
         $ind = LkIndicator::firstOrCreate(['lk_id' => $lk->id, 'code' => 'ZI-AC16'], ['title' => 'Indikator AC16', 'order_index' => 1]);
 
         $doc = EvidenceDocument::create([
@@ -688,7 +688,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_23_importing_same_file_twice_is_strictly_idempotent(): void
     {
-        $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
+        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
         $profile = LkImportProfile::firstOrCreate(
             ['name' => 'Profil Idempoten Test AC23'],
             [
@@ -800,7 +800,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_27_reimporting_lk_preserves_confirmed_and_rejected_matches(): void
     {
-        $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
+        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
         $ind = LkIndicator::firstOrCreate(['lk_id' => $lk->id, 'code' => 'ZI-AC27'], ['title' => 'Indikator AC27', 'order_index' => 1]);
 
         $doc = EvidenceDocument::create([

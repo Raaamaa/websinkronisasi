@@ -48,7 +48,7 @@ class VerificationQueuePage extends Page
     }
 
     // Filter properties
-    public ?int $period = 2026;
+    public string|int|null $period = null;
 
     public ?string $lkId = null;
 

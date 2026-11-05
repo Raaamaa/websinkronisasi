@@ -19,7 +19,7 @@ class ChecklistSheetStrategy implements ParsingStrategyInterface
     public function parse(
         Spreadsheet $spreadsheet,
         LkImportProfile $profile,
-        int $period,
+        int|string $period,
         YearPlaceholderResolver $yearResolver,
         ExcelParserService $parserService
     ): ParsedImportResult {

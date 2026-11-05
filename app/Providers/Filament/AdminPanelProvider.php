@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('Websinkronisasi - BPS RI')
+            ->brandName('ELKA - BPS RI')
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
             ->homeUrl('/admin/monitor-matrix')

@@ -74,8 +74,8 @@ class ListLembarKerjas extends ListRecords
         parent::mount();
 
         if (empty($this->selectedLkId)) {
-            $defaultLk = LembarKerja::where('period', 2026)->where('code', 'ZI')->first()
-                ?? LembarKerja::where('period', 2026)->where('is_active', true)->first();
+            $defaultLk = LembarKerja::where('code', 'ZI')->where('is_active', true)->first()
+                ?? LembarKerja::where('is_active', true)->first();
             $this->selectedLkId = $defaultLk ? (string) $defaultLk->id : null;
         }
     }
@@ -86,7 +86,6 @@ class ListLembarKerjas extends ListRecords
     public function getLksData(): array
     {
         $lks = LembarKerja::query()
-            ->where('period', 2026)
             ->where('is_active', true)
             ->withCount(['indicators'])
             ->orderBy('category')

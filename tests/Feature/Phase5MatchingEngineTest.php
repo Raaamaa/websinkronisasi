@@ -30,6 +30,8 @@ class Phase5MatchingEngineTest extends TestCase
 
         DocumentMatch::query()->forceDelete();
         EvidenceDocument::query()->forceDelete();
+        LkEvidenceItem::query()->forceDelete();
+        LkIndicator::query()->forceDelete();
 
         $this->admin = User::firstOrCreate(
             ['email' => 'admin.matching@bps.go.id'],
@@ -47,6 +49,8 @@ class Phase5MatchingEngineTest extends TestCase
     {
         DocumentMatch::query()->forceDelete();
         EvidenceDocument::query()->forceDelete();
+        LkEvidenceItem::query()->forceDelete();
+        LkIndicator::query()->forceDelete();
         parent::tearDown();
     }
 

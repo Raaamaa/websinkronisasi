@@ -3,10 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Pembaruan kata sandi wajib awal akun Websinkronisasi BPS Kabupaten Tegal.">
+    <meta name="description" content="Pembaruan kata sandi wajib awal akun ELKA BPS Kabupaten Tegal.">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Wajib Ganti Kata Sandi: Websinkronisasi</title>
+    <title>Wajib Ganti Kata Sandi: ELKA</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -170,7 +170,7 @@
         <header class="quarantine-header">
             <h1 class="quarantine-title">Perbarui Kata Sandi Akun</h1>
             <p class="quarantine-desc">
-                Demi keamanan sistem, Anda diwajibkan mengganti kata sandi bawaan sebelum dapat mengakses dasbor Websinkronisasi.
+                Demi keamanan sistem, Anda diwajibkan mengganti kata sandi bawaan sebelum dapat mengakses dasbor ELKA.
             </p>
         </header>
 

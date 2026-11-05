@@ -113,7 +113,7 @@ class ExcelParserService
     public function parse(
         string $path,
         LkImportProfile $profile,
-        int $period,
+        int|string $period,
         ?string $originalFilename = null
     ): ParsedImportResult {
         $spreadsheet = $this->validateAndLoad($path, $originalFilename ?? basename($path));

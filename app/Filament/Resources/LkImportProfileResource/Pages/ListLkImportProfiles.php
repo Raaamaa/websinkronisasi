@@ -81,10 +81,10 @@ class ListLkImportProfiles extends ListRecords
     {
         parent::mount();
 
-        // Default LK: ZI TA 2026
+        // Default LK: ZI atau LK aktif pertama
         if (empty($this->selectedLkId)) {
-            $defaultLk = LembarKerja::where('period', 2026)->where('code', 'ZI')->first()
-                ?? LembarKerja::where('period', 2026)->where('is_active', true)->first();
+            $defaultLk = LembarKerja::where('is_active', true)->where('code', 'ZI')->first()
+                ?? LembarKerja::where('is_active', true)->first();
             $this->selectedLkId = $defaultLk ? (string) $defaultLk->id : null;
         }
 
@@ -124,10 +124,10 @@ class ListLkImportProfiles extends ListRecords
     public function getAvailableLks(): array
     {
         return LembarKerja::query()
-            ->where('period', 2026)
             ->where('is_active', true)
             ->orderBy('code')
-            ->pluck('name', 'id')
+            ->get()
+            ->mapWithKeys(fn (LembarKerja $lk) => [$lk->id => "{$lk->code} - {$lk->name} ({$lk->period})"])
             ->toArray();
     }
 

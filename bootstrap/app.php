@@ -29,5 +29,32 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, \Illuminate\Http\Request $request) {
+            $msg = $e->getMessage();
+            if (
+                str_contains($msg, 'could not translate host name') ||
+                str_contains($msg, 'Connection refused') ||
+                str_contains($msg, 'SQLSTATE[08006]') ||
+                str_contains($msg, 'server closed the connection')
+            ) {
+                \Illuminate\Support\Facades\Log::critical('Database connection failure: '.$msg);
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Layanan basis data sedang tidak dapat dijangkau. Silakan hubungi administrator.',
+                    ], 503);
+                }
+
+                if ($request->is('login') || $request->is('auth/*')) {
+                    return redirect()->route('login')->with(
+                        'error',
+                        'Layanan basis data sedang tidak dapat dijangkau. Pastikan container basis data (PostgreSQL) berjalan.'
+                    );
+                }
+
+                return response('Layanan basis data sedang tidak dapat dijangkau. Pastikan container basis data (PostgreSQL) berjalan.', 503);
+            }
+
+            return null;
+        });
     })->create();

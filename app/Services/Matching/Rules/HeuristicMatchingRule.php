@@ -43,9 +43,18 @@ class HeuristicMatchingRule
             $titleScore = $this->trigramSimilarity->compute($docNormalizedName, $targetTitle);
 
             // 2. Penalti Perbedaan Tahun (MATCH-03, MATCH-10)
-            $targetYear = $indicator->lembarKerja?->period ?? $document->year;
+            $lkPeriod = $indicator->lembarKerja?->period;
+            $targetYear = null;
+            if ($lkPeriod !== null && is_numeric($lkPeriod) && (int) $lkPeriod > 1900) {
+                $targetYear = (int) $lkPeriod;
+            } elseif ($item !== null && ! empty($item->resolved_name) && preg_match('/\b(20\d{2})\b/', $item->resolved_name, $m)) {
+                $targetYear = (int) $m[1];
+            } elseif (preg_match('/\b(20\d{2})\b/', $indicator->title, $m)) {
+                $targetYear = (int) $m[1];
+            }
+
             $hasYearPenalty = false;
-            if ($document->year !== $targetYear) {
+            if ($targetYear !== null && $document->year !== null && $document->year !== $targetYear) {
                 $titleScore = max(0.0, $titleScore - 20.0);
                 $hasYearPenalty = true;
             }

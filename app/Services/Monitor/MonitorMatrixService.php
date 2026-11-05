@@ -26,11 +26,16 @@ class MonitorMatrixService
      *     pending_verification: int
      * }
      */
-    public function getMatrixStats(int $period = 2026): array
+    public function getMatrixStats(string|int $period = '12 Bulan'): array
     {
+        $rawPeriod = (string) $period;
+        $periodStr = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
+            ? $rawPeriod
+            : '12 Bulan';
+
         $totalIndicators = LkIndicator::query()
-            ->whereHas('lembarKerja', function ($q) use ($period): void {
-                $q->where('period', $period)
+            ->whereHas('lembarKerja', function ($q) use ($periodStr): void {
+                $q->where('period', $periodStr)
                     ->where('is_active', true)
                     ->whereNull('deleted_at');
             })
@@ -38,8 +43,8 @@ class MonitorMatrixService
 
         $fulfilledIndicators = DocumentMatch::query()
             ->whereIn('status', ['auto', 'confirmed'])
-            ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {
-                $q->where('period', $period)
+            ->whereHas('indicator.lembarKerja', function ($q) use ($periodStr): void {
+                $q->where('period', $periodStr)
                     ->where('is_active', true)
                     ->whereNull('deleted_at');
             })
@@ -52,8 +57,8 @@ class MonitorMatrixService
 
         $pendingVerification = DocumentMatch::query()
             ->where('status', 'auto')
-            ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {
-                $q->where('period', $period)
+            ->whereHas('indicator.lembarKerja', function ($q) use ($periodStr): void {
+                $q->where('period', $periodStr)
                     ->where('is_active', true)
                     ->whereNull('deleted_at');
             })
@@ -74,10 +79,15 @@ class MonitorMatrixService
      *
      * @return array{internal: Collection<int, LembarKerja>, eksternal: Collection<int, LembarKerja>}
      */
-    public function getColumnGroups(int $period = 2026, ?string $category = null): array
+    public function getColumnGroups(string|int $period = '12 Bulan', ?string $category = null): array
     {
+        $rawPeriod = (string) $period;
+        $periodStr = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
+            ? $rawPeriod
+            : '12 Bulan';
+
         $query = LembarKerja::query()
-            ->where('period', $period)
+            ->where('period', $periodStr)
             ->where('is_active', true)
             ->whereNull('deleted_at')
             ->orderBy('code');
@@ -106,7 +116,14 @@ class MonitorMatrixService
      */
     public function getMatrixData(array $filters = []): array
     {
-        $period = (int) ($filters['period'] ?? date('Y'));
+        if (($filters['view_mode'] ?? 'document') === 'indicator') {
+            return $this->getIndicatorMatrixData($filters);
+        }
+
+        $rawPeriod = (string) ($filters['period'] ?? '12 Bulan');
+        $period = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
+            ? $rawPeriod
+            : '12 Bulan';
         $category = ! empty($filters['category']) ? (string) $filters['category'] : null;
         $columnGroups = $this->getColumnGroups($period, $category);
 
@@ -116,6 +133,20 @@ class MonitorMatrixService
         // 1. Query Dokumen Berpaginasi di Sisi Server (MON-08)
         $docQuery = EvidenceDocument::query()
             ->whereNull('deleted_at');
+
+        if (! empty($filters['status_filter']) && $filters['status_filter'] !== 'all') {
+            if ($filters['status_filter'] === 'fulfilled') {
+                $docQuery->whereHas('matches', function ($q) use ($period): void {
+                    $q->whereIn('status', ['auto', 'confirmed'])
+                        ->whereHas('indicator.lembarKerja', fn ($lq) => $lq->where('period', $period)->where('is_active', true)->whereNull('deleted_at'));
+                });
+            } elseif ($filters['status_filter'] === 'unfulfilled') {
+                $docQuery->whereDoesntHave('matches', function ($q) use ($period): void {
+                    $q->whereIn('status', ['auto', 'confirmed'])
+                        ->whereHas('indicator.lembarKerja', fn ($lq) => $lq->where('period', $period)->where('is_active', true)->whereNull('deleted_at'));
+                });
+            }
+        }
 
         if (! empty($filters['year'])) {
             $docQuery->where('year', (int) $filters['year']);
@@ -286,6 +317,168 @@ class MonitorMatrixService
                 'period' => $lk->period,
             ],
             'indicators' => $indicators,
+        ];
+    }
+
+    /**
+     * Get paginated monitor matrix rows grouped by Indicator & LK requirement (MON-01, MON-02, MON-03).
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{
+     *     columns: array{internal: Collection<int, LembarKerja>, eksternal: Collection<int, LembarKerja>},
+     *     rows: array<int, array<string, mixed>>,
+     *     paginator: LengthAwarePaginator
+     * }
+     */
+    public function getIndicatorMatrixData(array $filters = []): array
+    {
+        $rawPeriod = (string) ($filters['period'] ?? '12 Bulan');
+        $period = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
+            ? $rawPeriod
+            : '12 Bulan';
+        $category = ! empty($filters['category']) ? (string) $filters['category'] : null;
+        $columnGroups = $this->getColumnGroups($period, $category);
+
+        $allLks = $columnGroups['internal']->merge($columnGroups['eksternal']);
+        $lkCodes = $allLks->pluck('code')->toArray();
+        $lkIds = $allLks->pluck('id')->toArray();
+
+        $query = LkIndicator::query()
+            ->with([
+                'lembarKerja',
+                'evidenceItems',
+                'matches' => function ($q): void {
+                    $q->whereIn('status', ['auto', 'confirmed'])->with('document');
+                },
+            ])
+            ->whereIn('lk_id', $lkIds)
+            ->whereNull('deleted_at');
+
+        if (! empty($filters['search'])) {
+            $search = (string) $filters['search'];
+            $query->where(function ($q) use ($search): void {
+                $q->where('code', 'ilike', "%{$search}%")
+                    ->orWhere('title', 'ilike', "%{$search}%")
+                    ->orWhere('pic', 'ilike', "%{$search}%")
+                    ->orWhereHas('evidenceItems', fn ($iq) => $iq->where('resolved_name', 'ilike', "%{$search}%"))
+                    ->orWhereHas('matches.document', fn ($dq) => $dq->where('document_name', 'ilike', "%{$search}%")->orWhere('document_number', 'ilike', "%{$search}%"));
+            });
+        }
+
+        if (! empty($filters['status_filter']) && $filters['status_filter'] !== 'all') {
+            if ($filters['status_filter'] === 'fulfilled') {
+                $query->whereHas('matches', fn ($mq) => $mq->whereIn('status', ['auto', 'confirmed']));
+            } elseif ($filters['status_filter'] === 'unfulfilled') {
+                $query->whereDoesntHave('matches', fn ($mq) => $mq->whereIn('status', ['auto', 'confirmed']));
+            }
+        }
+
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $page = (int) ($filters['page'] ?? 1);
+
+        /** @var LengthAwarePaginator $paginator */
+        $paginator = $query->orderBy('order_index')->orderBy('code')->paginate($perPage, ['*'], 'page', $page);
+
+        $rows = [];
+        foreach ($paginator->items() as $ind) {
+            $cells = [];
+            $activeMatches = $ind->matches;
+            $hasMatch = $activeMatches->isNotEmpty();
+            $firstMatch = $activeMatches->first();
+            $driveUrl = $ind->evidence_link ?: ($firstMatch?->document?->external_link ?: null);
+
+            foreach ($lkCodes as $code) {
+                $isTargetLk = ($ind->lembarKerja?->code === $code);
+                $cellHasMatch = $isTargetLk && $hasMatch;
+
+                $cells[$code] = [
+                    'has_match' => $cellHasMatch,
+                    'symbol' => $cellHasMatch ? '✔' : '',
+                    'count' => $cellHasMatch ? $activeMatches->count() : 0,
+                    'lk_id' => $allLks->firstWhere('code', $code)?->id,
+                    'drive_url' => $cellHasMatch ? $driveUrl : null,
+                    'is_target_lk' => $isTargetLk,
+                    'matched_doc_name' => $cellHasMatch ? $firstMatch?->document?->document_name : null,
+                    'document_id' => $cellHasMatch ? $firstMatch?->document_id : null,
+                ];
+            }
+
+            $evidenceItemList = $ind->evidenceItems->pluck('resolved_name')->filter()->toArray();
+
+            $rows[] = [
+                'row_type' => 'indicator',
+                'indicator_id' => $ind->id,
+                'document_id' => $firstMatch?->document_id,
+                'code' => $ind->code,
+                'pic' => $ind->pic ?: 'Subbagian Umum',
+                'title' => $ind->title,
+                'document_name' => $ind->title,
+                'document_number' => $firstMatch?->document?->document_number,
+                'year' => $firstMatch?->document?->year ?? (is_numeric($period) ? (int) $period : date('Y')),
+                'document_type' => $firstMatch?->document?->document_type ?? 'Indikator LK',
+                'external_link' => $driveUrl,
+                'has_match' => $hasMatch,
+                'matched_doc_name' => $firstMatch?->document?->document_name,
+                'matched_score' => $firstMatch?->confidence_score,
+                'matched_status' => $firstMatch?->status,
+                'matched_document' => $firstMatch?->document,
+                'evidence_items' => $evidenceItemList,
+                'indicators_summary' => ! empty($evidenceItemList) ? implode(' • ', $evidenceItemList) : null,
+                'cells' => $cells,
+            ];
+        }
+
+        return [
+            'columns' => $columnGroups,
+            'rows' => $rows,
+            'paginator' => $paginator,
+        ];
+    }
+
+    /**
+     * Get drill-down modal details for an indicator.
+     *
+     * @return array<string, mixed>
+     */
+    public function getIndicatorDrilldownDetails(string $indicatorId): array
+    {
+        $indicator = LkIndicator::with(['lembarKerja', 'evidenceItems', 'matches.document'])->findOrFail($indicatorId);
+        $lk = $indicator->lembarKerja;
+
+        $activeMatch = $indicator->matches
+            ->whereIn('status', ['auto', 'confirmed'])
+            ->first();
+
+        $document = $activeMatch?->document;
+        $rawLink = $indicator->evidence_link ?: ($document?->external_link ?: null);
+        $hasValidLink = ! empty($rawLink) && (bool) preg_match('/^https?:\/\/.+/i', $rawLink);
+
+        return [
+            'indicator' => [
+                'id' => $indicator->id,
+                'code' => $indicator->code,
+                'title' => $indicator->title,
+                'pic' => $indicator->pic ?: 'Subbagian Umum',
+                'evidence_link' => $hasValidLink ? $rawLink : null,
+                'has_valid_link' => $hasValidLink,
+                'items' => $indicator->evidenceItems->pluck('resolved_name')->filter()->values()->toArray(),
+            ],
+            'lk' => [
+                'id' => $lk?->id,
+                'code' => $lk?->code,
+                'name' => $lk?->name,
+                'period' => $lk?->period,
+            ],
+            'matched_document' => $document ? [
+                'id' => $document->id,
+                'name' => $document->document_name,
+                'number' => $document->document_number,
+                'year' => $document->year,
+                'type' => $document->document_type,
+                'match_status' => $activeMatch->status,
+                'match_score' => $activeMatch->confidence_score,
+                'match_method' => $activeMatch->match_method,
+            ] : null,
         ];
     }
 }

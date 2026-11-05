@@ -87,74 +87,85 @@ class SSOController extends Controller
             return redirect()->route('login')->with('error', 'Terjadi kesalahan teknis saat menghubungi SSO BPS. Silakan coba kembali.');
         }
 
-        // Cari user yang sudah ada berdasarkan email atau NIP
-        $normalizedEmail = strtolower(trim($ssoUser->email));
-        $user = User::withTrashed()
-            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
-            ->orWhere(function ($query) use ($ssoUser): void {
-                if ($ssoUser->nip !== null && $ssoUser->nip !== '') {
-                    $query->where('nip', $ssoUser->nip);
-                }
-            })
-            ->first();
+        try {
+            // Cari user yang sudah ada berdasarkan email atau NIP
+            $normalizedEmail = strtolower(trim($ssoUser->email));
+            $user = User::withTrashed()
+                ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+                ->orWhere(function ($query) use ($ssoUser): void {
+                    if ($ssoUser->nip !== null && $ssoUser->nip !== '') {
+                        $query->where('nip', $ssoUser->nip);
+                    }
+                })
+                ->first();
 
-        // Cek status keaktifan akun (AUTH-07, AC-18)
-        if ($user !== null && (! $user->is_active || $user->deleted_at !== null)) {
+            // Cek status keaktifan akun (AUTH-07, AC-18)
+            if ($user !== null && (! $user->is_active || $user->deleted_at !== null)) {
+                DB::table('audit_logs')->insert([
+                    'user_id' => $user->id,
+                    'action' => 'auth.sso_login_blocked_inactive',
+                    'entity_type' => 'users',
+                    'entity_id' => (string) $user->id,
+                    'old_values' => null,
+                    'new_values' => json_encode(['email' => $user->email, 'is_active' => $user->is_active]),
+                    'ip_address' => $request->ip() ?? '127.0.0.1',
+                    'user_agent' => $request->userAgent(),
+                    'created_at' => now(),
+                ]);
+
+                abort(403, 'Akun Anda dinonaktifkan, silakan hubungi administrator.');
+            }
+
+            // Auto-provisioning jika user belum pernah ada (AUTH-10, AC-21)
+            if ($user === null) {
+                try {
+                    $user = User::create([
+                        'name' => $ssoUser->name,
+                        'email' => $normalizedEmail,
+                        'nip' => $ssoUser->nip,
+                        'role' => 'pegawai',
+                        'is_active' => true,
+                        'auth_provider' => 'sso',
+                        'auth_provider_id' => $ssoUser->id,
+                        'must_change_password' => false,
+                        'password_hash' => null,
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // Tangani potensi race condition jika request paralel telah membuat user secara bersamaan
+                    /** @var User|null $user */
+                    $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+                    if ($user === null) {
+                        throw $e;
+                    }
+                }
+            }
+
+            // Catat jejak audit login sukses (AUDIT-01)
             DB::table('audit_logs')->insert([
                 'user_id' => $user->id,
-                'action' => 'auth.sso_login_blocked_inactive',
+                'action' => 'auth.login_sso',
                 'entity_type' => 'users',
                 'entity_id' => (string) $user->id,
                 'old_values' => null,
-                'new_values' => json_encode(['email' => $user->email, 'is_active' => $user->is_active]),
+                'new_values' => json_encode(['email' => $user->email, 'role' => $user->role]),
                 'ip_address' => $request->ip() ?? '127.0.0.1',
                 'user_agent' => $request->userAgent(),
                 'created_at' => now(),
             ]);
 
-            abort(403, 'Akun Anda dinonaktifkan, silakan hubungi administrator.');
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return redirect()->intended('/admin');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+        } catch (\Illuminate\Database\QueryException | \PDOException $e) {
+            Log::critical('Koneksi basis data bermasalah saat callback SSO: '.$e->getMessage());
+
+            return redirect()->route('login')->with(
+                'error',
+                'Layanan basis data sedang tidak dapat dijangkau. Pastikan container basis data aktif atau hubungi administrator.'
+            );
         }
-
-        // Auto-provisioning jika user belum pernah ada (AUTH-10, AC-21)
-        if ($user === null) {
-            try {
-                $user = User::create([
-                    'name' => $ssoUser->name,
-                    'email' => $normalizedEmail,
-                    'nip' => $ssoUser->nip,
-                    'role' => 'pegawai',
-                    'is_active' => true,
-                    'auth_provider' => 'sso',
-                    'auth_provider_id' => $ssoUser->id,
-                    'must_change_password' => false,
-                    'password_hash' => null,
-                ]);
-            } catch (\Illuminate\Database\QueryException $e) {
-                // Tangani potensi race condition jika request paralel telah membuat user secara bersamaan
-                /** @var User|null $user */
-                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
-                if ($user === null) {
-                    throw $e;
-                }
-            }
-        }
-
-        // Catat jejak audit login sukses (AUDIT-01)
-        DB::table('audit_logs')->insert([
-            'user_id' => $user->id,
-            'action' => 'auth.login_sso',
-            'entity_type' => 'users',
-            'entity_id' => (string) $user->id,
-            'old_values' => null,
-            'new_values' => json_encode(['email' => $user->email, 'role' => $user->role]),
-            'ip_address' => $request->ip() ?? '127.0.0.1',
-            'user_agent' => $request->userAgent(),
-            'created_at' => now(),
-        ]);
-
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return redirect()->intended('/admin');
     }
 }
