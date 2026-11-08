@@ -8,6 +8,7 @@ use App\Exceptions\DuplicateDocumentException;
 use App\Models\EvidenceDocument;
 use App\Models\User;
 use App\Services\Evidence\EvidenceUploadService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -36,7 +37,7 @@ class EvidenceUploadRaceConditionTest extends TestCase
     {
         Storage::fake('private');
 
-        $actor = User::where('role', 'admin')->firstOrFail();
+        $actor = User::where('role', 'admin')->where('is_active', true)->firstOrFail();
 
         $pdfContent = "%PDF-1.4\n%âãÏÓ\n1 0 obj\n<< /Title (Dokumen Race Condition) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
         $file = UploadedFile::fake()->createWithContent('surat_keputusan.pdf', $pdfContent);
@@ -97,7 +98,7 @@ class EvidenceUploadRaceConditionTest extends TestCase
     {
         Storage::fake('private');
 
-        $actor = User::where('role', 'admin')->firstOrFail();
+        $actor = User::where('role', 'admin')->where('is_active', true)->firstOrFail();
 
         $pdfContent = "%PDF-1.4\n%âãÏÓ\n1 0 obj\n<< /Title (Dokumen Soft Delete Reupload) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
         $file = UploadedFile::fake()->createWithContent('surat_reupload.pdf', $pdfContent);
@@ -133,5 +134,47 @@ class EvidenceUploadRaceConditionTest extends TestCase
         $this->assertNotEquals($doc1->id, $doc2->id);
         $this->assertSame($fileHash, $doc2->file_hash);
         $this->assertNull($doc2->deleted_at);
+    }
+
+    public function test_upload_rethrows_unique_violation_when_existing_record_is_null_and_cleans_file(): void
+    {
+        Storage::fake('private');
+
+        $actor = User::where('role', 'admin')->where('is_active', true)->firstOrFail();
+
+        $pdfContent = "%PDF-1.4\n%âãÏÓ\n1 0 obj\n<< /Title (Dokumen Non Hash Unique Violation) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
+        $file = UploadedFile::fake()->createWithContent('surat_non_hash_violation.pdf', $pdfContent);
+        $fileHash = (string) hash_file('sha256', $file->getRealPath());
+
+        EvidenceDocument::where('file_hash', $fileHash)->forceDelete();
+
+        $service = app(EvidenceUploadService::class);
+        $metadata = [
+            'document_name' => 'Dokumen Unique Violation Ekstrem',
+            'document_number' => 'SK-VIOLATION-001',
+            'year' => 2026,
+        ];
+
+        // Simulasikan UniqueConstraintViolationException terjadi (misal konflik kolom selain file_hash atau race ekstrem),
+        // sehingga saat di-catch, pencarian where('file_hash', $hash)->first() mengembalikan null.
+        EvidenceDocument::creating(function (): void {
+            throw new UniqueConstraintViolationException(
+                'pgsql',
+                'insert into evidence_documents ...',
+                [],
+                new \Exception('duplicate key value violates unique constraint')
+            );
+        });
+
+        try {
+            $service->upload($file, $metadata, $actor);
+            $this->fail('Seharusnya melempar UniqueConstraintViolationException saat existing record null');
+        } catch (UniqueConstraintViolationException $e) {
+            $this->assertStringContainsString('duplicate key value violates unique constraint', $e->getMessage());
+
+            // Verifikasi berkas fisik tetap dibersihkan dan tidak tersisa di storage privat
+            $files = Storage::disk('private')->allFiles('evidence');
+            $this->assertCount(0, $files, 'Berkas fisik harus dihapus bersih saat rethrow exception');
+        }
     }
 }

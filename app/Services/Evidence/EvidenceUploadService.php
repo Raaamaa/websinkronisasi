@@ -155,10 +155,7 @@ class EvidenceUploadService
 
             $existingDoc = EvidenceDocument::where('file_hash', $inspection['hash'])->first();
             if ($existingDoc === null) {
-                $existingDoc = new EvidenceDocument([
-                    'file_hash' => $inspection['hash'],
-                    'document_name' => $metadata['document_name'],
-                ]);
+                throw $e;
             }
 
             throw new DuplicateDocumentException($existingDoc);

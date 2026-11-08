@@ -6,7 +6,10 @@ namespace Tests\Feature;
 
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
+use App\Models\LkImportLog;
+use App\Models\LkImportProfile;
 use App\Models\LkIndicator;
+use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -64,6 +67,32 @@ class CleanupDevTestLembarKerjaCommandTest extends TestCase
             'order_index' => 1,
         ]);
 
+        // Buat LK ZI 2026 dengan indikator residu dan log impor
+        $zi2026 = LembarKerja::firstOrCreate(
+            ['code' => 'ZI', 'period' => '2026'],
+            ['name' => 'Lembar Kerja ZI 2026', 'category' => 'internal', 'is_active' => true]
+        );
+
+        // Pastikan indikator residu belum ada sebelum dibuat
+        LkIndicator::where('lk_id', $zi2026->id)->where('code', 'ZI-AC08')->forceDelete();
+
+        $residualInd = LkIndicator::create([
+            'id' => (string) Str::uuid(),
+            'lk_id' => $zi2026->id,
+            'code' => 'ZI-AC08',
+            'title' => 'Indikator Residu AC08',
+            'order_index' => 99,
+        ]);
+
+        $ziLog = LkImportLog::create([
+            'lk_id' => $zi2026->id,
+            'user_id' => User::firstOrFail()->id,
+            'profile_id' => LkImportProfile::firstOrFail()->id,
+            'file_name' => 'lke_zi_2026_import.xlsx',
+            'file_hash' => hash('sha256', 'lke_zi_2026_import.xlsx'),
+            'status' => 'committed',
+        ]);
+
         $exitCode = Artisan::call('websinkronisasi:cleanup-test-data', [
             '--force' => true,
             '--no-interaction' => true,
@@ -72,8 +101,17 @@ class CleanupDevTestLembarKerjaCommandTest extends TestCase
 
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('SUKSES', $output);
+
+        // LK artefak terhapus
         $this->assertNull(LembarKerja::find($testLk->id));
         $this->assertNull(LkIndicator::find($indicator->id));
         $this->assertNull(LkEvidenceItem::find($item->id));
+
+        // LK ZI 2026 dan log impornya TETAP ADA
+        $this->assertNotNull(LembarKerja::find($zi2026->id), 'LK ZI 2026 tidak boleh dihapus');
+        $this->assertNotNull(LkImportLog::find($ziLog->id), 'Log impor LK ZI 2026 tidak boleh dihapus');
+
+        // Indikator residu ZI-AC08 terhapus bersih
+        $this->assertNull(LkIndicator::find($residualInd->id), 'Indikator residu ZI 2026 harus terhapus');
     }
 }

@@ -17,7 +17,7 @@ class MimeMagicBytesSniffingTest extends TestCase
     {
         Storage::fake('private');
 
-        $actor = User::where('role', 'admin')->firstOrFail();
+        $actor = User::where('role', 'admin')->where('is_active', true)->firstOrFail();
 
         $pdfContent = "%PDF-1.4\n%âãÏÓ\n1 0 obj\n<< /Title (Dokumen PDF) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
         $file = UploadedFile::fake()->createWithContent('laporan_palsu.exe', $pdfContent);

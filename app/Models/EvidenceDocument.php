@@ -41,6 +41,15 @@ class EvidenceDocument extends Model
     ];
 
     /**
+     * @var list<string>
+     */
+    protected $hidden = [
+        'file_path',
+        'extracted_text',
+        'uploaded_by',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
