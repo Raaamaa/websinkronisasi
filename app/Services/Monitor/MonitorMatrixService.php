@@ -9,11 +9,25 @@ use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkIndicator;
 use App\Services\Search\DocumentSearchService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class MonitorMatrixService
 {
+    /**
+     * Apply period (year integer) or evaluation_interval (string) filter on Lembar Kerja query.
+     */
+    protected function applyPeriodFilter(\Illuminate\Contracts\Database\Query\Builder|Builder $query, string|int $period): void
+    {
+        $raw = (string) $period;
+        if (is_numeric($raw)) {
+            $query->where('period', (int) $raw);
+        } else {
+            $query->where('evaluation_interval', $raw);
+        }
+    }
+
     /**
      * Get aggregate KPI statistics for the monitor dashboard (Total, Terpenuhi, Belum, Perlu Verifikasi).
      *
@@ -28,24 +42,19 @@ class MonitorMatrixService
      */
     public function getMatrixStats(string|int $period = '12 Bulan'): array
     {
-        $rawPeriod = (string) $period;
-        $periodStr = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
-            ? $rawPeriod
-            : '12 Bulan';
-
         $totalIndicators = LkIndicator::query()
-            ->whereHas('lembarKerja', function ($q) use ($periodStr): void {
-                $q->where('period', $periodStr)
-                    ->where('is_active', true)
+            ->whereHas('lembarKerja', function ($q) use ($period): void {
+                $this->applyPeriodFilter($q, $period);
+                $q->where('is_active', true)
                     ->whereNull('deleted_at');
             })
             ->count();
 
         $fulfilledIndicators = DocumentMatch::query()
             ->whereIn('status', ['auto', 'confirmed'])
-            ->whereHas('indicator.lembarKerja', function ($q) use ($periodStr): void {
-                $q->where('period', $periodStr)
-                    ->where('is_active', true)
+            ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {
+                $this->applyPeriodFilter($q, $period);
+                $q->where('is_active', true)
                     ->whereNull('deleted_at');
             })
             ->distinct('indicator_id')
@@ -57,9 +66,9 @@ class MonitorMatrixService
 
         $pendingVerification = DocumentMatch::query()
             ->where('status', 'auto')
-            ->whereHas('indicator.lembarKerja', function ($q) use ($periodStr): void {
-                $q->where('period', $periodStr)
-                    ->where('is_active', true)
+            ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {
+                $this->applyPeriodFilter($q, $period);
+                $q->where('is_active', true)
                     ->whereNull('deleted_at');
             })
             ->count();
@@ -81,16 +90,12 @@ class MonitorMatrixService
      */
     public function getColumnGroups(string|int $period = '12 Bulan', ?string $category = null): array
     {
-        $rawPeriod = (string) $period;
-        $periodStr = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
-            ? $rawPeriod
-            : '12 Bulan';
-
         $query = LembarKerja::query()
-            ->where('period', $periodStr)
             ->where('is_active', true)
             ->whereNull('deleted_at')
             ->orderBy('code');
+
+        $this->applyPeriodFilter($query, $period);
 
         if (! empty($category) && in_array($category, ['internal', 'eksternal'], true)) {
             $query->where('category', $category);
@@ -120,10 +125,7 @@ class MonitorMatrixService
             return $this->getIndicatorMatrixData($filters);
         }
 
-        $rawPeriod = (string) ($filters['period'] ?? '12 Bulan');
-        $period = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
-            ? $rawPeriod
-            : '12 Bulan';
+        $period = $filters['period'] ?? '12 Bulan';
         $category = ! empty($filters['category']) ? (string) $filters['category'] : null;
         $columnGroups = $this->getColumnGroups($period, $category);
 
@@ -138,12 +140,18 @@ class MonitorMatrixService
             if ($filters['status_filter'] === 'fulfilled') {
                 $docQuery->whereHas('matches', function ($q) use ($period): void {
                     $q->whereIn('status', ['auto', 'confirmed'])
-                        ->whereHas('indicator.lembarKerja', fn ($lq) => $lq->where('period', $period)->where('is_active', true)->whereNull('deleted_at'));
+                        ->whereHas('indicator.lembarKerja', function ($lq) use ($period): void {
+                            $this->applyPeriodFilter($lq, $period);
+                            $lq->where('is_active', true)->whereNull('deleted_at');
+                        });
                 });
             } elseif ($filters['status_filter'] === 'unfulfilled') {
                 $docQuery->whereDoesntHave('matches', function ($q) use ($period): void {
                     $q->whereIn('status', ['auto', 'confirmed'])
-                        ->whereHas('indicator.lembarKerja', fn ($lq) => $lq->where('period', $period)->where('is_active', true)->whereNull('deleted_at'));
+                        ->whereHas('indicator.lembarKerja', function ($lq) use ($period): void {
+                            $this->applyPeriodFilter($lq, $period);
+                            $lq->where('is_active', true)->whereNull('deleted_at');
+                        });
                 });
             }
         }
@@ -176,8 +184,8 @@ class MonitorMatrixService
             ->whereIn('document_id', $docIds)
             ->whereIn('status', ['auto', 'confirmed'])
             ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {
-                $q->where('period', $period)
-                    ->where('is_active', true)
+                $this->applyPeriodFilter($q, $period);
+                $q->where('is_active', true)
                     ->whereNull('deleted_at');
             })
             ->get();
@@ -210,7 +218,7 @@ class MonitorMatrixService
                     $ind = $firstMatch->indicator;
                     if ($ind !== null) {
                         $driveUrl = $ind->evidence_link ?: ($doc->external_link ?: null);
-                        $matchedIndicatorsText[] = "[{$code}] " . ($firstMatch->matchedItem?->resolved_name ?? $ind->title);
+                        $matchedIndicatorsText[] = "[{$code}] ".($firstMatch->matchedItem?->resolved_name ?? $ind->title);
                         if ($firstPic === null && ! empty($ind->pic)) {
                             $firstPic = $ind->pic;
                         }
@@ -239,7 +247,7 @@ class MonitorMatrixService
                 };
             }
 
-            $displayCode = $doc->document_number ?: ($firstCode ?: 'DOK-' . substr($doc->id, 0, 6));
+            $displayCode = $doc->document_number ?: ($firstCode ?: 'DOK-'.substr($doc->id, 0, 6));
 
             $rows[] = [
                 'document_id' => $doc->id,
@@ -332,10 +340,7 @@ class MonitorMatrixService
      */
     public function getIndicatorMatrixData(array $filters = []): array
     {
-        $rawPeriod = (string) ($filters['period'] ?? '12 Bulan');
-        $period = LembarKerja::query()->where('period', $rawPeriod)->where('is_active', true)->whereNull('deleted_at')->exists()
-            ? $rawPeriod
-            : '12 Bulan';
+        $period = $filters['period'] ?? '12 Bulan';
         $category = ! empty($filters['category']) ? (string) $filters['category'] : null;
         $columnGroups = $this->getColumnGroups($period, $category);
 

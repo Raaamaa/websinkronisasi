@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -24,7 +25,7 @@ class ProcessEvidenceDocumentJob implements ShouldQueue
         public readonly string $documentId
     ) {}
 
-    public function handle(TextExtractionService $extractor): void
+    public function handle(TextExtractionService $extractor, ?MatchingEngineService $matchingEngine = null): void
     {
         $document = EvidenceDocument::find($this->documentId);
 
@@ -108,10 +109,20 @@ class ProcessEvidenceDocumentJob implements ShouldQueue
 
         // Jalankan Matching Pipeline otomatis setelah ekstraksi teks (MATCH-01)
         try {
-            $matchingEngine = app(MatchingEngineService::class);
-            $matchingEngine->matchDocument($document);
-        } catch (Throwable) {
-            // Jangan gagalkan alur jika matching mengalami kendala
+            $engine = $matchingEngine ?? app(MatchingEngineService::class);
+            $engine->matchDocument($document);
+        } catch (Throwable $e) {
+            $document->update([
+                'processing_status' => 'perlu_review_manual',
+                'error_message' => 'Kegagalan matching engine: '.$e->getMessage(),
+            ]);
+
+            Log::error('ProcessEvidenceDocumentJob matching failure: '.$e->getMessage(), [
+                'document_id' => $document->id,
+                'exception' => $e,
+            ]);
+
+            throw $e;
         }
     }
 }

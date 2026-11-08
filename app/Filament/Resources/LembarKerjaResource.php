@@ -88,8 +88,14 @@ class LembarKerjaResource extends Resource
                             ])
                             ->required(),
 
-                        Forms\Components\Select::make('period')
-                            ->label('Periode Evaluasi')
+                        Forms\Components\TextInput::make('period')
+                            ->label('Tahun Periode')
+                            ->numeric()
+                            ->default((int) date('Y'))
+                            ->required(),
+
+                        Forms\Components\Select::make('evaluation_interval')
+                            ->label('Interval Evaluasi')
                             ->options([
                                 '1 Bulan' => '1 Bulan (Bulanan)',
                                 '3 Bulan' => '3 Bulan (Triwulanan)',
@@ -150,7 +156,11 @@ class LembarKerjaResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('period')
-                    ->label('Periode')
+                    ->label('Tahun')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('evaluation_interval')
+                    ->label('Interval')
                     ->badge()
                     ->color('gray')
                     ->sortable(),

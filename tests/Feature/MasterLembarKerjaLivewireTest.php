@@ -19,8 +19,11 @@ use Tests\TestCase;
 class MasterLembarKerjaLivewireTest extends TestCase
 {
     protected User $admin;
+
     protected LembarKerja $lk;
+
     protected LkIndicator $indicator;
+
     protected LkEvidenceItem $item;
 
     /** @var list<string> */

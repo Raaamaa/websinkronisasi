@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Auth\Contracts\SSOProviderInterface;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 class SSOController extends Controller
@@ -33,6 +35,10 @@ class SSOController extends Controller
      */
     public function mockLogin(): Response
     {
+        if (! app()->environment(['local', 'testing'])) {
+            abort(403, 'Halaman simulasi SSO hanya tersedia di lingkungan lokal atau testing.');
+        }
+
         return response(
             '<!DOCTYPE html>
             <html lang="id">
@@ -68,9 +74,16 @@ class SSOController extends Controller
      */
     public function callback(Request $request, SSOProviderInterface $provider): Response
     {
+        if ($request->has('mock_user')) {
+            $driver = strtolower((string) config('services.sso.driver', 'keycloak'));
+            if ($driver !== 'mock' || ! app()->environment(['local', 'testing'])) {
+                abort(403, 'Akses simulasi mock SSO dilarang pada konfigurasi atau lingkungan ini.');
+            }
+        }
+
         try {
             $ssoUser = $provider->handleCallback($request);
-        } catch (ConnectException | ConnectionException | RequestException $e) {
+        } catch (ConnectException|ConnectionException|RequestException $e) {
             Log::warning('Koneksi SSO BPS gagal / timeout: '.$e->getMessage());
 
             return redirect()->route('login')->with(
@@ -130,7 +143,7 @@ class SSOController extends Controller
                         'must_change_password' => false,
                         'password_hash' => null,
                     ]);
-                } catch (\Illuminate\Database\QueryException $e) {
+                } catch (QueryException $e) {
                     // Tangani potensi race condition jika request paralel telah membuat user secara bersamaan
                     /** @var User|null $user */
                     $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
@@ -157,9 +170,9 @@ class SSOController extends Controller
             $request->session()->regenerate();
 
             return redirect()->intended('/admin');
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+        } catch (HttpException $e) {
             throw $e;
-        } catch (\Illuminate\Database\QueryException | \PDOException $e) {
+        } catch (QueryException|\PDOException $e) {
             Log::critical('Koneksi basis data bermasalah saat callback SSO: '.$e->getMessage());
 
             return redirect()->route('login')->with(

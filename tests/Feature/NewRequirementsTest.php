@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
@@ -12,13 +11,14 @@ use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
 use App\Models\User;
 use App\Services\Monitor\MonitorMatrixService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class NewRequirementsTest extends TestCase
 {
     protected User $superAdmin;
+
     protected User $admin;
+
     protected User $pegawai;
 
     protected function setUp(): void
@@ -114,7 +114,7 @@ class NewRequirementsTest extends TestCase
             ['name' => 'LK KIP', 'category' => 'internal']
         );
 
-        $code = 'TEST_' . uniqid();
+        $code = 'TEST_'.uniqid();
         $indicator = LkIndicator::create([
             'lk_id' => $lk->id,
             'code' => $code,
@@ -155,7 +155,7 @@ class NewRequirementsTest extends TestCase
             ['name' => 'LK KIP 2026', 'category' => 'internal']
         );
 
-        $code = 'TEST_' . uniqid();
+        $code = 'TEST_'.uniqid();
         $driveLink = 'https://drive.google.com/drive/folders/sample-kip-folder';
         $indicator = LkIndicator::create([
             'lk_id' => $lk->id,
@@ -166,12 +166,12 @@ class NewRequirementsTest extends TestCase
 
         $item = LkEvidenceItem::create([
             'indicator_id' => $indicator->id,
-            'raw_template_name' => 'SK PPID ' . $code,
-            'resolved_name' => 'SK PPID ' . $code,
+            'raw_template_name' => 'SK PPID '.$code,
+            'resolved_name' => 'SK PPID '.$code,
         ]);
 
         $doc = EvidenceDocument::create([
-            'document_name' => 'SK PPID Kantor 2026 ' . $code,
+            'document_name' => 'SK PPID Kantor 2026 '.$code,
             'year' => 2026,
             'mime_type' => 'application/pdf',
             'file_size_bytes' => 1024,

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -199,4 +198,3 @@ class BpsAuditLogDemoSeeder extends Seeder
         }
     }
 }
-

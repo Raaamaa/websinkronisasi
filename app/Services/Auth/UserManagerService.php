@@ -6,6 +6,7 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use InvalidArgumentException;
 
 class UserManagerService
@@ -118,7 +119,7 @@ class UserManagerService
     /**
      * Create a user account manually (Super Admin only).
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createUser(User $actor, array $data): User
     {
@@ -132,7 +133,7 @@ class UserManagerService
             'nip' => $data['nip'] ?? null,
             'role' => $data['role'] ?? 'admin',
             'auth_provider' => $data['auth_provider'] ?? (! empty($data['password']) ? 'local' : 'sso'),
-            'password_hash' => ! empty($data['password']) ? \Illuminate\Support\Facades\Hash::make((string) $data['password']) : null,
+            'password_hash' => ! empty($data['password']) ? Hash::make((string) $data['password']) : null,
             'is_active' => $data['is_active'] ?? true,
             'must_change_password' => false,
         ]);

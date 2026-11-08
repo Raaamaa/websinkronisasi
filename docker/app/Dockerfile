@@ -1,7 +1,8 @@
 FROM php:8.3-cli-alpine
 
-# Install build & runtime dependencies
+# Install build & runtime dependencies, OCR, and build tools
 RUN apk add --no-cache \
+    bash \
     postgresql-dev \
     libzip-dev \
     libpng-dev \
@@ -43,9 +44,17 @@ RUN addgroup -g ${PGID} appuser && \
 
 WORKDIR /var/www/html
 
+# Install dependencies inside image (tanpa --no-dev agar phpunit & pint tersedia di dev)
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-scripts --prefer-dist
+
+COPY . .
+
 USER appuser
 
 EXPOSE 8000
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Eksekusi entrypoint menggunakan sh tanpa bergantung bit executable berkas
+ENTRYPOINT ["/bin/sh", "/var/www/html/docker/app/entrypoint.sh"]
+
 

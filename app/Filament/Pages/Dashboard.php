@@ -15,4 +15,3 @@ class Dashboard extends BaseDashboard
         redirect()->to('/admin/monitor-matrix');
     }
 }
-

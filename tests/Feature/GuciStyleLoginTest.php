@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\Auth\Contracts\SSOProviderInterface;
+use App\Services\Auth\UserManagerService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
@@ -160,7 +161,8 @@ class GuciStyleLoginTest extends TestCase
      */
     public function test_superadmin_quarantined_when_must_change_password_is_true(): void
     {
-        $superAdmin = User::where('email', 'admin@kantor.go.id')->firstOrFail();
+        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $email = $superAdmin->email;
         $origHash = $superAdmin->password_hash;
 
         try {
@@ -173,7 +175,7 @@ class GuciStyleLoginTest extends TestCase
             $this->flushSession();
 
             $response = $this->post('/login', [
-                'email' => 'admin@kantor.go.id',
+                'email' => $email,
                 'password' => '123456789',
             ]);
 
@@ -288,7 +290,7 @@ class GuciStyleLoginTest extends TestCase
     public function test_admin_created_by_superadmin_can_login_via_local_form(): void
     {
         $superAdmin = User::where('role', 'super_admin')->whereNull('deleted_at')->firstOrFail();
-        $manager = app(\App\Services\Auth\UserManagerService::class);
+        $manager = app(UserManagerService::class);
 
         $uniqueEmail = 'admin.baru.'.bin2hex(random_bytes(4)).'@bps.go.id';
 
@@ -335,5 +337,59 @@ class GuciStyleLoginTest extends TestCase
         $response = $this->actingAs($quarantinedUser)->post('/logout');
         $response->assertRedirect('/login');
         $this->assertFalse(Auth::check());
+    }
+
+    /**
+     * 14. Akses ke /auth/sso/callback?mock_user=... ditolak 403 saat driver Keycloak aktif (T3).
+     */
+    public function test_mock_user_parameter_is_rejected_with_403_when_driver_is_keycloak(): void
+    {
+        config(['services.sso.driver' => 'keycloak']);
+
+        $response = $this->get('/auth/sso/callback?mock_user=pegawai_sample');
+        $response->assertStatus(403);
+    }
+
+    /**
+     * 15. Halaman /auth/sso/mock ditolak 403 atau 404 saat bukan di lingkungan local/testing (T3).
+     */
+    public function test_mock_login_view_is_rejected_outside_local_or_testing(): void
+    {
+        $origEnv = app()->environment();
+        $this->app->detectEnvironment(fn () => 'production');
+
+        try {
+            $response = $this->get('/auth/sso/mock');
+            $this->assertContains($response->getStatusCode(), [403, 404]);
+        } finally {
+            $this->app->detectEnvironment(fn () => $origEnv);
+        }
+    }
+
+    /**
+     * 16. Resolving SSOProviderInterface with mock driver throws DomainException outside local or testing.
+     */
+    public function test_mock_driver_throws_domain_exception_outside_local_or_testing(): void
+    {
+        $origEnv = app()->environment();
+        $this->app->detectEnvironment(fn () => 'production');
+        config(['services.sso.driver' => 'mock']);
+
+        try {
+            $this->expectException(\DomainException::class);
+            app(SSOProviderInterface::class);
+        } finally {
+            $this->app->detectEnvironment(fn () => $origEnv);
+            config(['services.sso.driver' => 'mock']);
+        }
+    }
+
+    /**
+     * 17. GET /logout is rejected with 405 Method Not Allowed (only POST allowed to prevent CSRF).
+     */
+    public function test_get_logout_is_rejected_with_method_not_allowed(): void
+    {
+        $response = $this->get('/logout');
+        $response->assertStatus(405);
     }
 }

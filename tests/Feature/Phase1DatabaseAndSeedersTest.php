@@ -8,6 +8,7 @@ use App\Models\LembarKerja;
 use App\Models\LkImportProfile;
 use App\Models\SystemSetting;
 use App\Models\User;
+use Database\Seeders\SuperAdminSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -23,17 +24,34 @@ class Phase1DatabaseAndSeedersTest extends TestCase
     {
         Artisan::call('db:seed', ['--class' => 'SuperAdminSeeder']);
 
-        $expectedEmail = (string) env('SEEDER_SUPERADMIN_EMAIL', 'admin@kantor.go.id');
-        $expectedPassword = (string) env('SEEDER_SUPERADMIN_PASSWORD', '123456789');
+        $expectedEmail = (string) config('services.seeder.superadmin.email', env('SEEDER_SUPERADMIN_EMAIL', 'superadmin@kantor.local'));
+        $expectedPassword = (string) config('services.seeder.superadmin.password', env('SEEDER_SUPERADMIN_PASSWORD', 'SecretSuperAdmin123!'));
 
         $superAdmin = User::where('email', $expectedEmail)->first();
 
         $this->assertNotNull($superAdmin, 'Super admin user must exist');
         $this->assertSame($expectedEmail, $superAdmin->email);
-        $this->assertIsBool($superAdmin->must_change_password);
+        $this->assertTrue($superAdmin->must_change_password);
         $this->assertTrue($superAdmin->is_active, 'is_active should be true');
         $this->assertSame('local', $superAdmin->auth_provider);
-        $this->assertTrue(Hash::check($expectedPassword, $superAdmin->password_hash), 'Password hash must match default initial password');
+        $this->assertTrue(Hash::check($expectedPassword, $superAdmin->password_hash), 'Password hash must match config password');
+    }
+
+    /**
+     * Test super admin seeder throws RuntimeException if password is empty (no fallback allowed).
+     */
+    public function test_super_admin_seeder_throws_when_password_is_empty(): void
+    {
+        $origPassword = config('services.seeder.superadmin.password');
+        config(['services.seeder.superadmin.password' => '']);
+
+        try {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessage('SEEDER_SUPERADMIN_PASSWORD');
+            (new SuperAdminSeeder)->run();
+        } finally {
+            config(['services.seeder.superadmin.password' => $origPassword]);
+        }
     }
 
     /**

@@ -21,7 +21,9 @@ use Tests\TestCase;
 class ExcelImportWizardLivewireTest extends TestCase
 {
     protected User $admin;
+
     protected LembarKerja $lk;
+
     protected LkImportProfile $profile;
 
     /** @var list<string> */
@@ -151,4 +153,3 @@ class ExcelImportWizardLivewireTest extends TestCase
         Queue::assertPushed(RematchActiveDocumentsJob::class);
     }
 }
-

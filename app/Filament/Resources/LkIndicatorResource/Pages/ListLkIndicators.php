@@ -20,4 +20,3 @@ class ListLkIndicators extends ListRecords
         ];
     }
 }
-

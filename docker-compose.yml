@@ -16,8 +16,38 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD wajib disetel di .env}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD wajib disetel di .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - websinkronisasi_net
+
+  queue-worker:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      args:
+        PUID: 1000
+        PGID: 1000
+    container_name: websinkronisasi_queue_worker
+    restart: always
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--timeout=120"]
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD wajib disetel di .env}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD wajib disetel di .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,9 +63,9 @@ services:
     environment:
       POSTGRES_DB: ${DB_DATABASE:-websinkronisasi}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-YOUR_STRONG_POSTGRES_PASSWORD_PLACEHOLDER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib disetel di .env}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql:ro
@@ -51,13 +81,13 @@ services:
     image: redis:7-alpine
     container_name: websinkronisasi_redis
     restart: always
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-YOUR_STRONG_REDIS_PASSWORD_PLACEHOLDER}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD wajib disetel di .env}"]
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-YOUR_STRONG_REDIS_PASSWORD_PLACEHOLDER}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?REDIS_PASSWORD wajib disetel di .env}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5

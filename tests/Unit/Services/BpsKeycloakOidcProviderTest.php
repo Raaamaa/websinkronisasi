@@ -34,7 +34,7 @@ class BpsKeycloakOidcProviderTest extends TestCase
     public function test_provider_throws_exception_if_client_id_empty_on_redirect(): void
     {
         config(['services.sso.client_id' => '']);
-        $provider = new BpsKeycloakOidcProvider();
+        $provider = new BpsKeycloakOidcProvider;
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Client ID SSO BPS belum dikonfigurasi.');
@@ -44,7 +44,7 @@ class BpsKeycloakOidcProviderTest extends TestCase
 
     public function test_provider_builds_correct_keycloak_urls(): void
     {
-        $provider = new BpsKeycloakOidcProvider();
+        $provider = new BpsKeycloakOidcProvider;
 
         $this->assertSame(
             'https://sso.bps.go.id/auth/realms/pegawai-bps/protocol/openid-connect/auth',
@@ -66,7 +66,7 @@ class BpsKeycloakOidcProviderTest extends TestCase
 
     public function test_provider_generates_redirect_response_with_csrf_state(): void
     {
-        $provider = new BpsKeycloakOidcProvider();
+        $provider = new BpsKeycloakOidcProvider;
         $response = $provider->getRedirectResponse();
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
@@ -84,7 +84,7 @@ class BpsKeycloakOidcProviderTest extends TestCase
 
     public function test_provider_throws_exception_if_keycloak_returns_error(): void
     {
-        $provider = new BpsKeycloakOidcProvider();
+        $provider = new BpsKeycloakOidcProvider;
         $request = Request::create('/auth/sso/callback', 'GET', [
             'error' => 'access_denied',
             'error_description' => 'User cancelled login',
@@ -98,7 +98,7 @@ class BpsKeycloakOidcProviderTest extends TestCase
 
     public function test_provider_throws_exception_if_auth_code_missing(): void
     {
-        $provider = new BpsKeycloakOidcProvider();
+        $provider = new BpsKeycloakOidcProvider;
         $request = Request::create('/auth/sso/callback', 'GET', []);
 
         $this->expectException(RuntimeException::class);
@@ -111,7 +111,7 @@ class BpsKeycloakOidcProviderTest extends TestCase
     {
         session(['sso_state' => 'state_asli']);
 
-        $provider = new BpsKeycloakOidcProvider();
+        $provider = new BpsKeycloakOidcProvider;
         $request = Request::create('/auth/sso/callback', 'GET', [
             'code' => 'auth_code_123',
             'state' => 'state_palsu',
@@ -146,7 +146,7 @@ class BpsKeycloakOidcProviderTest extends TestCase
                     'nama' => 'Budi Santoso, S.Tr.Stat.',
                     'nip' => '199001012015011001',
                     'jabatan' => 'Statistisi Ahli Pertama',
-                ]
+                ],
             ]) ?: ''),
         ]);
 
@@ -233,4 +233,3 @@ class BpsKeycloakOidcProviderTest extends TestCase
         $provider->handleCallback($request);
     }
 }
-

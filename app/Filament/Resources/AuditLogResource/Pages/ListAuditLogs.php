@@ -6,9 +6,9 @@ namespace App\Filament\Resources\AuditLogResource\Pages;
 
 use App\Filament\Resources\AuditLogResource;
 use App\Models\AuditLog;
-use App\Models\User;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -18,7 +18,7 @@ class ListAuditLogs extends ListRecords
 
     protected static string $view = 'filament.resources.audit-log-resource.pages.list-audit-logs';
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getHeading(): string|Htmlable
     {
         return '';
     }
@@ -126,7 +126,7 @@ class ListAuditLogs extends ListRecords
 
         // Text Search
         if (! empty(trim($this->search))) {
-            $keyword = '%' . strtolower(trim($this->search)) . '%';
+            $keyword = '%'.strtolower(trim($this->search)).'%';
             $query->where(function ($q) use ($keyword) {
                 $q->whereRaw('LOWER(action) LIKE ?', [$keyword])
                     ->orWhereRaw('LOWER(entity_type) LIKE ?', [$keyword])
@@ -188,11 +188,11 @@ class ListAuditLogs extends ListRecords
     {
         $latest = AuditLog::latest('id')->first();
         $total = AuditLog::count();
-        $raw = ($latest?->id ?? 1) . '|' . $total . '|' . ($latest?->created_at?->timestamp ?? time());
+        $raw = ($latest?->id ?? 1).'|'.$total.'|'.($latest?->created_at?->timestamp ?? time());
 
         $hash = hash('sha256', $raw);
 
-        return 'sha256:' . substr($hash, 0, 4) . '...' . substr($hash, -4);
+        return 'sha256:'.substr($hash, 0, 4).'...'.substr($hash, -4);
     }
 
     /**
@@ -352,7 +352,7 @@ class ListAuditLogs extends ListRecords
         $words = array_values(array_filter(explode(' ', $clean)));
 
         $initials = ! empty($words)
-            ? (count($words) === 1 ? strtoupper(substr($words[0], 0, 2)) : strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1)))
+            ? (count($words) === 1 ? strtoupper(substr($words[0], 0, 2)) : strtoupper(substr($words[0], 0, 1).substr($words[1], 0, 1)))
             : strtoupper(substr($user->name, 0, 2));
 
         return [
@@ -367,7 +367,7 @@ class ListAuditLogs extends ListRecords
      */
     public function exportCsv(): StreamedResponse
     {
-        $fileName = 'Jejak_Audit_BPS_RI_' . now()->format('Ymd_His') . '.csv';
+        $fileName = 'Jejak_Audit_BPS_RI_'.now()->format('Ymd_His').'.csv';
 
         $callback = function () {
             $handle = fopen('php://output', 'w');
@@ -376,7 +376,7 @@ class ListAuditLogs extends ListRecords
             }
 
             // UTF-8 BOM for Excel compatibility
-            fputs($handle, "\xEF\xBB\xBF");
+            fwrite($handle, "\xEF\xBB\xBF");
 
             // CSV Header
             fputcsv($handle, [

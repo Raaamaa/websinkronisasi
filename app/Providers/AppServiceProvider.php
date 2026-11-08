@@ -28,13 +28,21 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(SSOProviderInterface::class, function (): SSOProviderInterface {
-            $driver = strtolower((string) config('services.sso.driver', 'mock'));
+            $driver = strtolower((string) config('services.sso.driver', 'keycloak'));
 
             if (in_array($driver, ['keycloak', 'oidc', 'bps'], true)) {
                 return new BpsKeycloakOidcProvider;
             }
 
-            return new MockSSOProvider;
+            if ($driver === 'mock') {
+                if (! app()->environment(['local', 'testing'])) {
+                    throw new \DomainException('Mock SSO driver is only permitted in local and testing environments.');
+                }
+
+                return new MockSSOProvider;
+            }
+
+            return new BpsKeycloakOidcProvider;
         });
     }
 
@@ -52,8 +60,8 @@ class AppServiceProvider extends ServiceProvider
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_END,
             fn (): HtmlString => new HtmlString('
-                <link rel="stylesheet" href="' . asset('css/tailwind-compiled.css') . '?v=' . (file_exists(public_path('css/tailwind-compiled.css')) ? filemtime(public_path('css/tailwind-compiled.css')) : time()) . '">
-                <link rel="stylesheet" href="' . asset('css/filament-custom.css') . '?v=' . (file_exists(public_path('css/filament-custom.css')) ? filemtime(public_path('css/filament-custom.css')) : time()) . '">
+                <link rel="stylesheet" href="'.asset('css/tailwind-compiled.css').'?v='.(file_exists(public_path('css/tailwind-compiled.css')) ? filemtime(public_path('css/tailwind-compiled.css')) : time()).'">
+                <link rel="stylesheet" href="'.asset('css/filament-custom.css').'?v='.(file_exists(public_path('css/filament-custom.css')) ? filemtime(public_path('css/filament-custom.css')) : time()).'">
             ')
         );
     }

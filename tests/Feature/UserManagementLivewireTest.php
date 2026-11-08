@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Filament\Resources\UserResource\Pages\ListUsers;
-use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -15,7 +14,9 @@ use Tests\TestCase;
 class UserManagementLivewireTest extends TestCase
 {
     protected User $superAdmin;
+
     protected User $admin;
+
     protected User $pegawai;
 
     protected function setUp(): void
@@ -140,7 +141,7 @@ class UserManagementLivewireTest extends TestCase
     {
         $this->actingAs($this->superAdmin);
 
-        $testEmail = 'test.livewire.user.' . Str::random(6) . '@bps.go.id';
+        $testEmail = 'test.livewire.user.'.Str::random(6).'@bps.go.id';
 
         Livewire::test(ListUsers::class)
             ->call('openCreateModal')
@@ -161,4 +162,3 @@ class UserManagementLivewireTest extends TestCase
         $newUser->forceDelete();
     }
 }
-

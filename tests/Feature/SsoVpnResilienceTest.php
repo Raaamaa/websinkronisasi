@@ -72,4 +72,3 @@ class SsoVpnResilienceTest extends TestCase
         $this->assertFalse(Auth::check());
     }
 }
-

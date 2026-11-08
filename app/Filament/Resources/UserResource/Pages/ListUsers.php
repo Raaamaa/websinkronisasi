@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
-use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\Auth\UserManagerService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,7 +20,7 @@ class ListUsers extends ListRecords
 
     protected static string $view = 'filament.resources.user-resource.pages.list-users';
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getHeading(): string|Htmlable
     {
         return '';
     }
@@ -150,7 +150,7 @@ class ListUsers extends ListRecords
 
         // Text search (Nama, NIP, Email)
         if (! empty(trim($this->search))) {
-            $keyword = '%' . strtolower(trim($this->search)) . '%';
+            $keyword = '%'.strtolower(trim($this->search)).'%';
             $query->where(function ($q) use ($keyword) {
                 $q->whereRaw('LOWER(name) LIKE ?', [$keyword])
                     ->orWhereRaw('LOWER(email) LIKE ?', [$keyword])
@@ -204,7 +204,7 @@ class ListUsers extends ListRecords
             return strtoupper(substr($words[0], 0, 2));
         }
 
-        return strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+        return strtoupper(substr($words[0], 0, 1).substr($words[1], 0, 1));
     }
 
     /**
@@ -239,13 +239,13 @@ class ListUsers extends ListRecords
 
         $carbon = Carbon::parse($dt);
         if ($carbon->isToday()) {
-            return 'Hari ini, ' . $carbon->format('H:i');
+            return 'Hari ini, '.$carbon->format('H:i');
         }
         if ($carbon->isYesterday()) {
-            return 'Kemarin, ' . $carbon->format('H:i');
+            return 'Kemarin, '.$carbon->format('H:i');
         }
         if ($carbon->diffInDays(now()) < 7) {
-            return $carbon->diffInDays(now()) . ' hari lalu';
+            return $carbon->diffInDays(now()).' hari lalu';
         }
 
         return $carbon->format('d M Y');

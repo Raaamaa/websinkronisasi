@@ -26,6 +26,7 @@ class LembarKerja extends Model
         'name',
         'category',
         'period',
+        'evaluation_interval',
         'description',
         'default_profile_id',
         'is_active',
@@ -37,7 +38,8 @@ class LembarKerja extends Model
     protected function casts(): array
     {
         return [
-            'period' => 'string',
+            'period' => 'integer',
+            'evaluation_interval' => 'string',
             'is_active' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

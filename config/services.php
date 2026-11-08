@@ -36,13 +36,22 @@ return [
     ],
 
     'sso' => [
-        'driver' => env('SSO_DRIVER', 'mock'),
+        'driver' => env('SSO_DRIVER', 'keycloak'),
         'base_url' => env('BPS_SSO_BASE_URL', env('SSO_BASE_URL', 'https://sso.bps.go.id')),
         'realm' => env('BPS_SSO_REALM', env('SSO_REALM', 'pegawai-bps')),
         'client_id' => env('BPS_SSO_CLIENT_ID', env('SSO_CLIENT_ID', '13328-elka-nv1')),
         'client_secret' => env('BPS_SSO_CLIENT_SECRET', env('SSO_CLIENT_SECRET', '')),
         'redirect_uri' => env('BPS_SSO_REDIRECT_URI', env('SSO_REDIRECT_URI', env('APP_URL', 'http://localhost:8000').'/auth/sso/callback')),
         'timeout' => (float) env('SSO_TIMEOUT', 10.0),
+    ],
+
+    'seeder' => [
+        'superadmin' => [
+            'name' => env('SEEDER_SUPERADMIN_NAME', 'Super Administrator Awal'),
+            'email' => env('SEEDER_SUPERADMIN_EMAIL'),
+            'password' => env('SEEDER_SUPERADMIN_PASSWORD'),
+            'nip' => env('SEEDER_SUPERADMIN_NIP', '198501012010011001'),
+        ],
     ],
 
 ];

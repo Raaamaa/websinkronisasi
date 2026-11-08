@@ -18,9 +18,13 @@ use Tests\TestCase;
 class VerificationQueueLivewireTest extends TestCase
 {
     protected User $admin;
+
     protected User $pegawai;
+
     protected LembarKerja $lk;
+
     protected LkIndicator $indicator;
+
     protected LkEvidenceItem $item;
 
     /** @var list<string> */
@@ -94,14 +98,14 @@ class VerificationQueueLivewireTest extends TestCase
     {
         $doc = EvidenceDocument::create([
             'id' => (string) Str::uuid(),
-            'document_name' => 'SK Tim Kerja ' . uniqid(),
-            'document_number' => 'B-' . rand(100, 999) . '/0200/2026',
+            'document_name' => 'SK Tim Kerja '.uniqid(),
+            'document_number' => 'B-'.rand(100, 999).'/0200/2026',
             'year' => 2026,
-            'file_path' => 'evidence/test_' . uniqid() . '.pdf',
+            'file_path' => 'evidence/test_'.uniqid().'.pdf',
             'original_filename' => 'sk_tim.pdf',
             'mime_type' => 'application/pdf',
             'file_size_bytes' => 2048,
-            'file_hash' => hash('sha256', 'hash_' . uniqid()),
+            'file_hash' => hash('sha256', 'hash_'.uniqid()),
             'processing_status' => 'selesai',
             'uploaded_by' => $this->admin->id,
         ]);

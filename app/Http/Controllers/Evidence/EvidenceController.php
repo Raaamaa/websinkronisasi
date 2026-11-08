@@ -45,13 +45,17 @@ class EvidenceController extends Controller
 
             return response()->json([
                 'message' => 'Bukti dukung berhasil diunggah dan sedang diproses.',
-                'data' => $document,
+                'data' => [
+                    'id' => $document->id,
+                    'document_name' => $document->document_name,
+                    'document_number' => $document->document_number,
+                    'year' => $document->year,
+                    'document_type' => $document->document_type,
+                    'created_at' => $document->created_at?->toIso8601String(),
+                ],
             ], 201);
         } catch (DuplicateDocumentException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'existing_document' => $e->existingDocument,
-            ], 409);
+            return $e->render($request);
         }
     }
 

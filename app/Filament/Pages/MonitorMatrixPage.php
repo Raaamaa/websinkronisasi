@@ -6,6 +6,7 @@ namespace App\Filament\Pages;
 
 use App\Exceptions\DuplicateDocumentException;
 use App\Jobs\ProcessEvidenceDocumentJob;
+use App\Models\LembarKerja;
 use App\Models\User;
 use App\Services\Evidence\EvidenceUploadService;
 use App\Services\Evidence\TextExtractionService;
@@ -14,8 +15,10 @@ use App\Services\Matching\MatchingEngineService;
 use App\Services\Monitor\MonitorMatrixService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class MonitorMatrixPage extends Page
@@ -34,7 +37,7 @@ class MonitorMatrixPage extends Page
 
     protected static string $view = 'filament.pages.monitor-matrix';
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getHeading(): string|Htmlable
     {
         return '';
     }
@@ -89,15 +92,15 @@ class MonitorMatrixPage extends Page
      */
     public function getAvailablePeriods(): array
     {
-        $dbPeriods = \App\Models\LembarKerja::query()
+        $dbIntervals = LembarKerja::query()
             ->where('is_active', true)
             ->whereNull('deleted_at')
             ->distinct()
-            ->pluck('period')
+            ->pluck('evaluation_interval')
             ->toArray();
 
         $defaultIntervals = ['12 Bulan', '6 Bulan', '3 Bulan', '1 Bulan'];
-        $merged = array_unique(array_merge($defaultIntervals, $dbPeriods));
+        $merged = array_unique(array_merge($defaultIntervals, $dbIntervals));
 
         return array_values($merged);
     }
@@ -167,7 +170,7 @@ class MonitorMatrixPage extends Page
     /**
      * Export current matrix view to CSV file for Excel
      */
-    public function exportMatrix(): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function exportMatrix(): StreamedResponse
     {
         $service = app(MonitorMatrixService::class);
         $data = $service->getMatrixData([
@@ -181,7 +184,7 @@ class MonitorMatrixPage extends Page
         ]);
 
         $allLks = $data['columns']['internal']->merge($data['columns']['eksternal']);
-        $filename = 'matriks-monitor-elka-' . $this->period . '-' . date('Ymd_His') . '.csv';
+        $filename = 'matriks-monitor-elka-'.$this->period.'-'.date('Ymd_His').'.csv';
 
         return response()->streamDownload(function () use ($allLks, $data): void {
             $output = fopen('php://output', 'w');
@@ -190,11 +193,11 @@ class MonitorMatrixPage extends Page
             }
 
             // BOM untuk UTF-8 Excel
-            fputs($output, "\xEF\xBB\xBF");
+            fwrite($output, "\xEF\xBB\xBF");
 
             $headers = ['Kode', 'Uraian Dokumen / Bukti Dukung', 'Nomor Dokumen', 'Tahun', 'Jenis Dokumen', 'PIC Satker'];
             foreach ($allLks as $lk) {
-                $headers[] = $lk->code . ' (' . $lk->name . ')';
+                $headers[] = $lk->code.' ('.$lk->name.')';
             }
             fputcsv($output, $headers);
 
@@ -257,6 +260,7 @@ class MonitorMatrixPage extends Page
         $user = Auth::user();
         if ($user === null || ! in_array($user->role, ['super_admin', 'admin', 'pegawai'], true)) {
             Notification::make()->title('Akses Ditolak')->danger()->send();
+
             return;
         }
 
@@ -296,7 +300,7 @@ class MonitorMatrixPage extends Page
         }
 
         $sample = $samples[$sampleKey];
-        $filePath = public_path('sample-documents/' . $sample['file']);
+        $filePath = public_path('sample-documents/'.$sample['file']);
 
         if (! file_exists($filePath)) {
             Notification::make()
@@ -304,6 +308,7 @@ class MonitorMatrixPage extends Page
                 ->body("Berkas {$sample['file']} belum digenerate di server.")
                 ->danger()
                 ->send();
+
             return;
         }
 

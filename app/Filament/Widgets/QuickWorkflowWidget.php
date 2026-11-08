@@ -37,4 +37,3 @@ class QuickWorkflowWidget extends Widget
         ];
     }
 }
-

@@ -6,12 +6,15 @@ namespace App\Filament\Resources\EvidenceDocumentResource\Pages;
 
 use App\Exceptions\DuplicateDocumentException;
 use App\Filament\Resources\EvidenceDocumentResource;
+use App\Models\EvidenceDocument;
 use App\Models\User;
 use App\Services\Evidence\EvidenceUploadService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -28,17 +31,17 @@ class CreateEvidenceDocument extends CreateRecord
         return 'Unggah Dokumen Bukti Dukung';
     }
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getHeading(): string|Htmlable
     {
         return '';
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, \App\Models\EvidenceDocument>
+     * @return Collection<int, EvidenceDocument>
      */
-    public function getRecentUploads(): \Illuminate\Support\Collection
+    public function getRecentUploads(): Collection
     {
-        return \App\Models\EvidenceDocument::query()
+        return EvidenceDocument::query()
             ->withCount(['matches as active_matches_count' => function ($q): void {
                 $q->whereIn('status', ['auto', 'confirmed']);
             }])

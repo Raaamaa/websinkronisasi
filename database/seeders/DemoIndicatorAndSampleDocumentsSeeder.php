@@ -142,7 +142,7 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'DAN WILAYAH BIROKRASI BERSIH DAN MELAYANI (WBBM)',
             'BPS KABUPATEN TEGAL TAHUN 2026',
         ]);
-        file_put_contents($sampleDir . '/SK_Tim_Pembangunan_Zona_Integritas_2026.pdf', $pdf1);
+        file_put_contents($sampleDir.'/SK_Tim_Pembangunan_Zona_Integritas_2026.pdf', $pdf1);
 
         // File 2: Standar Pelayanan Publik PEKPPP
         $pdf2 = $this->createMultilinePdf([
@@ -153,7 +153,7 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'PEMANTAUAN DAN EVALUASI KINERJA PENYELENGGARA PELAYANAN PUBLIK (PEKPPP-01)',
             'BPS KABUPATEN TEGAL TAHUN 2026',
         ]);
-        file_put_contents($sampleDir . '/Standar_Pelayanan_Publik_BPS_2026.pdf', $pdf2);
+        file_put_contents($sampleDir.'/Standar_Pelayanan_Publik_BPS_2026.pdf', $pdf2);
 
         // File 3: Laporan Kinerja LKjIP SAKIP
         $pdf3 = $this->createMultilinePdf([
@@ -163,19 +163,19 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'SURAT PENGANTAR KEPALA BPS NOMOR B-305/3328/OT.010/2026',
             'BPS KABUPATEN TEGAL TAHUN 2026',
         ]);
-        file_put_contents($sampleDir . '/Laporan_Kinerja_Instansi_Pemerintah_LKjIP_2026.pdf', $pdf3);
+        file_put_contents($sampleDir.'/Laporan_Kinerja_Instansi_Pemerintah_LKjIP_2026.pdf', $pdf3);
 
         // File 4: Daftar Informasi Publik DOCX KIP
         $this->createDocxFile(
-            $sampleDir . '/Daftar_Informasi_Publik_DIP_PPID_2026.docx',
-            'BADAN PUSAT STATISTIK KABUPATEN TEGAL. ' .
-            'SURAT KEPUTUSAN STRUKTUR PPID DAN PENETAPAN DAFTAR INFORMASI PUBLIK (DIP) KETERBUKAAN INFORMASI PUBLIK (KIP-01) ' .
+            $sampleDir.'/Daftar_Informasi_Publik_DIP_PPID_2026.docx',
+            'BADAN PUSAT STATISTIK KABUPATEN TEGAL. '.
+            'SURAT KEPUTUSAN STRUKTUR PPID DAN PENETAPAN DAFTAR INFORMASI PUBLIK (DIP) KETERBUKAAN INFORMASI PUBLIK (KIP-01) '.
             'SELF ASSESSMENT QUESTIONNAIRE NOMOR B-402/3328/HM.100/2026 TAHUN 2026.'
         );
     }
 
     /**
-     * @param list<string> $lines
+     * @param  list<string>  $lines
      */
     private function createMultilinePdf(array $lines): string
     {
@@ -184,7 +184,7 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             if ($idx > 0) {
                 $stream .= '0 -18 Td ';
             }
-            $stream .= '(' . addcslashes($line, '()\\') . ') Tj ';
+            $stream .= '('.addcslashes($line, '()\\').') Tj ';
         }
         $stream .= 'ET';
 
@@ -225,16 +225,16 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
         $zip->open($outputPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-            . '<Default Extension="xml" ContentType="application/xml"/>'
-            . '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-            . '</Types>';
+            .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            .'<Default Extension="xml" ContentType="application/xml"/>'
+            .'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            .'</Types>';
         $zip->addFromString('[Content_Types].xml', $contentTypes);
 
         $documentXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-            . '<w:body><w:p><w:r><w:t>' . htmlspecialchars($text) . '</w:t></w:r></w:p></w:body>'
-            . '</w:document>';
+            .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            .'<w:body><w:p><w:r><w:t>'.htmlspecialchars($text).'</w:t></w:r></w:p></w:body>'
+            .'</w:document>';
         $zip->addFromString('word/document.xml', $documentXml);
         $zip->close();
     }

@@ -12,6 +12,7 @@ use App\Services\Matching\VerificationService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 
 class VerificationQueuePage extends Page
@@ -42,7 +43,7 @@ class VerificationQueuePage extends Page
 
     protected static string $view = 'filament.pages.verification-queue';
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getHeading(): string|Htmlable
     {
         return '';
     }
@@ -89,7 +90,14 @@ class VerificationQueuePage extends Page
     {
         $baseQuery = DocumentMatch::query()
             ->when($this->period !== null, function ($q) {
-                $q->whereHas('indicator.lembarKerja', fn ($lq) => $lq->where('period', $this->period));
+                $isYear = is_numeric($this->period);
+                $q->whereHas('indicator.lembarKerja', function ($lq) use ($isYear) {
+                    if ($isYear) {
+                        $lq->where('period', (int) $this->period);
+                    } else {
+                        $lq->where('evaluation_interval', $this->period);
+                    }
+                });
             });
 
         return [
@@ -203,8 +211,13 @@ class VerificationQueuePage extends Page
         }
 
         if ($this->period !== null) {
-            $query->whereHas('indicator.lembarKerja', function ($q) {
-                $q->where('period', $this->period);
+            $isYear = is_numeric($this->period);
+            $query->whereHas('indicator.lembarKerja', function ($q) use ($isYear) {
+                if ($isYear) {
+                    $q->where('period', (int) $this->period);
+                } else {
+                    $q->where('evaluation_interval', $this->period);
+                }
             });
         }
 
@@ -440,7 +453,13 @@ class VerificationQueuePage extends Page
     public function getLkOptions(): array
     {
         return LembarKerja::query()
-            ->when($this->period !== null, fn ($q) => $q->where('period', $this->period))
+            ->when($this->period !== null, function ($q) {
+                if (is_numeric($this->period)) {
+                    $q->where('period', (int) $this->period);
+                } else {
+                    $q->where('evaluation_interval', $this->period);
+                }
+            })
             ->where('is_active', true)
             ->orderBy('name')
             ->pluck('name', 'id')
@@ -478,7 +497,7 @@ class VerificationQueuePage extends Page
             if (mb_strlen($word) < 3) {
                 continue;
             }
-            $pattern = '/(' . preg_quote($word, '/') . ')/i';
+            $pattern = '/('.preg_quote($word, '/').')/i';
             $escaped = preg_replace(
                 $pattern,
                 '<mark class="bg-amber-200 text-amber-900 px-1 py-0.5 rounded font-semibold">$1</mark>',

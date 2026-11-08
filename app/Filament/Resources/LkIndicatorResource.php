@@ -6,7 +6,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LkIndicatorResource\Pages;
 use App\Models\AuditLog;
-use App\Models\LembarKerja;
 use App\Models\LkIndicator;
 use App\Models\User;
 use Filament\Forms;
@@ -222,4 +221,3 @@ class LkIndicatorResource extends Resource
         ];
     }
 }
-

@@ -16,6 +16,7 @@ use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 
 class ListLembarKerjas extends ListRecords
@@ -24,7 +25,7 @@ class ListLembarKerjas extends ListRecords
 
     protected static string $view = 'filament.resources.lembar-kerja-resource.pages.list-lembar-kerjas';
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getHeading(): string|Htmlable
     {
         return '';
     }
@@ -152,7 +153,7 @@ class ListLembarKerjas extends ListRecords
             ->where('lk_id', $this->selectedLkId);
 
         if (! empty($this->search)) {
-            $term = '%' . trim($this->search) . '%';
+            $term = '%'.trim($this->search).'%';
             $query->where(function ($q) use ($term) {
                 $q->where('code', 'ilike', $term)
                     ->orWhere('title', 'ilike', $term)
@@ -165,8 +166,8 @@ class ListLembarKerjas extends ListRecords
 
         if (! empty($this->areaFilter)) {
             $query->where(function ($q) {
-                $q->where('metadata->area', 'ilike', '%' . $this->areaFilter . '%')
-                    ->orWhere('title', 'ilike', '%' . $this->areaFilter . '%');
+                $q->where('metadata->area', 'ilike', '%'.$this->areaFilter.'%')
+                    ->orWhere('title', 'ilike', '%'.$this->areaFilter.'%');
             });
         }
 
@@ -219,7 +220,7 @@ class ListLembarKerjas extends ListRecords
             ->toArray();
 
         if (empty($this->indicatorItems)) {
-            $this->indicatorItems = [$indicator->title . ' [t]'];
+            $this->indicatorItems = [$indicator->title.' [t]'];
         }
 
         $this->newItemText = '';

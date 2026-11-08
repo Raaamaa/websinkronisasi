@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\EvidenceDocument;
 use App\Models\SystemSetting;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -84,10 +85,19 @@ class EvidenceUploadService
             }
         }
 
-        // 3. Kalkulasi SHA-256 Hash Berkas (BD-04)
+        // 3. Tentukan Ekstensi Aman Berbasis Sniffed Magic Bytes (NFR-04, BD-03, T12)
+        $mimeToExtensionMap = [
+            'application/pdf' => 'pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+        ];
+        $safeExtension = $mimeToExtensionMap[$sniffedMime] ?? 'bin';
+
+        // 4. Kalkulasi SHA-256 Hash Berkas (BD-04)
         $fileHash = (string) hash_file('sha256', $realPath);
 
-        // 4. Periksa Duplikasi Dokumen Berdasarkan Hash (BD-05, AC-05)
+        // 5. Periksa Duplikasi Dokumen Berdasarkan Hash Aktif (BD-05, AC-05)
         $existingDoc = EvidenceDocument::where('file_hash', $fileHash)->first();
         if ($existingDoc !== null) {
             throw new DuplicateDocumentException($existingDoc);
@@ -97,7 +107,7 @@ class EvidenceUploadService
             'mime' => $sniffedMime,
             'size' => $fileSize,
             'hash' => $fileHash,
-            'extension' => $extension ?: 'bin',
+            'extension' => $safeExtension,
         ];
     }
 
@@ -122,22 +132,37 @@ class EvidenceUploadService
         $fileContent = (string) file_get_contents($file->getRealPath());
         Storage::disk('private')->put($relativeFilePath, $fileContent);
 
-        // Simpan record master EvidenceDocument
-        $document = EvidenceDocument::create([
-            'id' => $uuid,
-            'document_name' => $metadata['document_name'],
-            'document_number' => $metadata['document_number'] ?? null,
-            'year' => (int) $metadata['year'],
-            'document_type' => $metadata['document_type'] ?? null,
-            'external_link' => $metadata['external_link'] ?? null,
-            'file_path' => $relativeFilePath,
-            'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $inspection['mime'],
-            'file_size_bytes' => $inspection['size'],
-            'file_hash' => $inspection['hash'],
-            'processing_status' => 'memproses',
-            'uploaded_by' => $actor->id,
-        ]);
+        try {
+            // Simpan record master EvidenceDocument
+            $document = EvidenceDocument::create([
+                'id' => $uuid,
+                'document_name' => $metadata['document_name'],
+                'document_number' => $metadata['document_number'] ?? null,
+                'year' => (int) $metadata['year'],
+                'document_type' => $metadata['document_type'] ?? null,
+                'external_link' => $metadata['external_link'] ?? null,
+                'file_path' => $relativeFilePath,
+                'original_filename' => $file->getClientOriginalName(),
+                'mime_type' => $inspection['mime'],
+                'file_size_bytes' => $inspection['size'],
+                'file_hash' => $inspection['hash'],
+                'processing_status' => 'memproses',
+                'uploaded_by' => $actor->id,
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            // Bersihkan berkas fisik yatim saat terjadi konflik duplikasi bersamaan (race condition)
+            Storage::disk('private')->delete($relativeFilePath);
+
+            $existingDoc = EvidenceDocument::where('file_hash', $inspection['hash'])->first();
+            if ($existingDoc === null) {
+                $existingDoc = new EvidenceDocument([
+                    'file_hash' => $inspection['hash'],
+                    'document_name' => $metadata['document_name'],
+                ]);
+            }
+
+            throw new DuplicateDocumentException($existingDoc);
+        }
 
         // Catat jejak audit tak terhapuskan (AUDIT-01, AC-17)
         AuditLog::create([

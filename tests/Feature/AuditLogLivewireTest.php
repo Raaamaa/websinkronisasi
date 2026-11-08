@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Filament\Resources\AuditLogResource\Pages\ListAuditLogs;
-use App\Models\AuditLog;
 use App\Models\User;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -17,7 +14,9 @@ use Tests\TestCase;
 class AuditLogLivewireTest extends TestCase
 {
     protected User $superAdmin;
+
     protected User $admin;
+
     protected User $pegawai;
 
     protected function setUp(): void

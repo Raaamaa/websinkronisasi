@@ -17,6 +17,7 @@ use App\Services\LkImport\Resolvers\YearPlaceholderResolver;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -27,7 +28,7 @@ class ListLkImportProfiles extends ListRecords
 
     protected static string $view = 'filament.resources.lk-import-profile-resource.pages.list-lk-import-profiles';
 
-    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getHeading(): string|Htmlable
     {
         return '';
     }
@@ -371,7 +372,7 @@ class ListLkImportProfiles extends ListRecords
                 'user_id' => $user->id,
                 'profile_id' => $this->selectedProfileId,
                 'file_name' => $this->uploadedFileName,
-                'file_hash' => hash('sha256', $this->uploadedFileName . time()),
+                'file_hash' => hash('sha256', $this->uploadedFileName.time()),
                 'status' => 'committed',
                 'total_rows_read' => 139,
                 'imported_indicators' => 109,

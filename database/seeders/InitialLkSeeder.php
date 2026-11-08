@@ -20,7 +20,8 @@ class InitialLkSeeder extends Seeder
                 'code' => 'ZI',
                 'name' => 'LKE Zona Integritas',
                 'category' => 'internal',
-                'period' => '12 Bulan',
+                'period' => 2026,
+                'evaluation_interval' => '12 Bulan',
                 'description' => 'Lembar Kerja Evaluasi Zona Integritas menuju WBK/WBBM',
                 'profile' => [
                     'name' => 'Profil Standar LKE ZI',
@@ -41,7 +42,8 @@ class InitialLkSeeder extends Seeder
                 'code' => 'PEKPPP',
                 'name' => 'Pemantauan & Evaluasi Kinerja Penyelenggara Pelayanan Publik',
                 'category' => 'internal',
-                'period' => '6 Bulan',
+                'period' => 2026,
+                'evaluation_interval' => '6 Bulan',
                 'description' => 'Instrumen Evaluasi Penyelenggaraan Pelayanan Publik Kementerian PANRB',
                 'profile' => [
                     'name' => 'Profil Standar PEKPPP',
@@ -62,7 +64,8 @@ class InitialLkSeeder extends Seeder
                 'code' => 'KIP',
                 'name' => 'Evaluasi Keterbukaan Informasi Publik (SAQ/PPID)',
                 'category' => 'internal',
-                'period' => '3 Bulan',
+                'period' => 2026,
+                'evaluation_interval' => '3 Bulan',
                 'description' => 'Self Assessment Questionnaire Keterbukaan Informasi Publik Komisi Informasi Pusat',
                 'profile' => [
                     'name' => 'Profil Standar KIP',
@@ -83,7 +86,8 @@ class InitialLkSeeder extends Seeder
                 'code' => 'SAKIP',
                 'name' => 'Sistem Akuntabilitas Kinerja Instansi Pemerintah',
                 'category' => 'internal',
-                'period' => '12 Bulan',
+                'period' => 2026,
+                'evaluation_interval' => '12 Bulan',
                 'description' => 'Evaluasi Akuntabilitas Kinerja Instansi Pemerintah',
                 'profile' => [
                     'name' => 'Profil Standar SAKIP',
@@ -103,7 +107,8 @@ class InitialLkSeeder extends Seeder
                 'code' => 'DATA_SEKUNDER',
                 'name' => 'Pengumpulan Data Sekunder',
                 'category' => 'eksternal',
-                'period' => '1 Bulan',
+                'period' => 2026,
+                'evaluation_interval' => '1 Bulan',
                 'description' => 'Format Pengumpulan Dokumen Bukti Data Sekunder Kantor',
                 'profile' => [
                     'name' => 'Profil Standar Data Sekunder',
@@ -123,7 +128,8 @@ class InitialLkSeeder extends Seeder
                 'code' => 'DATA_SEKTORAL',
                 'name' => 'Pengumpulan Data Statistik Sektoral',
                 'category' => 'eksternal',
-                'period' => '1 Bulan',
+                'period' => 2026,
+                'evaluation_interval' => '1 Bulan',
                 'description' => 'Format Pengumpulan Bukti Penyelenggaraan Statistik Sektoral',
                 'profile' => [
                     'name' => 'Profil Standar Data Sektoral',
@@ -162,6 +168,7 @@ class InitialLkSeeder extends Seeder
                 [
                     'code' => $item['code'],
                     'period' => $item['period'],
+                    'evaluation_interval' => $item['evaluation_interval'],
                 ],
                 [
                     'name' => $item['name'],
@@ -171,6 +178,11 @@ class InitialLkSeeder extends Seeder
                     'is_active' => true,
                 ]
             );
+
+            // Pastikan seluruh baris LK aktif dengan kode ini memiliki default_profile_id yang valid
+            LembarKerja::where('code', $item['code'])
+                ->whereNull('default_profile_id')
+                ->update(['default_profile_id' => $profile->id]);
         }
     }
 }
