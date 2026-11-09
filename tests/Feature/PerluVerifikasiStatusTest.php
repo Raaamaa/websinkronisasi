@@ -60,8 +60,14 @@ class PerluVerifikasiStatusTest extends TestCase
 
     public function test_perlu_verifikasi_status_does_not_render_checkmark_on_monitor_matrix(): void
     {
-        $lk = LembarKerja::where('is_active', true)->first();
-        $indicator = LkIndicator::where('lk_id', $lk->id)->first();
+        $lk = LembarKerja::where('is_active', true)->firstOrFail();
+        $indicator = LkIndicator::where('lk_id', $lk->id)->first() ?? LkIndicator::create([
+            'id' => (string) Str::uuid(),
+            'lk_id' => $lk->id,
+            'code' => 'TEST-IND-PV',
+            'title' => 'Indikator Uji Verifikasi',
+            'order_index' => 1,
+        ]);
 
         $user = User::where('role', 'super_admin')->first();
 

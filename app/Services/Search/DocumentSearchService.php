@@ -55,7 +55,8 @@ class DocumentSearchService
             return $builder;
         }
 
-        $likeParam = '%'.$sanitized.'%';
+        $escaped = addcslashes($sanitized, '%_\\');
+        $likeParam = '%'.$escaped.'%';
         $threshold = self::TRIGRAM_SIMILARITY_THRESHOLD;
 
         return $builder->where(function (Builder $q) use ($sanitized, $likeParam, $threshold): void {

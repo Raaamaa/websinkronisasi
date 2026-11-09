@@ -865,37 +865,37 @@
                         </div>
                     </div>
 
-                    {{-- Modal Footer Actions --}}
-                    <div class="p-5 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-between gap-3">
+                    {{-- Modal Footer Actions (Tombol Besar 56px Ramah Pengguna & Aksesibilitas Lansia) --}}
+                    <div class="p-5 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3">
                         <button
                             type="button"
                             wire:click="rejectInspectedMatch"
                             wire:confirm="Yakin ingin menolak dan mengunci penolakan permanen ini sesuai aturan MATCH-06?"
-                            class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs sm:text-sm font-bold transition shadow-xs active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                            class="min-h-[56px] px-5 py-3 bg-rose-600 hover:bg-rose-700 focus:ring-4 focus:ring-rose-300 dark:focus:ring-rose-900 text-white rounded-xl text-sm font-bold transition shadow-xs active:scale-95 flex items-center gap-2 cursor-pointer"
                         >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                             </svg>
                             <span>Tolak &amp; Kunci Permanen</span>
                         </button>
 
-                        <div class="flex items-center gap-2.5">
+                        <div class="flex items-center gap-3">
                             <button
                                 type="button"
                                 wire:click="closeInspectModal"
-                                class="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer"
+                                class="min-h-[56px] px-5 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition shadow-2xs cursor-pointer focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700"
                             >
-                                Batal
+                                Tutup / Batal
                             </button>
                             <button
                                 type="button"
                                 wire:click="confirmInspectedMatch"
-                                class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-bold transition shadow-xs active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                                class="min-h-[56px] px-6 py-3 bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900 text-white rounded-xl text-sm font-extrabold transition shadow-xs active:scale-95 flex items-center gap-2 cursor-pointer"
                             >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span>Konfirmasi Bukti (✔)</span>
+                                <span>Konfirmasi &amp; Pasang Centang (✔)</span>
                             </button>
                         </div>
                     </div>

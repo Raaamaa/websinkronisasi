@@ -216,7 +216,8 @@ class MonitorMatrixPage extends Page
                     $line[] = $cell['has_match'] ? 'Terpenuhi (✔)' : '';
                 }
 
-                fputcsv($output, $line);
+                $sanitizedLine = array_map([$this, 'sanitizeCsvCell'], $line);
+                fputcsv($output, $sanitizedLine);
             }
 
             fclose($output);
@@ -225,13 +226,37 @@ class MonitorMatrixPage extends Page
         ]);
     }
 
+    /**
+     * Alias untuk exportMatrix sesuai spesifikasi rencana implementasi.
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        return $this->exportMatrix();
+    }
+
+    /**
+     * Sanitasi karakter pemicu spreadsheet formula injection (N-02).
+     */
+    private function sanitizeCsvCell(mixed $value): string
+    {
+        $val = (string) ($value ?? '');
+        $formulaTriggers = ['=', '+', '-', '@', "\t", "\r"];
+        $trimmed = ltrim($val);
+
+        if ($trimmed !== '' && in_array($trimmed[0], $formulaTriggers, true)) {
+            return "'".$val;
+        }
+
+        return $val;
+    }
+
     public static function canAccess(): bool
     {
         /** @var User|null $user */
         $user = Auth::user();
 
-        // MON-01, RBAC.md: Seluruh role aktif (Super Admin, Admin, Pegawai) dapat melihat monitor
-        return $user !== null && $user->is_active && in_array($user->role, ['super_admin', 'admin', 'pegawai'], true);
+        // MON-01, RBAC.md: Seluruh role aktif dengan permission monitor.view dapat melihat monitor
+        return $user !== null && $user->is_active && $user->hasPermission('monitor.view');
     }
 
     public function toggleTestingPanel(): void

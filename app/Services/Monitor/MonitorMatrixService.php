@@ -180,7 +180,7 @@ class MonitorMatrixService
 
         // 2. Ambil seluruh match aktif ('auto' & 'confirmed') untuk dokumen di halaman ini (MON-02, MON-03)
         $matches = DocumentMatch::query()
-            ->with(['indicator.lembarKerja'])
+            ->with(['indicator.lembarKerja', 'matchedItem'])
             ->whereIn('document_id', $docIds)
             ->whereIn('status', ['auto', 'confirmed'])
             ->whereHas('indicator.lembarKerja', function ($q) use ($period): void {

@@ -94,11 +94,12 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
         foreach ($lkData as $code => $info) {
             /** @var LembarKerja $lk */
             $lk = LembarKerja::firstOrCreate(
-                ['code' => $code, 'period' => '12 Bulan'],
+                ['code' => $code, 'period' => 2026],
                 [
                     'name' => $info['name'],
                     'category' => $info['category'],
                     'is_active' => true,
+                    'evaluation_interval' => '12 Bulan',
                     'description' => "Instrumen evaluasi {$info['name']} untuk periode 12 Bulan.",
                 ]
             );

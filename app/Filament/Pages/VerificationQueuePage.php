@@ -545,20 +545,32 @@ class VerificationQueuePage extends Page
             return e($text);
         }
 
-        $escaped = e($text);
-        foreach ($keywords as $word) {
-            $word = trim((string) $word);
-            if (mb_strlen($word) < 3) {
-                continue;
-            }
-            $pattern = '/('.preg_quote($word, '/').')/i';
-            $escaped = preg_replace(
-                $pattern,
-                '<mark class="bg-amber-200 text-amber-900 px-1 py-0.5 rounded font-semibold">$1</mark>',
-                $escaped
-            ) ?? $escaped;
+        $validWords = array_values(array_filter($keywords, fn ($w) => mb_strlen(trim((string) $w)) >= 3));
+        if (empty($validWords)) {
+            return e($text);
         }
 
-        return $escaped;
+        // Bangun satu ekspresi reguler gabungan dengan batasan kata
+        $escapedPatterns = array_map(fn ($w) => preg_quote(trim((string) $w), '/'), $validWords);
+        $regex = '/(\b(?:'.implode('|', $escapedPatterns).')\b)/iu';
+
+        // Pecah teks berdasarkan keyword; token genap adalah teks biasa, token ganjil adalah keyword
+        $tokens = preg_split($regex, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        if ($tokens === false) {
+            return e($text);
+        }
+
+        $output = '';
+        foreach ($tokens as $index => $token) {
+            if ($index % 2 === 1) {
+                // Token keyword yang cocok
+                $output .= '<mark class="bg-amber-200 text-amber-900 px-1 py-0.5 rounded font-semibold">'.e($token).'</mark>';
+            } else {
+                // Teks biasa
+                $output .= e($token);
+            }
+        }
+
+        return $output;
     }
 }
