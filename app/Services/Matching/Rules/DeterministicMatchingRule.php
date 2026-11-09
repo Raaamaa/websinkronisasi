@@ -61,24 +61,58 @@ class DeterministicMatchingRule
         foreach ($sources as $source) {
             if (preg_match($pattern, $source)) {
                 $matchedItem = $indicator->evidenceItems->first();
+                $titleMatched = $this->isTitleMatched($document, $indicator);
 
                 return new MatchCandidate(
                     documentId: $document->id,
                     indicatorId: $indicator->id,
                     matchedItemId: $matchedItem?->id,
-                    status: 'confirmed',
+                    status: $titleMatched ? 'confirmed' : 'perlu_verifikasi',
                     matchMethod: 'exact_code',
-                    confidenceScore: 100.0,
+                    confidenceScore: $titleMatched ? 100.0 : 70.0,
                     matchReasons: [
                         'rule' => 'exact_code',
                         'matched_code' => $code,
                         'matched_source' => $source,
+                        'title_matched' => $titleMatched,
                     ]
                 );
             }
         }
 
         return null;
+    }
+
+    /**
+     * Check if indicator title or evidence items match document name, filename, or extracted text.
+     */
+    public function isTitleMatched(EvidenceDocument $document, LkIndicator $indicator): bool
+    {
+        $rawTarget = $indicator->title;
+        foreach ($indicator->evidenceItems as $item) {
+            $rawTarget .= ' '.($item->resolved_name ?: $item->raw_template_name);
+        }
+
+        $targetKeywords = $this->preprocessor->extractKeywords($rawTarget);
+        if (empty($targetKeywords)) {
+            return false;
+        }
+
+        $docSources = array_filter([
+            $document->document_name,
+            $document->original_filename,
+            $document->extracted_text,
+        ]);
+        $docCombined = implode(' ', $docSources);
+        $docNormalized = $this->preprocessor->normalize($docCombined);
+
+        foreach ($targetKeywords as $keyword) {
+            if (preg_match('/\b'.preg_quote($keyword, '/').'\b/u', $docNormalized)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

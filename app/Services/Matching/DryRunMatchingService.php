@@ -92,8 +92,8 @@ class DryRunMatchingService
                     'indicator_code' => $ind->code,
                     'indicator_title' => $ind->title,
                     'lk_name' => $ind->lembarKerja?->name,
-                    'status' => 'confirmed',
-                    'score' => 100.0,
+                    'status' => $exact->status,
+                    'score' => (float) $exact->confidenceScore,
                     'match_item' => $ind->evidenceItems->first()?->resolved_name,
                     'method' => $exact->matchMethod,
                 ]);

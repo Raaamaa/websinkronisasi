@@ -14,11 +14,12 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Data Indikator Resmi LK Periode '12 Bulan'
+        // 1. Data Indikator Resmi LK Periode Seluruh Interval (12 Bulan, 6 Bulan, 3 Bulan)
         $lkData = [
             'ZI' => [
                 'name' => 'LKE Zona Integritas',
                 'category' => 'internal',
+                'evaluation_interval' => '12 Bulan',
                 'indicators' => [
                     [
                         'code' => 'ZI-1.1',
@@ -44,6 +45,7 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'PEKPPP' => [
                 'name' => 'Pemantauan & Evaluasi Kinerja Penyelenggara Pelayanan Publik',
                 'category' => 'internal',
+                'evaluation_interval' => '6 Bulan',
                 'indicators' => [
                     [
                         'code' => 'PEKPPP-01',
@@ -60,6 +62,7 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'SAKIP' => [
                 'name' => 'Sistem Akuntabilitas Kinerja Instansi Pemerintah',
                 'category' => 'internal',
+                'evaluation_interval' => '12 Bulan',
                 'indicators' => [
                     [
                         'code' => 'SAKIP-01',
@@ -76,6 +79,7 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'KIP' => [
                 'name' => 'Evaluasi Keterbukaan Informasi Publik (SAQ/PPID)',
                 'category' => 'internal',
+                'evaluation_interval' => '3 Bulan',
                 'indicators' => [
                     [
                         'code' => 'KIP-01',
@@ -93,14 +97,14 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
 
         foreach ($lkData as $code => $info) {
             /** @var LembarKerja $lk */
-            $lk = LembarKerja::firstOrCreate(
+            $lk = LembarKerja::updateOrCreate(
                 ['code' => $code, 'period' => 2026],
                 [
                     'name' => $info['name'],
                     'category' => $info['category'],
                     'is_active' => true,
-                    'evaluation_interval' => '12 Bulan',
-                    'description' => "Instrumen evaluasi {$info['name']} untuk periode 12 Bulan.",
+                    'evaluation_interval' => $info['evaluation_interval'] ?? '12 Bulan',
+                    'description' => "Instrumen evaluasi {$info['name']} untuk periode ".($info['evaluation_interval'] ?? '12 Bulan').'.',
                 ]
             );
 
