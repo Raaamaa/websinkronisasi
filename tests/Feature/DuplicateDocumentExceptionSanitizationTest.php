@@ -57,7 +57,7 @@ class DuplicateDocumentExceptionSanitizationTest extends TestCase
         $this->assertArrayHasKey('document_number', $json['existing_document']);
         $this->assertArrayHasKey('year', $json['existing_document']);
 
-        // Verifikasi ketat: TIDAK boleh membocorkan file_path, extracted_text, atau uploaded_by (Invarian #3, T20)
+        // Verifikasi ketat: TIDAK boleh membocorkan file_path, extracted_text, atau uploaded_by (NFR-04, BD-10, T20)
         $this->assertArrayNotHasKey('file_path', $json['existing_document'], 'file_path internal server dilarang bocor ke klien');
         $this->assertArrayNotHasKey('extracted_text', $json['existing_document'], 'extracted_text dilarang bocor ke payload');
         $this->assertArrayNotHasKey('uploaded_by', $json['existing_document'], 'uploaded_by dilarang bocor ke payload 409');

@@ -844,7 +844,7 @@
                                                 href="{{ $ind['evidence_link'] }}" 
                                                 target="_blank" 
                                                 rel="noopener noreferrer" 
-                                                class="min-h-[48px] inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 focus:ring-4 focus:ring-sky-300 dark:focus:ring-sky-900 text-white font-bold text-sm transition shadow-2xs"
+                                                class="min-h-[56px] inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 focus:ring-4 focus:ring-sky-300 dark:focus:ring-sky-900 text-white font-bold text-sm transition shadow-2xs"
                                             >
                                                 <span>Buka Tautan Google Drive</span>
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -861,7 +861,7 @@
                                             type="button"
                                             wire:click="removeMatch('{{ $drilldownData['document']['id'] }}', '{{ $ind['indicator_id'] }}')"
                                             wire:confirm="Yakin ingin mencabut relasi kecocokan ini? Tindakan ini akan menolak match secara permanen."
-                                            class="min-h-[48px] px-3 inline-flex items-center text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-bold text-sm cursor-pointer underline"
+                                            class="min-h-[56px] px-4 inline-flex items-center text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-bold text-sm cursor-pointer underline"
                                         >
                                             Cabut Relasi
                                         </button>
@@ -875,7 +875,7 @@
                         <button 
                             type="button"
                             wire:click="closeDrilldown" 
-                            class="min-h-[48px] px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-sm font-bold transition focus:ring-4 focus:ring-slate-300 cursor-pointer"
+                            class="min-h-[56px] px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-sm font-bold transition focus:ring-4 focus:ring-slate-300 cursor-pointer"
                         >
                             Tutup
                         </button>
@@ -982,7 +982,7 @@
                                     href="{{ $indicatorDrilldownData['indicator']['evidence_link'] }}" 
                                     target="_blank" 
                                     rel="noopener noreferrer" 
-                                    class="min-h-[48px] w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 focus:ring-4 focus:ring-sky-300 dark:focus:ring-sky-900 text-white font-bold text-sm transition shadow-2xs"
+                                    class="min-h-[56px] w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 focus:ring-4 focus:ring-sky-300 dark:focus:ring-sky-900 text-white font-bold text-sm transition shadow-2xs"
                                 >
                                     <span>Buka Folder Google Drive Resmi</span>
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -995,7 +995,7 @@
                         <button 
                             type="button"
                             wire:click="closeIndicatorDrilldown" 
-                            class="min-h-[48px] px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-sm font-bold transition focus:ring-4 focus:ring-slate-300 cursor-pointer"
+                            class="min-h-[56px] px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-sm font-bold transition focus:ring-4 focus:ring-slate-300 cursor-pointer"
                         >
                             Tutup
                         </button>

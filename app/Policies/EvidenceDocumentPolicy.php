@@ -46,4 +46,3 @@ class EvidenceDocumentPolicy
         return $user->is_active && $user->hasPermission('evidence.delete');
     }
 }
-

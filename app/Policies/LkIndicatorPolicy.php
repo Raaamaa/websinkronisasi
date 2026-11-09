@@ -47,4 +47,3 @@ class LkIndicatorPolicy
         return $user->is_active && $user->hasPermission('lk.indicator_manage');
     }
 }
-

@@ -81,10 +81,10 @@ class FilamentRbacAuthorizationMatrixTest extends TestCase
         $this->inactiveUser->update(['is_active' => false]);
     }
 
-    public function test_dashboard_can_access_blocks_inactive_user_enforcing_invariant_4(): void
+    public function test_dashboard_can_access_blocks_inactive_user_enforcing_auth_07(): void
     {
         Auth::login($this->inactiveUser);
-        $this->assertFalse(Dashboard::canAccess(), 'Pengguna nonaktif dilarang mengakses Dashboard (Invarian #4)');
+        $this->assertFalse(Dashboard::canAccess(), 'Pengguna nonaktif dilarang mengakses Dashboard (AUTH-07)');
 
         Auth::login($this->pegawai);
         $this->assertTrue(Dashboard::canAccess());
@@ -140,11 +140,53 @@ class FilamentRbacAuthorizationMatrixTest extends TestCase
         $this->assertTrue(Gate::forUser($this->admin)->allows('toggleActive', [$this->pegawai]));
         $this->assertFalse(Gate::forUser($this->admin)->allows('toggleActive', [$this->superAdmin]));
 
-        // Sole active super admin cannot deactivate self (Invariant #3 & AC-04)
-        $soleAdmin = User::where('role', 'super_admin')->where('is_active', true)->first();
-        if (User::where('role', 'super_admin')->where('is_active', true)->count() === 1) {
-            $this->assertFalse(Gate::forUser($soleAdmin)->allows('toggleActive', [$soleAdmin]));
-        }
+        // Sole active super admin cannot deactivate self (Invariant #4 & AC-04)
+        User::where('role', 'super_admin')->where('id', '!=', $this->superAdmin->id)->update(['is_active' => false]);
+        $this->superAdmin->update(['is_active' => true, 'role' => 'super_admin']);
+
+        $this->assertFalse(
+            Gate::forUser($this->superAdmin)->allows('toggleActive', [$this->superAdmin]),
+            'Satu-satunya Super Admin aktif dilarang menonaktifkan diri sendiri (Invarian #4 & AC-04)'
+        );
+    }
+
+    public function test_user_policy_update_and_delete_enforces_admin_scope_and_last_super_admin_protection(): void
+    {
+        $otherAdmin = User::firstOrCreate(
+            ['email' => 'other.admin.matrix@bps.go.id'],
+            [
+                'id' => (string) Str::uuid(),
+                'name' => 'Other Admin Matrix',
+                'role' => 'admin',
+                'is_active' => true,
+                'password' => bcrypt('password'),
+            ]
+        );
+        $otherAdmin->update(['is_active' => true, 'role' => 'admin']);
+
+        // Admin cannot update other Admin or Super Admin
+        $this->assertFalse(Gate::forUser($this->admin)->allows('update', $otherAdmin), 'Admin tidak boleh mengupdate Admin lain');
+        $this->assertFalse(Gate::forUser($this->admin)->allows('update', $this->superAdmin), 'Admin tidak boleh mengupdate Super Admin');
+
+        // Admin can update Pegawai
+        $this->assertTrue(Gate::forUser($this->admin)->allows('update', $this->pegawai), 'Admin berhak mengupdate Pegawai');
+
+        // Super Admin can update anyone
+        $this->assertTrue(Gate::forUser($this->superAdmin)->allows('update', $this->pegawai));
+        $this->assertTrue(Gate::forUser($this->superAdmin)->allows('update', $otherAdmin));
+
+        // Delete sole Super Admin is rejected unconditionally (Invariant #4 & AC-04)
+        User::where('role', 'super_admin')->where('id', '!=', $this->superAdmin->id)->update(['is_active' => false]);
+        $this->superAdmin->update(['is_active' => true, 'role' => 'super_admin']);
+
+        $this->assertFalse(
+            Gate::forUser($this->superAdmin)->allows('delete', $this->superAdmin),
+            'Super Admin aktif terakhir dilarang dihapus (Invarian #4)'
+        );
+        $this->assertFalse(
+            Gate::forUser($this->admin)->allows('delete', $this->superAdmin),
+            'Admin dilarang menghapus Super Admin aktif terakhir (Invarian #4)'
+        );
     }
 
     public function test_master_lk_and_system_settings_policies_are_super_admin_only(): void

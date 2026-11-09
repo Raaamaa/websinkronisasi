@@ -46,4 +46,3 @@ class AuditLogPolicy
         return false;
     }
 }
-

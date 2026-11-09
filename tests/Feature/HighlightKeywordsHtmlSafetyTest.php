@@ -42,4 +42,3 @@ class HighlightKeywordsHtmlSafetyTest extends TestCase
         $this->assertMatchesRegularExpression('/^((?!<mark[^>]*<mark).)*$/s', $result, 'Ditemukan tag mark bersarang yang merusak HTML!');
     }
 }
-

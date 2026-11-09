@@ -44,4 +44,3 @@ class LembarKerjaPolicy
         return $user->is_active && $user->hasPermission('lk.manage');
     }
 }
-

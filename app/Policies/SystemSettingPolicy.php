@@ -44,4 +44,3 @@ class SystemSettingPolicy
         return $user->is_active && $user->hasPermission('settings.manage');
     }
 }
-

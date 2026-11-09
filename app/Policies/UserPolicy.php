@@ -25,12 +25,40 @@ class UserPolicy
 
     public function update(User $actor, User $target): bool
     {
-        return $actor->is_active && ($actor->isSuperAdmin() || $actor->isAdmin());
+        if (! $actor->is_active) {
+            return false;
+        }
+
+        if ($actor->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($actor->isAdmin()) {
+            return $target->isPegawai(); // Admin HANYA boleh mengupdate Pegawai
+        }
+
+        return false;
     }
 
     public function delete(User $actor, User $target): bool
     {
-        return $actor->is_active && $actor->isSuperAdmin() && $actor->id !== $target->id;
+        if (! $actor->is_active || ! $actor->isSuperAdmin() || $actor->id === $target->id) {
+            return false;
+        }
+
+        // Invarian #4 & AUTH-06: Dilarang menghapus satu-satunya Super Admin aktif terakhir
+        if ($target->isSuperAdmin() && $target->is_active) {
+            $activeSuperAdminCount = User::query()
+                ->where('role', 'super_admin')
+                ->where('is_active', true)
+                ->count();
+
+            if ($activeSuperAdminCount <= 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function updateRole(User $actor, User $target): bool
@@ -44,7 +72,7 @@ class UserPolicy
             return false;
         }
 
-        // Invarian #3 & AUTH-06: Dilarang menonaktifkan satu-satunya Super Admin aktif terakhir
+        // Invarian #4 & AUTH-06: Dilarang menonaktifkan satu-satunya Super Admin aktif terakhir
         if ($target->isSuperAdmin() && $target->is_active) {
             $activeSuperAdminCount = User::query()
                 ->where('role', 'super_admin')
@@ -67,4 +95,3 @@ class UserPolicy
         return false;
     }
 }
-

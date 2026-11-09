@@ -28,8 +28,7 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
         $viewContent = file_get_contents(resource_path('views/filament/pages/monitor-matrix.blade.php'));
         $this->assertNotFalse($viewContent);
 
-        // Memastikan tombol aksi drilldown modal memiliki target sentuh ramah lansia minimal 48px/56px
-        $this->assertStringContainsString('min-h-[48px]', $viewContent, 'Tombol aksi modal drilldown matriks monitor belum memenuhi target sentuh minimal 48px/56px untuk lansia');
+        // Memastikan tombol aksi drilldown modal memiliki target sentuh ramah lansia minimal 56px (Antislop UI)
+        $this->assertStringContainsString('min-h-[56px]', $viewContent, 'Tombol aksi modal drilldown matriks monitor belum memenuhi target sentuh minimal 56px untuk lansia');
     }
 }
-

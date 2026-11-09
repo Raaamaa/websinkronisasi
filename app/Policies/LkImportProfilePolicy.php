@@ -44,4 +44,3 @@ class LkImportProfilePolicy
         return $user->is_active && $user->isSuperAdmin();
     }
 }
-

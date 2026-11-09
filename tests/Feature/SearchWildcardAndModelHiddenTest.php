@@ -67,4 +67,3 @@ class SearchWildcardAndModelHiddenTest extends TestCase
         $this->assertArrayNotHasKey('file_path', $array, 'file_path bocor di toArray()');
     }
 }
-
