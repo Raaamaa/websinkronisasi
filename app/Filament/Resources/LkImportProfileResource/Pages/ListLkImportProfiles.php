@@ -5,22 +5,16 @@ declare(strict_types=1);
 namespace App\Filament\Resources\LkImportProfileResource\Pages;
 
 use App\Filament\Resources\LkImportProfileResource;
-use App\Jobs\RematchActiveDocumentsJob;
-use App\Models\AuditLog;
 use App\Models\LembarKerja;
-use App\Models\LkEvidenceItem;
-use App\Models\LkImportLog;
 use App\Models\LkImportProfile;
-use App\Models\LkIndicator;
 use App\Models\User;
+use App\Services\LkImport\DTOs\ParsedImportResult;
 use App\Services\LkImport\LkImportService;
-use App\Services\LkImport\Resolvers\YearPlaceholderResolver;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ListLkImportProfiles extends ListRecords
@@ -38,9 +32,9 @@ class ListLkImportProfiles extends ListRecords
     public int $currentStep = 2;
 
     // File and LK Info
-    public string $uploadedFileName = 'LKE_ZI_BPS_2026_Final.xlsx';
+    public ?string $uploadedFileName = null;
 
-    public string $uploadedFileSize = '1.8 MB';
+    public ?string $uploadedFileSize = null;
 
     public ?string $uploadedFilePath = null;
 
@@ -192,18 +186,113 @@ class ListLkImportProfiles extends ListRecords
             ->send();
     }
 
+    public function updatedUploadedFilePath(?string $path): void
+    {
+        if (! empty($path) && file_exists($path)) {
+            if (empty($this->uploadedFileName)) {
+                $this->uploadedFileName = basename($path);
+            }
+            $bytes = filesize($path) ?: 0;
+            if ($bytes >= 1048576) {
+                $this->uploadedFileSize = round($bytes / 1048576, 1).' MB';
+            } else {
+                $this->uploadedFileSize = round($bytes / 1024, 1).' KB';
+            }
+        }
+    }
+
+    protected function resolveActiveProfile(?LembarKerja $lk): LkImportProfile
+    {
+        $profile = null;
+        if ($this->selectedProfileId) {
+            $profile = LkImportProfile::find($this->selectedProfileId);
+        }
+
+        if ($profile === null) {
+            $profile = new LkImportProfile([
+                'lk_code' => $lk?->code ?? 'ZI',
+                'sheet_name' => 'LKE',
+                'header_row' => 1,
+                'parsing_strategy' => $this->parsingStrategy,
+                'column_mapping' => [
+                    'code_col' => $this->colCode,
+                    'title_col' => $this->colTitle,
+                    'evidence_items_col' => $this->colEvidence,
+                    'evidence_link_col' => $this->colDriveLink,
+                    'pic_col' => $this->colPic,
+                ],
+            ]);
+            $profile->id = (string) Str::uuid();
+        }
+
+        return $profile;
+    }
+
+    protected function getParsedImportResult(): ?ParsedImportResult
+    {
+        if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
+            return null;
+        }
+
+        $lk = $this->selectedLk;
+        $profile = $this->resolveActiveProfile($lk);
+
+        /** @var LkImportService $importService */
+        $importService = app(LkImportService::class);
+
+        return $importService->preview(
+            filePath: $this->uploadedFilePath,
+            lk: $lk ?? new LembarKerja(['period' => 2026, 'code' => 'DEFAULT']),
+            profile: $profile,
+            originalFilename: $this->uploadedFileName
+        );
+    }
+
     /**
      * @return array{total_rows: int, valid_indicators: int, valid_pct: float, skipped_rows: int, fatal_errors: int}
      */
     public function getValidationStats(): array
     {
-        return [
-            'total_rows' => 139,
-            'valid_indicators' => 109,
-            'valid_pct' => 78.4,
-            'skipped_rows' => 30,
-            'fatal_errors' => 0,
-        ];
+        if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
+            return [
+                'total_rows' => 0,
+                'valid_indicators' => 0,
+                'valid_pct' => 0.0,
+                'skipped_rows' => 0,
+                'fatal_errors' => 0,
+            ];
+        }
+
+        try {
+            $parsed = $this->getParsedImportResult();
+            if ($parsed === null) {
+                return [
+                    'total_rows' => 0,
+                    'valid_indicators' => 0,
+                    'valid_pct' => 0.0,
+                    'skipped_rows' => 0,
+                    'fatal_errors' => 0,
+                ];
+            }
+
+            return [
+                'total_rows' => $parsed->totalRowsRead,
+                'valid_indicators' => count($parsed->indicators),
+                'valid_pct' => $parsed->totalRowsRead > 0
+                    ? round((count($parsed->indicators) / $parsed->totalRowsRead) * 100, 1)
+                    : 0.0,
+                'skipped_rows' => count($parsed->skippedRows),
+                'fatal_errors' => 0,
+            ];
+        } catch (\Throwable) {
+            return [
+                'total_rows' => 0,
+                'valid_indicators' => 0,
+                'valid_pct' => 0.0,
+                'skipped_rows' => 0,
+                'fatal_errors' => 1,
+            ];
+        }
     }
 
     /**
@@ -211,40 +300,32 @@ class ListLkImportProfiles extends ListRecords
      */
     public function getPreviewSamples(): array
     {
-        return [
-            [
-                'code' => 'A11i',
-                'row_num' => 4,
-                'title' => 'Pembentukan Tim Kerja Pembangunan ZI',
-                'items' => [
-                    'SK Tim Kerja Pembangunan ZI [t]',
-                    'Undangan & Notula Rapat Pembentukan',
-                ],
-                'drive_link' => 'https://drive.google.com/drive/folders/1k8a0200KP010ZI2026BPS9xZ',
-                'pic' => 'Bagian Umum',
-            ],
-            [
-                'code' => 'A12i',
-                'row_num' => 46,
-                'title' => 'Rencana Pembangunan Zona Integritas',
-                'items' => [
-                    'Dokumen Rencana Aksi ZI 2026',
-                ],
-                'drive_link' => 'https://drive.google.com/drive/folders/1k8a0200KP010ZI2026BPS9xZ',
-                'pic' => 'Subbag Program',
-            ],
-            [
-                'code' => 'A111i',
-                'row_num' => 47,
-                'title' => 'Penerapan Standar Operasional Prosedur (SOP)',
-                'items' => [
-                    'SOP Terpadu Layanan BPS [t]',
-                    'Laporan Evaluasi SOP Triwulan I',
-                ],
-                'drive_link' => 'https://drive.google.com/drive/folders/1k8a0200KP010ZI2026BPS9xZ',
-                'pic' => 'Fungsi Diseminasi',
-            ],
-        ];
+        if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
+            return [];
+        }
+
+        try {
+            $parsed = $this->getParsedImportResult();
+            if ($parsed === null) {
+                return [];
+            }
+
+            $samples = [];
+            foreach ($parsed->indicators as $ind) {
+                $samples[] = [
+                    'code' => $ind->code,
+                    'row_num' => $ind->orderIndex,
+                    'title' => $ind->title,
+                    'items' => array_map(fn ($item) => $item->resolvedName, $ind->items),
+                    'drive_link' => $ind->evidenceLink ?? '',
+                    'pic' => $ind->pic ?? '-',
+                ];
+            }
+
+            return $samples;
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**
@@ -252,32 +333,59 @@ class ListLkImportProfiles extends ListRecords
      */
     public function getAnomalyRows(): array
     {
-        return [
-            [
-                'row_range' => 'Baris 1 - 3',
-                'description' => 'Kop Lembar Kerja & Label Metadata Dokumen "LEMBAR KERJA EVALUASI ZONA INTEGRITAS MENUJU WBK BPS RI TAHUN 2026"',
-                'badge' => 'Header Dokumen',
-            ],
-            [
-                'row_range' => 'Baris 45 & 89',
-                'description' => 'Subtotal Komponen Pengungkit & Rekapitulasi Bobot Nilai "TOTAL BOBOT AREA MANAJEMEN PERUBAHAN: 60.00 | NILAI MAKSIMAL: 100"',
-                'badge' => 'Formula Subtotal',
-            ],
-            [
-                'row_range' => 'Baris 136 - 139',
-                'description' => 'Tanda Tangan Asesor & Lembar Pengesahan Tim Penilai Nasional KemenPAN-RB',
-                'badge' => 'Lembar Pengesahan',
-            ],
-        ];
+        if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
+            return [];
+        }
+
+        try {
+            $parsed = $this->getParsedImportResult();
+            if ($parsed === null) {
+                return [];
+            }
+
+            $anomalies = [];
+            foreach ($parsed->skippedRows as $skipped) {
+                $anomalies[] = [
+                    'row_range' => "Baris {$skipped->rowIndex}",
+                    'description' => $skipped->reason,
+                    'badge' => 'Dilewati',
+                ];
+            }
+
+            return $anomalies;
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     public function retestMapping(): void
     {
-        Notification::make()
-            ->title('Uji Pemetaan Berhasil')
-            ->body('Simulasi parsing ulang berhasil dijalankan. 109 indikator valid terdeteksi tanpa error fatal.')
-            ->success()
-            ->send();
+        if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
+            Notification::make()
+                ->title('Pilih berkas Excel dulu')
+                ->body('Pilih berkas Excel dulu sebelum menguji pemetaan.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $parsed = $this->getParsedImportResult();
+            $count = $parsed ? count($parsed->indicators) : 0;
+
+            Notification::make()
+                ->title('Uji Pemetaan Berhasil')
+                ->body("Simulasi parsing berhasil. {$count} indikator valid terdeteksi.")
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Uji Pemetaan Gagal')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     public function executeImport(): void
@@ -295,6 +403,16 @@ class ListLkImportProfiles extends ListRecords
             return;
         }
 
+        if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
+            Notification::make()
+                ->title('Pilih berkas Excel dulu')
+                ->body('Pilih berkas Excel dulu sebelum memulai impor.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         $lk = $this->selectedLk;
         if (! $lk) {
             Notification::make()
@@ -306,156 +424,27 @@ class ListLkImportProfiles extends ListRecords
             return;
         }
 
-        if (! empty($this->uploadedFilePath) && file_exists($this->uploadedFilePath)) {
-            $importService = app(LkImportService::class);
-            $profile = null;
-            if ($this->selectedProfileId) {
-                $profile = LkImportProfile::find($this->selectedProfileId);
-            }
-            if ($profile === null) {
-                $profile = new LkImportProfile([
-                    'lk_code' => $lk->code,
-                    'sheet_name' => 'LKE',
-                    'header_row' => 1,
-                    'parsing_strategy' => $this->parsingStrategy,
-                    'column_mapping' => [
-                        'code_col' => $this->colCode,
-                        'title_col' => $this->colTitle,
-                        'evidence_items_col' => $this->colEvidence,
-                        'evidence_link_col' => $this->colDriveLink,
-                        'pic_col' => $this->colPic,
-                    ],
-                ]);
-                $profile->id = (string) Str::uuid();
-            }
+        $profile = $this->resolveActiveProfile($lk);
 
-            if ($this->saveAsTemplate && ! empty($this->newTemplateName)) {
-                $profile->name = trim($this->newTemplateName);
-                $profile->save();
-            }
-
-            $log = $importService->commit(
-                filePath: $this->uploadedFilePath,
-                lk: $lk,
-                profile: $profile,
-                actor: $user,
-                originalFilename: $this->uploadedFileName
-            );
-
-            $this->currentStep = 4;
-
-            Notification::make()
-                ->title('Impor Lembar Kerja Berhasil!')
-                ->body("{$log->imported_indicators} indikator dan {$log->imported_items} butir bukti berhasil disinkronkan ke {$lk->name}. Verifikasi manual tetap utuh (LKIMP-07).")
-                ->success()
-                ->send();
-
-            return;
+        if ($this->saveAsTemplate && ! empty($this->newTemplateName)) {
+            $profile->name = trim($this->newTemplateName);
+            $profile->save();
         }
 
-        DB::transaction(function () use ($user, $lk): void {
-            // If saveAsTemplate is checked, save profile
-            if ($this->saveAsTemplate && ! empty($this->newTemplateName)) {
-                LkImportProfile::updateOrCreate(
-                    [
-                        'name' => trim($this->newTemplateName),
-                        'lk_code' => $lk->code,
-                    ],
-                    [
-                        'sheet_name' => 'LKE',
-                        'header_row' => 1,
-                        'parsing_strategy' => $this->parsingStrategy,
-                        'column_mapping' => [
-                            'code_col' => $this->colCode,
-                            'title_col' => $this->colTitle,
-                            'evidence_items_col' => $this->colEvidence,
-                            'evidence_link_col' => $this->colDriveLink,
-                            'pic_col' => $this->colPic,
-                        ],
-                    ]
-                );
-            }
-
-            // Simulate / execute idempotent upsert of sample indicators
-            $samples = $this->getPreviewSamples();
-            /** @var YearPlaceholderResolver $yearResolver */
-            $yearResolver = app(YearPlaceholderResolver::class);
-
-            foreach ($samples as $sample) {
-                $ind = LkIndicator::updateOrCreate(
-                    [
-                        'lk_id' => $lk->id,
-                        'code' => $sample['code'],
-                    ],
-                    [
-                        'title' => $sample['title'],
-                        'order_index' => $sample['row_num'],
-                        'evidence_link' => $sample['drive_link'],
-                        'pic' => $sample['pic'],
-                        'metadata' => [
-                            'area' => 'Area I — Manajemen Perubahan',
-                            'imported_at' => now()->toIso8601String(),
-                        ],
-                    ]
-                );
-
-                $idx = 1;
-                foreach ($sample['items'] as $rawTemplate) {
-                    $resolvedName = $yearResolver->resolve($rawTemplate, $lk->period);
-                    LkEvidenceItem::updateOrCreate(
-                        [
-                            'indicator_id' => $ind->id,
-                            'resolved_name' => $resolvedName,
-                        ],
-                        [
-                            'raw_template_name' => $rawTemplate,
-                            'order_index' => $idx++,
-                        ]
-                    );
-                }
-            }
-
-            // Record Import Log (LKIMP-07, AC-23)
-            LkImportLog::create([
-                'id' => (string) Str::uuid(),
-                'lk_id' => $lk->id,
-                'user_id' => $user->id,
-                'profile_id' => $this->selectedProfileId,
-                'file_name' => $this->uploadedFileName,
-                'file_hash' => hash('sha256', $this->uploadedFileName.time()),
-                'status' => 'committed',
-                'total_rows_read' => 139,
-                'imported_indicators' => 109,
-                'imported_items' => 142,
-                'skipped_rows' => 30,
-                'summary_details' => [
-                    'source' => 'wizard_import_excel',
-                    'strategy' => $this->parsingStrategy,
-                ],
-            ]);
-
-            // Audit Log (AUDIT-02)
-            AuditLog::create([
-                'user_id' => $user->id,
-                'action' => 'lk.imported',
-                'entity_type' => 'LembarKerja',
-                'entity_id' => $lk->id,
-                'new_values' => [
-                    'file' => $this->uploadedFileName,
-                    'strategy' => $this->parsingStrategy,
-                    'indicators' => 109,
-                ],
-            ]);
-
-            // Dispatch Rematch Active Documents Job (LK-07)
-            RematchActiveDocumentsJob::dispatch($lk->id);
-        });
+        $importService = app(LkImportService::class);
+        $log = $importService->commit(
+            filePath: $this->uploadedFilePath,
+            lk: $lk,
+            profile: $profile,
+            actor: $user,
+            originalFilename: $this->uploadedFileName
+        );
 
         $this->currentStep = 4;
 
         Notification::make()
             ->title('Impor Lembar Kerja Berhasil!')
-            ->body("109 indikator dan 142 butir bukti berhasil disinkronkan ke {$lk->name}. Verifikasi manual tetap utuh (LKIMP-07).")
+            ->body("{$log->imported_indicators} indikator dan {$log->imported_items} butir bukti berhasil disinkronkan ke {$lk->name}. Verifikasi manual tetap utuh (LKIMP-07).")
             ->success()
             ->send();
     }

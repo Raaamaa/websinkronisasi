@@ -116,15 +116,15 @@
             <div class="flex flex-wrap items-center gap-4">
                 {{-- Berkas File --}}
                 <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs border border-emerald-200 dark:border-emerald-800">
+                    <div class="w-9 h-9 rounded-lg {{ !empty($uploadedFileName) ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800' }} flex items-center justify-center font-bold text-xs border">
                         XLSX
                     </div>
                     <div>
-                        <div class="font-bold text-xs text-slate-900 dark:text-slate-100 font-mono">
-                            {{ $uploadedFileName }}
+                        <div class="font-bold text-xs {{ !empty($uploadedFileName) ? 'text-slate-900 dark:text-slate-100 font-mono' : 'text-amber-800 dark:text-amber-300' }}">
+                            {{ $uploadedFileName ?? 'Belum ada berkas dipilih' }}
                         </div>
                         <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                            {{ $uploadedFileSize }} &bull; MIME: openxmlformats
+                            {{ !empty($uploadedFileSize) ? $uploadedFileSize . ' • MIME: openxmlformats' : 'Pilih berkas Excel dulu untuk memulai impor' }}
                         </div>
                     </div>
                 </div>
@@ -415,33 +415,39 @@
                 <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs flex flex-wrap items-center justify-between gap-3 transition-colors">
                     <a
                         href="/admin/lembar-kerjas"
-                        class="px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg border border-slate-300 dark:border-slate-600 transition flex items-center gap-1.5"
+                        class="min-h-[56px] px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl border border-slate-300 dark:border-slate-600 transition inline-flex items-center gap-2"
                     >
                         <span>&larr;</span>
-                        <span>Kembali ke Master LK</span>
+                        <span>Kembali ke Lembar Kerja</span>
                     </a>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-3">
                         <button
                             type="button"
                             wire:click="retestMapping"
                             wire:loading.attr="disabled"
-                            class="px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg border border-slate-300 dark:border-slate-600 transition flex items-center gap-1.5"
+                            class="min-h-[56px] px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl border border-slate-300 dark:border-slate-600 transition inline-flex items-center gap-2"
                         >
-                            <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
-                            <span>Uji Ulang Pemetaan</span>
+                            <span>Uji Ulang Kolom</span>
                         </button>
 
                         <button
                             type="button"
                             wire:click="executeImport"
-                            wire:confirm="Yakin ingin mengeksekusi impor ke Lembar Kerja ini? Proses bersifat idempoten dan tidak menimpa dokumen yang telah diverifikasi manual."
-                            wire:loading.attr="disabled"
-                            class="px-5 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-lg transition shadow-2xs active:scale-95 flex items-center gap-1.5"
+                            @if(empty($uploadedFilePath) || !file_exists($uploadedFilePath))
+                                disabled
+                                class="min-h-[56px] px-7 py-3 text-sm font-bold text-slate-400 bg-slate-200 dark:bg-slate-700 dark:text-slate-500 rounded-xl cursor-not-allowed inline-flex items-center gap-2"
+                                title="Pilih berkas Excel dulu"
+                            @else
+                                wire:confirm="Yakin ingin mengimpor berkas ini ke Lembar Kerja? Data yang sudah diverifikasi manual tidak akan tertimpa."
+                                wire:loading.attr="disabled"
+                                class="min-h-[56px] px-7 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 active:scale-98 rounded-xl shadow-md transition inline-flex items-center gap-2"
+                            @endif
                         >
-                            <span>Konfirmasi &amp; Eksekusi Impor (Idempoten)</span>
+                            <span>Mulai Impor Lembar Kerja</span>
                             <span class="font-extrabold">&rarr;</span>
                         </button>
                     </div>

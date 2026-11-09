@@ -8,6 +8,7 @@ use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkIndicator;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Matching\Rules\HeuristicMatchingRule;
 use App\Services\Matching\Similarity\TrigramSimilarity;
@@ -108,5 +109,46 @@ class PerluVerifikasiStatusTest extends TestCase
         // Bersihkan data uji
         $match->delete();
         $doc->forceDelete();
+    }
+
+    public function test_review_threshold_setting_controls_perlu_verifikasi_floor(): void
+    {
+        $lk = LembarKerja::where('is_active', true)->first();
+
+        // Dokumen dan indikator yang menghasilkan skor ~69.70%
+        $doc = new EvidenceDocument([
+            'document_name' => 'SK Penetapan Pengelola Informasi dan Dokumentasi',
+            'year' => $lk->period,
+        ]);
+        $doc->id = (string) Str::uuid();
+
+        $ind = new LkIndicator([
+            'code' => 'KIP-TEST-REV',
+            'title' => 'Penetapan Struktur PPID dan Penetapan Daftar Informasi Publik',
+            'order_index' => 1,
+        ]);
+        $ind->id = (string) Str::uuid();
+        $ind->setRelation('lembarKerja', $lk);
+        $ind->setRelation('evidenceItems', collect());
+
+        // Naikkan review_threshold ke 72.0 (di atas skor 69.7%)
+        SystemSetting::updateOrCreate(
+            ['key' => 'matching.review_threshold'],
+            ['value' => 72.0, 'description' => 'Ambang review test']
+        );
+
+        $candidate = $this->rule->evaluate($doc, $ind);
+        // Dengan review_threshold = 72.0, skor 69.7% berada di bawah threshold -> candidate null
+        $this->assertNull($candidate, 'Kandidat di bawah matching.review_threshold wajib null');
+
+        // Kembalikan review_threshold ke 60.0 -> kandidat diterima sebagai perlu_verifikasi
+        SystemSetting::updateOrCreate(
+            ['key' => 'matching.review_threshold'],
+            ['value' => 60.0, 'description' => 'Ambang review test']
+        );
+
+        $candidate = $this->rule->evaluate($doc, $ind);
+        $this->assertNotNull($candidate);
+        $this->assertSame('perlu_verifikasi', $candidate->status);
     }
 }

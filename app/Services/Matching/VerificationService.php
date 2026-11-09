@@ -6,6 +6,7 @@ namespace App\Services\Matching;
 
 use App\Models\AuditLog;
 use App\Models\DocumentMatch;
+use App\Models\SystemSetting;
 use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -108,8 +109,9 @@ class VerificationService
                 return $match;
             }
 
-            // Pulihkan status: jika skor >= 75% -> auto, jika tidak -> perlu_verifikasi
-            $newStatus = $match->confidence_score >= 75.0 ? 'auto' : 'perlu_verifikasi';
+            // Pulihkan status: jika skor >= similarity_threshold -> auto, jika tidak -> perlu_verifikasi
+            $threshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
+            $newStatus = $match->confidence_score >= $threshold ? 'auto' : 'perlu_verifikasi';
 
             $match->update([
                 'status' => $newStatus,
@@ -119,7 +121,7 @@ class VerificationService
 
             AuditLog::create([
                 'user_id' => $actor->id,
-                'action' => 'match.unrejected',
+                'action' => 'bd.match_unrejected',
                 'entity_type' => 'DocumentMatch',
                 'entity_id' => $match->id,
                 'old_values' => [

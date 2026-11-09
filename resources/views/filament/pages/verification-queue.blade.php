@@ -3,6 +3,7 @@
         $stats = $this->getStats();
         $matches = $this->getMatches();
         $inspected = $this->inspectedMatch;
+        $similarityThreshold = (float) \App\Models\SystemSetting::get('matching.similarity_threshold', 75.0);
     @endphp
 
     <div class="space-y-6">
@@ -26,7 +27,7 @@
                     </span>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
-                    Tinjau dan verifikasi pasangan dokumen bukti dukung ke lembar kerja hasil pencocokan otomatis (skor &ge; 75%). Keputusan verifikator memperkuat akurasi tata kelola data BPS RI.
+                    Tinjau dan verifikasi pasangan dokumen bukti dukung ke lembar kerja hasil pencocokan otomatis (skor &ge; {{ number_format($similarityThreshold, 0) }}%). Keputusan verifikator memperkuat akurasi tata kelola data BPS RI.
                 </p>
             </div>
 
@@ -36,7 +37,7 @@
                     <svg class="w-4 h-4 text-sky-600 dark:text-sky-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <span>Ambang Batas Otomatis: <strong>&ge; 75.0%</strong></span>
+                    <span>Ambang Batas Otomatis: <strong>&ge; {{ number_format($similarityThreshold, 1) }}%</strong></span>
                 </div>
                 <div class="flex items-center gap-2 px-3.5 py-2 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 rounded-xl text-xs font-semibold border border-amber-200 dark:border-amber-800 shadow-xs">
                     <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,7 +286,7 @@
                     >
                         <option value="">Semua Rentang Skor</option>
                         <option value="gte_90">Sangat Tinggi (&ge; 90%)</option>
-                        <option value="gte_75">Standar Ambang (&ge; 75%)</option>
+                        <option value="gte_75">Standar Ambang (&ge; {{ number_format($similarityThreshold, 0) }}%)</option>
                     </select>
                 </div>
 
@@ -520,11 +521,11 @@
                                                 {{ number_format((float) $match->confidence_score, 0) }}%
                                             </span>
                                             <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mt-1">Sangat Tinggi</span>
-                                        @elseif($match->confidence_score >= 75)
+                                        @elseif($match->confidence_score >= $similarityThreshold)
                                             <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs">
                                                 {{ number_format((float) $match->confidence_score, 0) }}%
                                             </span>
-                                            <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 mt-1">Ambang &ge;75%</span>
+                                            <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 mt-1">Ambang &ge;{{ number_format($similarityThreshold, 0) }}%</span>
                                         @else
                                             <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 shadow-2xs">
                                                 {{ number_format((float) $match->confidence_score, 0) }}%

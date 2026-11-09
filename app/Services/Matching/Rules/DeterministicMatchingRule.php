@@ -11,6 +11,12 @@ use App\Services\Matching\TextPreprocessor;
 
 class DeterministicMatchingRule
 {
+    // sementara, BELUM DIUKUR (K2)
+    public const int MIN_CODE_LENGTH = 3;
+
+    // sementara, BELUM DIUKUR (K2)
+    public const int MIN_NUMBER_LENGTH = 4;
+
     public function __construct(
         protected TextPreprocessor $preprocessor
     ) {}
@@ -42,7 +48,7 @@ class DeterministicMatchingRule
     public function evaluateExactCode(EvidenceDocument $document, LkIndicator $indicator): ?MatchCandidate
     {
         $code = trim($indicator->code);
-        if ($code === '' || mb_strlen($code) < 3) {
+        if ($code === '' || mb_strlen($code) < self::MIN_CODE_LENGTH) {
             return null; // Kode terlalu pendek (misal: "1", "A") rawan bentrok angka biasa
         }
 
@@ -81,12 +87,12 @@ class DeterministicMatchingRule
     public function evaluateExactNumber(EvidenceDocument $document, LkIndicator $indicator): ?MatchCandidate
     {
         $docNumber = trim((string) $document->document_number);
-        if ($docNumber === '' || mb_strlen($docNumber) < 4) {
+        if ($docNumber === '' || mb_strlen($docNumber) < self::MIN_NUMBER_LENGTH) {
             return null;
         }
 
         $cleanDocNum = $this->preprocessor->normalize($docNumber);
-        if ($cleanDocNum === '' || mb_strlen($cleanDocNum) < 4) {
+        if ($cleanDocNum === '' || mb_strlen($cleanDocNum) < self::MIN_NUMBER_LENGTH) {
             return null;
         }
 

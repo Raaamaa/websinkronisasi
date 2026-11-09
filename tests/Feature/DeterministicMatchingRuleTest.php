@@ -106,4 +106,10 @@ class DeterministicMatchingRuleTest extends TestCase
 
         $this->assertNull($matchInvalid);
     }
+
+    public function test_constants_defined_for_unmeasured_lengths_k2(): void
+    {
+        $this->assertSame(3, DeterministicMatchingRule::MIN_CODE_LENGTH);
+        $this->assertSame(4, DeterministicMatchingRule::MIN_NUMBER_LENGTH);
+    }
 }

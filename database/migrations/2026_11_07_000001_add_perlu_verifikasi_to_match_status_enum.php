@@ -16,10 +16,10 @@ return new class extends Migration
     {
         DB::statement("ALTER TYPE match_status ADD VALUE IF NOT EXISTS 'perlu_verifikasi';");
 
-        // Daftarkan baseline konfigurasi matching.verification_threshold bila belum ada
+        // Daftarkan baseline konfigurasi matching.review_threshold bila belum ada
         DB::statement("
             INSERT INTO system_settings (key, value, description)
-            VALUES ('matching.verification_threshold', '60.0'::jsonb, 'Ambang batas skor minimal (0-100) untuk antrean perlu verifikasi')
+            VALUES ('matching.review_threshold', '60.0'::jsonb, 'Ambang batas skor minimal (0-100) untuk antrean perlu verifikasi')
             ON CONFLICT (key) DO NOTHING;
         ");
     }

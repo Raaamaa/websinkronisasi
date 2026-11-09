@@ -11,6 +11,7 @@ use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkIndicator;
 use App\Models\User;
+use App\Services\Matching\MatchingEngineService;
 use App\Services\Matching\VerificationService;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -99,7 +100,7 @@ class VerificationServiceUnrejectTest extends TestCase
         $this->assertSame('perlu_verifikasi', $unrejected->status);
 
         $log = AuditLog::where('entity_id', $match->id)
-            ->where('action', 'match.unrejected')
+            ->where('action', 'bd.match_unrejected')
             ->latest()
             ->first();
 
@@ -107,6 +108,35 @@ class VerificationServiceUnrejectTest extends TestCase
         $this->assertSame('rejected', $log->old_values['status']);
         $this->assertSame('perlu_verifikasi', $log->new_values['status']);
         $this->assertSame($this->admin->id, $log->user_id);
+    }
+
+    public function test_unrejected_match_rematched_automatically_does_not_mutate_or_duplicate(): void
+    {
+        $match = DocumentMatch::create([
+            'id' => (string) Str::uuid(),
+            'document_id' => $this->doc->id,
+            'indicator_id' => $this->indicator->id,
+            'status' => 'rejected',
+            'match_method' => 'title_similarity',
+            'confidence_score' => 68.0,
+            'match_reasons' => ['test' => true],
+        ]);
+
+        $unrejected = $this->service->unrejectMatch($match->id, $this->admin);
+        $this->assertSame('perlu_verifikasi', $unrejected->status);
+
+        // Jalankan rematching otomatis untuk dokumen ini
+        $engine = app(MatchingEngineService::class);
+        $engine->matchDocument($this->doc);
+
+        // Verifikasi tidak ada duplikasi record (tepat 1 pasangan)
+        $matches = DocumentMatch::where('document_id', $this->doc->id)
+            ->where('indicator_id', $this->indicator->id)
+            ->get();
+
+        $this->assertCount(1, $matches);
+        $this->assertSame($match->id, $matches->first()->id);
+        $this->assertNotSame('rejected', $matches->first()->status);
     }
 
     public function test_livewire_verification_queue_can_execute_unreject_action(): void

@@ -24,7 +24,7 @@ class HeuristicMatchingRule
     public function evaluate(EvidenceDocument $document, LkIndicator $indicator): ?MatchCandidate
     {
         $threshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
-        $verificationThreshold = (float) SystemSetting::get('matching.verification_threshold', 60.0);
+        $reviewThreshold = (float) SystemSetting::get('matching.review_threshold', 60.0);
         $bestCandidate = null;
         $highestScore = 0.0;
 
@@ -92,7 +92,7 @@ class HeuristicMatchingRule
 
             if ($finalScore > $highestScore) {
                 $highestScore = $finalScore;
-                $status = $finalScore >= $threshold ? 'auto' : ($finalScore >= $verificationThreshold ? 'perlu_verifikasi' : 'none');
+                $status = $finalScore >= $threshold ? 'auto' : ($finalScore >= $reviewThreshold ? 'perlu_verifikasi' : 'none');
 
                 $bestCandidate = new MatchCandidate(
                     documentId: $document->id,
@@ -113,7 +113,7 @@ class HeuristicMatchingRule
             }
         }
 
-        $minThreshold = min($threshold, $verificationThreshold);
+        $minThreshold = min($threshold, $reviewThreshold);
         if ($highestScore >= $minThreshold && $bestCandidate !== null && $bestCandidate->status !== 'none') {
             return $bestCandidate;
         }
