@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Exceptions\DuplicateDocumentException;
 use App\Models\User;
 use App\Services\Evidence\EvidenceUploadService;
 use App\Services\Matching\DryRunMatchingService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Livewire\WithFileUploads;
 
 class CariDokumenPage extends Page
@@ -29,6 +31,8 @@ class CariDokumenPage extends Page
     protected static ?int $navigationSort = 2;
 
     public $file = null;
+
+    public int|string|null $year = null;
 
     public bool $hasEvaluated = false;
 
@@ -62,6 +66,8 @@ class CariDokumenPage extends Page
     public function mount(): void
     {
         abort_if(! static::canAccess(), 403, 'Akses Ditolak: Super Admin tidak memiliki izin untuk fitur Cari Dokumen.');
+
+        $this->year = (int) date('Y');
     }
 
     protected function authorizeAccess(): void
@@ -109,6 +115,16 @@ class CariDokumenPage extends Page
             return;
         }
 
+        $this->validate([
+            'year' => 'required|digits:4|integer|min:2000|max:2099',
+        ], [
+            'year.required' => 'Tahun anggaran dokumen wajib diisi.',
+            'year.digits' => 'Tahun harus berupa 4 digit angka (misal: 2026).',
+            'year.integer' => 'Tahun harus berupa angka.',
+            'year.min' => 'Tahun minimal adalah tahun 2000.',
+            'year.max' => 'Tahun maksimal adalah tahun 2099.',
+        ]);
+
         /** @var User $user */
         $user = Auth::user();
 
@@ -116,7 +132,7 @@ class CariDokumenPage extends Page
             /** @var EvidenceUploadService $uploadService */
             $uploadService = app(EvidenceUploadService::class);
             $doc = $uploadService->upload($this->file, [
-                'year' => (int) date('Y'),
+                'year' => (int) $this->year,
                 'document_name' => pathinfo($this->file->getClientOriginalName(), PATHINFO_FILENAME),
             ], $user);
 
@@ -128,19 +144,44 @@ class CariDokumenPage extends Page
                 ->body('Berkas telah disimpan sebagai bukti sah dan sedang diproses oleh antrean pencocokan.')
                 ->success()
                 ->send();
+        } catch (DuplicateDocumentException $e) {
+            Log::warning('Percobaan unggah berkas duplikat pada Cari Dokumen: '.$e->getMessage(), [
+                'user_id' => $user->id,
+                'filename' => $this->file?->getClientOriginalName(),
+                'year' => $this->year,
+            ]);
+
+            $friendlyMessage = 'Berkas ini sudah pernah terdaftar di sistem sebagai bukti resmi. Sistem mencegah penyimpanan berkas ganda yang identik.';
+            $this->errorMessage = $friendlyMessage;
+
+            Notification::make()
+                ->title('Dokumen Sudah Ada')
+                ->body($friendlyMessage)
+                ->warning()
+                ->send();
         } catch (\Throwable $e) {
+            Log::error('Gagal menyimpan dokumen bukti pada Cari Dokumen: '.$e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $user->id,
+                'filename' => $this->file?->getClientOriginalName(),
+                'year' => $this->year,
+            ]);
+
+            $friendlyMessage = 'Terjadi kendala saat menyimpan berkas ke sistem. Silakan periksa kembali berkas Anda atau hubungi administrator.';
+            $this->errorMessage = $friendlyMessage;
+
             Notification::make()
                 ->title('Gagal Menyimpan Dokumen')
-                ->body($e->getMessage())
+                ->body($friendlyMessage)
                 ->danger()
                 ->send();
-            $this->errorMessage = $e->getMessage();
         }
     }
 
     public function resetForm(): void
     {
         $this->file = null;
+        $this->year = (int) date('Y');
         $this->hasEvaluated = false;
         $this->evaluationResult = null;
         $this->isSaved = false;

@@ -6,6 +6,7 @@ namespace App\Services\Matching\Rules;
 
 use App\Models\EvidenceDocument;
 use App\Models\LkIndicator;
+use App\Models\SystemSetting;
 use App\Services\Matching\DTOs\MatchCandidate;
 use App\Services\Matching\TextPreprocessor;
 
@@ -62,6 +63,7 @@ class DeterministicMatchingRule
             if (preg_match($pattern, $source)) {
                 $matchedItem = $indicator->evidenceItems->first();
                 $titleMatched = $this->isTitleMatched($document, $indicator);
+                $reviewScore = (float) SystemSetting::get('matching.review_threshold', 60.0);
 
                 return new MatchCandidate(
                     documentId: $document->id,
@@ -69,7 +71,7 @@ class DeterministicMatchingRule
                     matchedItemId: $matchedItem?->id,
                     status: $titleMatched ? 'confirmed' : 'perlu_verifikasi',
                     matchMethod: 'exact_code',
-                    confidenceScore: $titleMatched ? 100.0 : 70.0,
+                    confidenceScore: $titleMatched ? 100.0 : $reviewScore,
                     matchReasons: [
                         'rule' => 'exact_code',
                         'matched_code' => $code,
@@ -85,6 +87,9 @@ class DeterministicMatchingRule
 
     /**
      * Check if indicator title or evidence items match document name, filename, or extracted text.
+     * Enforces F2.1 Option C:
+     * - Requires at least 2 distinct keywords to match if indicator title/item has >= 2 keywords.
+     * - Requires 1 keyword to match if indicator title/item has only 1 keyword.
      */
     public function isTitleMatched(EvidenceDocument $document, LkIndicator $indicator): bool
     {
@@ -93,10 +98,13 @@ class DeterministicMatchingRule
             $rawTarget .= ' '.($item->resolved_name ?: $item->raw_template_name);
         }
 
-        $targetKeywords = $this->preprocessor->extractKeywords($rawTarget);
-        if (empty($targetKeywords)) {
+        $targetKeywords = array_values(array_unique($this->preprocessor->extractKeywords($rawTarget)));
+        $targetCount = count($targetKeywords);
+        if ($targetCount === 0) {
             return false;
         }
+
+        $minRequired = min(2, $targetCount);
 
         $docSources = array_filter([
             $document->document_name,
@@ -106,9 +114,13 @@ class DeterministicMatchingRule
         $docCombined = implode(' ', $docSources);
         $docNormalized = $this->preprocessor->normalize($docCombined);
 
+        $matchedDistinctCount = 0;
         foreach ($targetKeywords as $keyword) {
             if (preg_match('/\b'.preg_quote($keyword, '/').'\b/u', $docNormalized)) {
-                return true;
+                $matchedDistinctCount++;
+                if ($matchedDistinctCount >= $minRequired) {
+                    return true;
+                }
             }
         }
 

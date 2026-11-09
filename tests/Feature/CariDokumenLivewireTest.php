@@ -10,7 +10,9 @@ use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
 use App\Models\User;
+use App\Services\Evidence\EvidenceUploadService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -191,6 +193,97 @@ class CariDokumenLivewireTest extends TestCase
         $component->assertSet('isSaved', true);
 
         $this->assertSame($docCountBefore + 1, EvidenceDocument::count());
+    }
+
+    public function test_user_can_set_custom_year_when_saving_official_evidence(): void
+    {
+        $uniqueToken = uniqid();
+        $file = $this->createDigitalPdf('Dokumen_Tahun_2025_'.$uniqueToken.'.pdf', 'Dokumen Tahun 2025 '.$uniqueToken);
+
+        $component = Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->set('file', $file)
+            ->set('year', 2025)
+            ->call('evaluateDocument')
+            ->call('saveAsOfficialEvidence');
+
+        $component->assertSet('isSaved', true);
+
+        $savedDoc = EvidenceDocument::where('original_filename', 'Dokumen_Tahun_2025_'.$uniqueToken.'.pdf')->first();
+        $this->assertNotNull($savedDoc);
+        $this->assertSame(2025, (int) $savedDoc->year);
+    }
+
+    public function test_year_must_be_valid_four_digits_number(): void
+    {
+        $uniqueToken = uniqid();
+        $file = $this->createDigitalPdf('Dokumen_Invalid_Year_'.$uniqueToken.'.pdf', 'Dokumen Invalid Year '.$uniqueToken);
+
+        $docCountBefore = EvidenceDocument::count();
+
+        $component = Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->set('file', $file)
+            ->set('year', 25) // Kurang dari 4 digit
+            ->call('evaluateDocument')
+            ->call('saveAsOfficialEvidence');
+
+        $component->assertHasErrors(['year']);
+        $this->assertSame($docCountBefore, EvidenceDocument::count());
+    }
+
+    public function test_duplicate_upload_shows_friendly_message_without_leaking_internal_paths(): void
+    {
+        $uniqueToken = uniqid();
+        $file = $this->createDigitalPdf('Dokumen_Duplikat_'.$uniqueToken.'.pdf', 'Dokumen Duplikat Content '.$uniqueToken);
+
+        // Upload pertama kali agar berkas resmi terdaftar
+        Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->set('file', $file)
+            ->call('evaluateDocument')
+            ->call('saveAsOfficialEvidence')
+            ->assertSet('isSaved', true);
+
+        // Upload kedua kali dengan berkas yang sama
+        $component = Livewire::actingAs($this->admin)
+            ->test(CariDokumenPage::class)
+            ->set('file', $file)
+            ->call('evaluateDocument')
+            ->call('saveAsOfficialEvidence');
+
+        $errorMsg = (string) $component->get('errorMessage');
+        $this->assertNotEmpty($errorMsg);
+        $this->assertStringNotContainsString('file_path', $errorMsg);
+        $this->assertStringNotContainsString('/var/www', $errorMsg);
+        $this->assertStringNotContainsString('evidence/', $errorMsg);
+        $this->assertStringContainsString('sudah pernah terdaftar di sistem', $errorMsg);
+    }
+
+    public function test_generic_exception_shows_friendly_message_and_logs_error(): void
+    {
+        $uniqueToken = uniqid();
+        $file = $this->createDigitalPdf('Dokumen_Crash_'.$uniqueToken.'.pdf', 'Dokumen Crash '.$uniqueToken);
+
+        $mockUploadService = \Mockery::mock(EvidenceUploadService::class);
+        $mockUploadService->shouldReceive('upload')
+            ->andThrow(new \RuntimeException('Sensitive DB connection timeout at /var/www/internal/storage/path'));
+        $this->app->instance(EvidenceUploadService::class, $mockUploadService);
+
+        Log::shouldReceive('error')
+            ->once();
+
+        $component = Livewire::actingAs($this->admin)
+            ->test(CariDokumenPage::class)
+            ->set('file', $file)
+            ->call('evaluateDocument')
+            ->call('saveAsOfficialEvidence');
+
+        $errorMsg = (string) $component->get('errorMessage');
+        $this->assertNotEmpty($errorMsg);
+        $this->assertStringNotContainsString('/var/www/internal/storage/path', $errorMsg);
+        $this->assertStringNotContainsString('Sensitive DB connection timeout', $errorMsg);
+        $this->assertStringContainsString('Terjadi kendala saat menyimpan berkas', $errorMsg);
     }
 
     public function test_super_admin_cannot_initialize_livewire_component(): void

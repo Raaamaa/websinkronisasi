@@ -97,7 +97,7 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
 
         foreach ($lkData as $code => $info) {
             /** @var LembarKerja $lk */
-            $lk = LembarKerja::updateOrCreate(
+            $lk = LembarKerja::firstOrCreate(
                 ['code' => $code, 'period' => 2026],
                 [
                     'name' => $info['name'],

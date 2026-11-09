@@ -65,6 +65,27 @@
                         @endif
                     </div>
 
+                    <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <label for="year-input" class="block text-lg font-semibold text-slate-900 dark:text-white mb-1">
+                            Tahun Anggaran Dokumen
+                        </label>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                            Tahun berlakunya dokumen bukti (default tahun berjalan).
+                        </p>
+                        <input
+                            id="year-input"
+                            wire:model="year"
+                            type="number"
+                            min="2000"
+                            max="2099"
+                            placeholder="2026"
+                            class="block w-full max-w-xs rounded-xl border border-slate-300 bg-white px-4 py-3 text-lg font-semibold text-slate-900 shadow-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500 min-h-[56px] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        >
+                        @error('year')
+                            <p class="mt-2 text-base font-semibold text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div class="flex items-center justify-end gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                         <button
                             type="submit"
@@ -222,23 +243,39 @@
                     </button>
 
                     @if (! $isSaved)
-                        <button
-                            type="button"
-                            wire:click="saveAsOfficialEvidence"
-                            wire:loading.attr="disabled"
-                            class="inline-flex min-h-[56px] w-full sm:w-auto items-center justify-center rounded-xl bg-emerald-600 px-8 py-3 text-base font-bold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50 transition-all cursor-pointer">
-                            <span wire:loading.remove wire:target="saveAsOfficialEvidence" class="flex items-center gap-2">
-                                <x-heroicon-o-arrow-up-on-square class="h-5 w-5" />
-                                Simpan sebagai Bukti Sah
-                            </span>
-                            <span wire:loading wire:target="saveAsOfficialEvidence" class="flex items-center gap-2">
-                                <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Sedang Menyimpan...
-                            </span>
-                        </button>
+                        <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto justify-end">
+                            <div class="flex items-center gap-3 w-full sm:w-auto">
+                                <label for="eval-year" class="text-base font-bold text-slate-800 dark:text-slate-200 shrink-0">
+                                    Tahun Dokumen:
+                                </label>
+                                <input
+                                    id="eval-year"
+                                    wire:model="year"
+                                    type="number"
+                                    min="2000"
+                                    max="2099"
+                                    class="w-32 rounded-xl border border-slate-300 bg-white px-4 py-3 text-lg font-bold text-slate-900 shadow-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500 min-h-[56px] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                >
+                            </div>
+
+                            <button
+                                type="button"
+                                wire:click="saveAsOfficialEvidence"
+                                wire:loading.attr="disabled"
+                                class="inline-flex min-h-[56px] w-full sm:w-auto items-center justify-center rounded-xl bg-emerald-600 px-8 py-3 text-base font-bold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50 transition-all cursor-pointer">
+                                <span wire:loading.remove wire:target="saveAsOfficialEvidence" class="flex items-center gap-2">
+                                    <x-heroicon-o-arrow-up-on-square class="h-5 w-5" />
+                                    Simpan sebagai Bukti Sah
+                                </span>
+                                <span wire:loading wire:target="saveAsOfficialEvidence" class="flex items-center gap-2">
+                                    <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Sedang Menyimpan...
+                                </span>
+                            </button>
+                        </div>
                     @endif
                 </div>
             </div>

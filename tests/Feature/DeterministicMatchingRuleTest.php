@@ -85,8 +85,8 @@ class DeterministicMatchingRuleTest extends TestCase
         $indicator->setRelation('evidenceItems', collect());
 
         $docValid = new EvidenceDocument([
-            'document_name' => 'Surat Keputusan Tim ZI-1.1 WBK Tahun 2026',
-            'original_filename' => 'SK_ZI-1.1.pdf',
+            'document_name' => 'Surat Keputusan Tim Kerja ZI-1.1 WBK Tahun 2026',
+            'original_filename' => 'SK_Tim_Kerja_ZI-1.1.pdf',
         ]);
         $docValid->id = (string) Str::uuid();
 
