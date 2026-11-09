@@ -42,15 +42,15 @@ class DeterministicMatchingRule
     public function evaluateExactCode(EvidenceDocument $document, LkIndicator $indicator): ?MatchCandidate
     {
         $code = trim($indicator->code);
-        if ($code === '') {
-            return null;
+        if ($code === '' || mb_strlen($code) < 3) {
+            return null; // Kode terlalu pendek (misal: "1", "A") rawan bentrok angka biasa
         }
 
         $sources = array_filter([$document->original_filename, $document->document_name]);
         $escapedCode = preg_quote($code, '/');
 
         // Regex boundary: kode harus berdiri sendiri (dibatasi spasi, tanda kurung, underscore, atau tanda titik/dash di akhir)
-        $pattern = '/(?:^|[\s_\[\(])'.$escapedCode.'(?:[\s_\]\)\.\-]|\b)/i';
+        $pattern = '/(?:^|[\s_\[\(])'.$escapedCode.'(?:[\s_\]\)\.\-]|$)/i';
 
         foreach ($sources as $source) {
             if (preg_match($pattern, $source)) {
@@ -81,18 +81,20 @@ class DeterministicMatchingRule
     public function evaluateExactNumber(EvidenceDocument $document, LkIndicator $indicator): ?MatchCandidate
     {
         $docNumber = trim((string) $document->document_number);
-        if ($docNumber === '') {
+        if ($docNumber === '' || mb_strlen($docNumber) < 4) {
             return null;
         }
 
         $cleanDocNum = $this->preprocessor->normalize($docNumber);
-        if ($cleanDocNum === '') {
+        if ($cleanDocNum === '' || mb_strlen($cleanDocNum) < 4) {
             return null;
         }
 
+        $pattern = '/(?:^|[\s_\[\(\/\-])'.preg_quote($cleanDocNum, '/').'(?:[\s_\]\)\.\/\-]|$)/i';
+
         // Cek di judul indikator
         $cleanTitle = $this->preprocessor->normalize($indicator->title);
-        if (str_contains($cleanTitle, $cleanDocNum)) {
+        if (preg_match($pattern, $cleanTitle)) {
             return new MatchCandidate(
                 documentId: $document->id,
                 indicatorId: $indicator->id,
@@ -111,7 +113,7 @@ class DeterministicMatchingRule
         // Cek di setiap item bukti
         foreach ($indicator->evidenceItems as $item) {
             $itemText = $this->preprocessor->normalize($item->resolved_name.' '.$item->raw_template_name);
-            if (str_contains($itemText, $cleanDocNum)) {
+            if (preg_match($pattern, $itemText)) {
                 return new MatchCandidate(
                     documentId: $document->id,
                     indicatorId: $indicator->id,

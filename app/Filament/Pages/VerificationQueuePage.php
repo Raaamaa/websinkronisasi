@@ -29,7 +29,7 @@ class VerificationQueuePage extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        $count = DocumentMatch::where('status', 'auto')->count();
+        $count = DocumentMatch::whereIn('status', ['auto', 'perlu_verifikasi'])->count();
 
         return $count > 0 ? (string) $count : null;
     }
@@ -84,7 +84,7 @@ class VerificationQueuePage extends Page
     }
 
     /**
-     * @return array{pending: int, confirmed: int, rejected: int}
+     * @return array{pending: int, needs_verification: int, confirmed: int, rejected: int}
      */
     public function getStats(): array
     {
@@ -102,6 +102,7 @@ class VerificationQueuePage extends Page
 
         return [
             'pending' => (clone $baseQuery)->where('status', 'auto')->count(),
+            'needs_verification' => (clone $baseQuery)->where('status', 'perlu_verifikasi')->count(),
             'confirmed' => (clone $baseQuery)->where('status', 'confirmed')->count(),
             'rejected' => (clone $baseQuery)->where('status', 'rejected')->count(),
         ];
@@ -237,6 +238,8 @@ class VerificationQueuePage extends Page
             $query->where('confidence_score', '>=', 90);
         } elseif ($this->scoreRange === 'gte_75') {
             $query->where('confidence_score', '>=', 75);
+        } elseif ($this->scoreRange === '60_74') {
+            $query->where('confidence_score', '>=', 60)->where('confidence_score', '<', 75);
         }
 
         if (! empty($this->search)) {
@@ -320,6 +323,53 @@ class VerificationQueuePage extends Page
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+        }
+    }
+
+    public function unrejectMatch(string $matchId): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if ($user === null || ! $user->hasPermission('match.verify')) {
+            Notification::make()
+                ->title('Akses Ditolak')
+                ->body('Anda tidak memiliki wewenang membatalkan penolakan.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $verificationService = app(VerificationService::class);
+            $verificationService->unrejectMatch($matchId, $user);
+
+            Notification::make()
+                ->title('Penolakan Dibatalkan')
+                ->body('Pencocokan berhasil dipulihkan ke antrean verifikasi.')
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Gagal Membatalkan Penolakan')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function unrejectSingleMatch(string $matchId): void
+    {
+        $this->unrejectMatch($matchId);
+    }
+
+    public function unrejectInspectedMatch(): void
+    {
+        if ($this->inspectMatchId !== null) {
+            $id = $this->inspectMatchId;
+            $this->closeInspectModal();
+            $this->unrejectMatch($id);
         }
     }
 

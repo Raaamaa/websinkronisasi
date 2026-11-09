@@ -7,6 +7,8 @@ namespace App\Services\Matching;
 use App\Models\AuditLog;
 use App\Models\DocumentMatch;
 use App\Models\User;
+use DomainException;
+use Illuminate\Support\Facades\DB;
 
 class VerificationService
 {
@@ -15,30 +17,43 @@ class VerificationService
      */
     public function confirmMatch(string $matchId, User $actor): DocumentMatch
     {
-        $match = DocumentMatch::findOrFail($matchId);
-        $oldStatus = $match->status;
+        return DB::transaction(function () use ($matchId, $actor): DocumentMatch {
+            /** @var DocumentMatch $match */
+            $match = DocumentMatch::where('id', $matchId)->lockForUpdate()->firstOrFail();
+            $oldStatus = $match->status;
 
-        $match->update([
-            'status' => 'confirmed',
-            'verified_by' => $actor->id,
-            'verified_at' => now(),
-        ]);
+            // Idempoten jika sudah dikonfirmasi
+            if ($oldStatus === 'confirmed') {
+                return $match;
+            }
 
-        AuditLog::create([
-            'user_id' => $actor->id,
-            'action' => 'match.verified',
-            'entity_type' => 'DocumentMatch',
-            'entity_id' => $match->id,
-            'old_values' => [
-                'status' => $oldStatus,
-            ],
-            'new_values' => [
+            // Invarian #2: Relasi berstatus rejected dilarang keras dikonfirmasi ulang
+            if ($oldStatus === 'rejected') {
+                throw new DomainException("Relasi berstatus 'rejected' tidak dapat dikonfirmasi ulang (Invarian #2).");
+            }
+
+            $match->update([
                 'status' => 'confirmed',
                 'verified_by' => $actor->id,
-            ],
-        ]);
+                'verified_at' => now(),
+            ]);
 
-        return $match;
+            AuditLog::create([
+                'user_id' => $actor->id,
+                'action' => 'match.verified',
+                'entity_type' => 'DocumentMatch',
+                'entity_id' => $match->id,
+                'old_values' => [
+                    'status' => $oldStatus,
+                ],
+                'new_values' => [
+                    'status' => 'confirmed',
+                    'verified_by' => $actor->id,
+                ],
+            ]);
+
+            return $match;
+        });
     }
 
     /**
@@ -46,29 +61,77 @@ class VerificationService
      */
     public function rejectMatch(string $matchId, User $actor): DocumentMatch
     {
-        $match = DocumentMatch::findOrFail($matchId);
-        $oldStatus = $match->status;
+        return DB::transaction(function () use ($matchId, $actor): DocumentMatch {
+            /** @var DocumentMatch $match */
+            $match = DocumentMatch::where('id', $matchId)->lockForUpdate()->firstOrFail();
+            $oldStatus = $match->status;
 
-        $match->update([
-            'status' => 'rejected',
-            'verified_by' => $actor->id,
-            'verified_at' => now(),
-        ]);
+            if ($oldStatus === 'rejected') {
+                return $match;
+            }
 
-        AuditLog::create([
-            'user_id' => $actor->id,
-            'action' => 'match.rejected',
-            'entity_type' => 'DocumentMatch',
-            'entity_id' => $match->id,
-            'old_values' => [
-                'status' => $oldStatus,
-            ],
-            'new_values' => [
+            $match->update([
                 'status' => 'rejected',
                 'verified_by' => $actor->id,
-            ],
-        ]);
+                'verified_at' => now(),
+            ]);
 
-        return $match;
+            AuditLog::create([
+                'user_id' => $actor->id,
+                'action' => 'match.rejected',
+                'entity_type' => 'DocumentMatch',
+                'entity_id' => $match->id,
+                'old_values' => [
+                    'status' => $oldStatus,
+                ],
+                'new_values' => [
+                    'status' => 'rejected',
+                    'verified_by' => $actor->id,
+                ],
+            ]);
+
+            return $match;
+        });
+    }
+
+    /**
+     * Un-reject a rejected match (TASK-21b), restoring it to active verification status.
+     */
+    public function unrejectMatch(string $matchId, User $actor): DocumentMatch
+    {
+        return DB::transaction(function () use ($matchId, $actor): DocumentMatch {
+            /** @var DocumentMatch $match */
+            $match = DocumentMatch::where('id', $matchId)->lockForUpdate()->firstOrFail();
+            $oldStatus = $match->status;
+
+            if ($oldStatus !== 'rejected') {
+                return $match;
+            }
+
+            // Pulihkan status: jika skor >= 75% -> auto, jika tidak -> perlu_verifikasi
+            $newStatus = $match->confidence_score >= 75.0 ? 'auto' : 'perlu_verifikasi';
+
+            $match->update([
+                'status' => $newStatus,
+                'verified_by' => null,
+                'verified_at' => null,
+            ]);
+
+            AuditLog::create([
+                'user_id' => $actor->id,
+                'action' => 'match.unrejected',
+                'entity_type' => 'DocumentMatch',
+                'entity_id' => $match->id,
+                'old_values' => [
+                    'status' => 'rejected',
+                ],
+                'new_values' => [
+                    'status' => $newStatus,
+                    'unrejected_by' => $actor->id,
+                ],
+            ]);
+
+            return $match;
+        });
     }
 }

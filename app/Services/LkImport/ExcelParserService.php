@@ -31,14 +31,23 @@ class ExcelParserService
     {
         $extension = strtolower(pathinfo($originalFilename, PATHINFO_EXTENSION));
 
-        // Strict rejection of macro-enabled files (AC-24)
-        if ($extension === 'xlsm') {
+        // Strict rejection of macro-enabled files (AC-24, T21)
+        if (in_array($extension, ['xlsm', 'xltm', 'xlam', 'xlsb'], true)) {
             throw ValidationException::withMessages([
-                'file' => 'File dengan format makro (.xlsm) ditolak demi keamanan server.',
+                'file' => "File dengan format makro (.{$extension}) ditolak demi keamanan server.",
             ]);
         }
 
         if (file_exists($path)) {
+            // Batas ukuran berkas impor maksimal 20 MB (T21)
+            $maxSizeBytes = 20 * 1024 * 1024;
+            if (filesize($path) > $maxSizeBytes) {
+                throw ValidationException::withMessages([
+                    'file' => 'Ukuran berkas Excel melebihi batas maksimal 20 MB.',
+                ]);
+            }
+
+            // MIME sniffing untuk file makro
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $mime = $finfo ? finfo_file($finfo, $path) : null;
             if ($finfo) {
@@ -47,8 +56,22 @@ class ExcelParserService
 
             if ($mime === 'application/vnd.ms-excel.sheet.macroEnabled.12') {
                 throw ValidationException::withMessages([
-                    'file' => 'File dengan format makro (.xlsm) ditolak demi keamanan server.',
+                    'file' => 'Berkas Excel dengan format makro (.xlsm) ditolak demi keamanan server.',
                 ]);
+            }
+
+            // Deteksi komponen makro VBA tersembunyi pada struktur ZIP berkas Excel (vbaProject.bin)
+            if (class_exists(\ZipArchive::class)) {
+                $zip = new \ZipArchive;
+                if ($zip->open($path) === true) {
+                    if ($zip->locateName('xl/vbaProject.bin') !== false) {
+                        $zip->close();
+                        throw ValidationException::withMessages([
+                            'file' => 'Berkas Excel terdeteksi memuat makro VBA tersembunyi (vbaProject.bin). Impor ditolak!',
+                        ]);
+                    }
+                    $zip->close();
+                }
             }
         }
 

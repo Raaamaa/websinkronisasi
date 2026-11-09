@@ -47,13 +47,13 @@
             </div>
         </div>
 
-        {{-- 3 KPI Executive Cards Formal (Dual-Theme) --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {{-- Menunggu Verifikasi --}}
+        {{-- 4 KPI Executive Cards Formal (Dual-Theme) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {{-- Pencocokan Otomatis --}}
             <button
                 type="button"
                 wire:click="setTab('auto')"
-                class="text-left p-4 rounded-xl border transition-all duration-150 relative bg-white dark:bg-slate-800 shadow-2xs
+                class="text-left p-4 min-h-[56px] rounded-xl border transition-all duration-150 relative bg-white dark:bg-slate-800 shadow-2xs
                     {{ $statusTab === 'auto'
                         ? 'border-sky-600 dark:border-sky-500 ring-2 ring-sky-600 dark:ring-sky-500'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600' }}"
@@ -63,7 +63,7 @@
                         Menunggu Verifikasi
                     </span>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                        Perlu Tindakan
+                        Skor &ge; 75%
                     </span>
                 </div>
                 <div class="mt-2.5 flex items-baseline justify-between">
@@ -71,11 +71,41 @@
                         {{ $stats['pending'] }}
                     </span>
                     <span class="text-xs text-sky-600 dark:text-sky-400 flex items-center gap-1 font-semibold">
-                        Tinjau Antrean &rarr;
+                        Tinjau &rarr;
                     </span>
                 </div>
                 <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-normal">
-                    Hasil pencocokan otomatis skor &ge; 75%
+                    Langsung centang di monitor, siap ditinjau
+                </div>
+            </button>
+
+            {{-- Perlu Verifikasi --}}
+            <button
+                type="button"
+                wire:click="setTab('perlu_verifikasi')"
+                class="text-left p-4 min-h-[56px] rounded-xl border transition-all duration-150 relative bg-white dark:bg-slate-800 shadow-2xs
+                    {{ $statusTab === 'perlu_verifikasi'
+                        ? 'border-indigo-600 dark:border-indigo-500 ring-2 ring-indigo-600 dark:ring-indigo-500'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600' }}"
+            >
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Perlu Verifikasi
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        Skor 60&ndash;74%
+                    </span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span class="text-3xl font-bold font-mono text-slate-900 dark:text-slate-100 tracking-tight">
+                        {{ $stats['needs_verification'] }}
+                    </span>
+                    <span class="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-semibold">
+                        Periksa &rarr;
+                    </span>
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-normal">
+                    Belum centang di monitor, butuh persetujuan
                 </div>
             </button>
 
@@ -83,7 +113,7 @@
             <button
                 type="button"
                 wire:click="setTab('confirmed')"
-                class="text-left p-4 rounded-xl border transition-all duration-150 relative bg-white dark:bg-slate-800 shadow-2xs
+                class="text-left p-4 min-h-[56px] rounded-xl border transition-all duration-150 relative bg-white dark:bg-slate-800 shadow-2xs
                     {{ $statusTab === 'confirmed'
                         ? 'border-emerald-600 dark:border-emerald-500 ring-2 ring-emerald-600 dark:ring-emerald-500'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600' }}"
@@ -113,7 +143,7 @@
             <button
                 type="button"
                 wire:click="setTab('rejected')"
-                class="text-left p-4 rounded-xl border transition-all duration-150 relative bg-white dark:bg-slate-800 shadow-2xs
+                class="text-left p-4 min-h-[56px] rounded-xl border transition-all duration-150 relative bg-white dark:bg-slate-800 shadow-2xs
                     {{ $statusTab === 'rejected'
                         ? 'border-rose-600 dark:border-rose-500 ring-2 ring-rose-600 dark:ring-rose-500'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600' }}"
@@ -146,14 +176,28 @@
                 <button
                     type="button"
                     wire:click="setTab('auto')"
-                    class="px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-2
+                    class="px-4 py-2 min-h-[44px] rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-2
                         {{ $statusTab === 'auto'
                             ? 'bg-sky-600 text-white shadow-2xs'
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
-                    <span>Perlu Ditinjau</span>
+                    <span>Otomatis (&ge; 75%)</span>
                     <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'auto' ? 'bg-amber-500 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
                         {{ $stats['pending'] }}
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    wire:click="setTab('perlu_verifikasi')"
+                    class="px-4 py-2 min-h-[44px] rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-2
+                        {{ $statusTab === 'perlu_verifikasi'
+                            ? 'bg-indigo-600 text-white shadow-2xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                >
+                    <span>Perlu Verifikasi (60&ndash;74%)</span>
+                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'perlu_verifikasi' ? 'bg-indigo-800 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
+                        {{ $stats['needs_verification'] }}
                     </span>
                 </button>
 
@@ -544,9 +588,21 @@
                                                 ✔ Terverifikasi
                                             </span>
                                         @elseif($match->status === 'rejected')
-                                            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold text-xs">
-                                                ✖ Ditolak
-                                            </span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold text-xs">
+                                                    ✖ Ditolak
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    wire:click="unrejectSingleMatch('{{ $match->id }}')"
+                                                    wire:confirm="Batalkan penolakan ini dan pulihkan kembali ke antrean verifikasi?"
+                                                    wire:loading.attr="disabled"
+                                                    class="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg text-xs font-bold transition active:scale-95 shadow-2xs min-h-[44px] cursor-pointer"
+                                                    title="Batalkan Penolakan"
+                                                >
+                                                    <span>Pulihkan</span>
+                                                </button>
+                                            </div>
                                         @endif
                                     </div>
                                 </td>

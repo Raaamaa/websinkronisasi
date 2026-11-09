@@ -38,13 +38,14 @@ class RematchActiveDocumentsJob implements ShouldQueue
             return;
         }
 
-        // Rematch seluruh dokumen terhadap seluruh LK aktif
-        $documents = EvidenceDocument::query()
+        // Rematch seluruh dokumen selesai terhadap seluruh LK aktif dengan chunkById(100)
+        EvidenceDocument::query()
             ->whereNull('deleted_at')
-            ->get();
-
-        foreach ($documents as $doc) {
-            $engine->matchDocument($doc);
-        }
+            ->where('processing_status', 'selesai')
+            ->chunkById(100, function ($documents) use ($engine): void {
+                foreach ($documents as $doc) {
+                    $engine->matchDocument($doc);
+                }
+            });
     }
 }

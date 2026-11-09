@@ -13,6 +13,7 @@ use App\Models\LkImportLog;
 use App\Models\LkImportProfile;
 use App\Models\LkIndicator;
 use App\Models\User;
+use App\Services\LkImport\LkImportService;
 use App\Services\LkImport\Resolvers\YearPlaceholderResolver;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -40,6 +41,8 @@ class ListLkImportProfiles extends ListRecords
     public string $uploadedFileName = 'LKE_ZI_BPS_2026_Final.xlsx';
 
     public string $uploadedFileSize = '1.8 MB';
+
+    public ?string $uploadedFilePath = null;
 
     public ?string $selectedLkId = null;
 
@@ -298,6 +301,53 @@ class ListLkImportProfiles extends ListRecords
                 ->title('Target LK Belum Dipilih')
                 ->body('Silakan pilih Lembar Kerja target terlebih dahulu.')
                 ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (! empty($this->uploadedFilePath) && file_exists($this->uploadedFilePath)) {
+            $importService = app(LkImportService::class);
+            $profile = null;
+            if ($this->selectedProfileId) {
+                $profile = LkImportProfile::find($this->selectedProfileId);
+            }
+            if ($profile === null) {
+                $profile = new LkImportProfile([
+                    'lk_code' => $lk->code,
+                    'sheet_name' => 'LKE',
+                    'header_row' => 1,
+                    'parsing_strategy' => $this->parsingStrategy,
+                    'column_mapping' => [
+                        'code_col' => $this->colCode,
+                        'title_col' => $this->colTitle,
+                        'evidence_items_col' => $this->colEvidence,
+                        'evidence_link_col' => $this->colDriveLink,
+                        'pic_col' => $this->colPic,
+                    ],
+                ]);
+                $profile->id = (string) Str::uuid();
+            }
+
+            if ($this->saveAsTemplate && ! empty($this->newTemplateName)) {
+                $profile->name = trim($this->newTemplateName);
+                $profile->save();
+            }
+
+            $log = $importService->commit(
+                filePath: $this->uploadedFilePath,
+                lk: $lk,
+                profile: $profile,
+                actor: $user,
+                originalFilename: $this->uploadedFileName
+            );
+
+            $this->currentStep = 4;
+
+            Notification::make()
+                ->title('Impor Lembar Kerja Berhasil!')
+                ->body("{$log->imported_indicators} indikator dan {$log->imported_items} butir bukti berhasil disinkronkan ke {$lk->name}. Verifikasi manual tetap utuh (LKIMP-07).")
+                ->success()
                 ->send();
 
             return;

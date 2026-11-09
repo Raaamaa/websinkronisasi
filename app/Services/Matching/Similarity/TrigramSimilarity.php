@@ -56,8 +56,12 @@ class TrigramSimilarity
             return 0.0;
         }
 
-        $intersection = count(array_intersect($t1, $t2));
-        $union = count(array_unique(array_merge($t1, $t2)));
+        // Pastikan multiset deduplikasi sebelum operasi himpunan (N-01)
+        $u1 = array_unique($t1);
+        $u2 = array_unique($t2);
+
+        $intersection = count(array_intersect($u1, $u2));
+        $union = count(array_unique(array_merge($u1, $u2)));
 
         return $union > 0 ? (float) ($intersection / $union) : 0.0;
     }

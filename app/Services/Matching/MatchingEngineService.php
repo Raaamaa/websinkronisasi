@@ -94,16 +94,17 @@ class MatchingEngineService
      */
     public function rematchLk(string $lkId): int
     {
-        $documents = EvidenceDocument::query()
-            ->whereNull('deleted_at')
-            ->get();
-
         $totalMatches = 0;
 
-        foreach ($documents as $document) {
-            $matches = $this->matchDocument($document, $lkId);
-            $totalMatches += $matches->count();
-        }
+        EvidenceDocument::query()
+            ->whereNull('deleted_at')
+            ->where('processing_status', 'selesai')
+            ->chunkById(100, function ($documents) use ($lkId, &$totalMatches): void {
+                foreach ($documents as $document) {
+                    $matches = $this->matchDocument($document, $lkId);
+                    $totalMatches += $matches->count();
+                }
+            });
 
         return $totalMatches;
     }

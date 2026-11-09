@@ -24,6 +24,7 @@ class HeuristicMatchingRule
     public function evaluate(EvidenceDocument $document, LkIndicator $indicator): ?MatchCandidate
     {
         $threshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
+        $verificationThreshold = (float) SystemSetting::get('matching.verification_threshold', 60.0);
         $bestCandidate = null;
         $highestScore = 0.0;
 
@@ -45,7 +46,7 @@ class HeuristicMatchingRule
             // 2. Penalti Perbedaan Tahun (MATCH-03, MATCH-10)
             $lkPeriod = $indicator->lembarKerja?->period;
             $targetYear = null;
-            if ($lkPeriod !== null && is_numeric($lkPeriod) && (int) $lkPeriod > 1900) {
+            if ($lkPeriod !== null && (int) $lkPeriod >= 2000) {
                 $targetYear = (int) $lkPeriod;
             } elseif ($item !== null && ! empty($item->resolved_name) && preg_match('/\b(20\d{2})\b/', $item->resolved_name, $m)) {
                 $targetYear = (int) $m[1];
@@ -54,7 +55,7 @@ class HeuristicMatchingRule
             }
 
             $hasYearPenalty = false;
-            if ($targetYear !== null && $document->year !== null && $document->year !== $targetYear) {
+            if ($targetYear !== null && $document->year !== null && (int) $document->year !== $targetYear) {
                 $titleScore = max(0.0, $titleScore - 20.0);
                 $hasYearPenalty = true;
             }
@@ -91,11 +92,13 @@ class HeuristicMatchingRule
 
             if ($finalScore > $highestScore) {
                 $highestScore = $finalScore;
+                $status = $finalScore >= $threshold ? 'auto' : ($finalScore >= $verificationThreshold ? 'perlu_verifikasi' : 'none');
+
                 $bestCandidate = new MatchCandidate(
                     documentId: $document->id,
                     indicatorId: $indicator->id,
                     matchedItemId: $item?->id,
-                    status: 'auto',
+                    status: $status,
                     matchMethod: $method,
                     confidenceScore: $finalScore,
                     matchReasons: [
@@ -110,7 +113,8 @@ class HeuristicMatchingRule
             }
         }
 
-        if ($highestScore >= $threshold && $bestCandidate !== null) {
+        $minThreshold = min($threshold, $verificationThreshold);
+        if ($highestScore >= $minThreshold && $bestCandidate !== null && $bestCandidate->status !== 'none') {
             return $bestCandidate;
         }
 
