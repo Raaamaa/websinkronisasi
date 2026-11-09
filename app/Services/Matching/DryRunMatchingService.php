@@ -76,7 +76,7 @@ class DryRunMatchingService
         $transientDoc->id = (string) Str::uuid();
 
         $autoThreshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
-        $verifThreshold = (float) SystemSetting::get('matching.verification_threshold', 60.0);
+        $reviewThreshold = (float) SystemSetting::get('matching.review_threshold', 60.0);
 
         $indicators = LkIndicator::with(['evidenceItems', 'lembarKerja'])
             ->whereHas('lembarKerja', fn ($q) => $q->where('is_active', true))
@@ -103,7 +103,7 @@ class DryRunMatchingService
 
             // Cek heuristic
             $heur = $this->heuristicRule->evaluate($transientDoc, $ind);
-            if ($heur !== null && $heur->confidenceScore >= $verifThreshold) {
+            if ($heur !== null && $heur->confidenceScore >= $reviewThreshold) {
                 $candidates->push([
                     'indicator_code' => $ind->code,
                     'indicator_title' => $ind->title,

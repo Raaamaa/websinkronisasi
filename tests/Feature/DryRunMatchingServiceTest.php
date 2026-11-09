@@ -9,6 +9,7 @@ use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Matching\DryRunMatchingService;
 use Illuminate\Http\UploadedFile;
@@ -151,5 +152,53 @@ class DryRunMatchingServiceTest extends TestCase
         // Invarian #2: Database tetap steril dari rekaman transient dry-run
         $this->assertSame($docCountBefore, EvidenceDocument::count());
         $this->assertSame($matchCountBefore, DocumentMatch::count());
+    }
+
+    public function test_evaluate_upload_respects_dynamic_review_threshold_setting(): void
+    {
+        $lk = LembarKerja::firstOrCreate(
+            ['code' => 'DRY-REV', 'period' => 2026],
+            [
+                'name' => 'Lembar Kerja Review Threshold Dry Run',
+                'category' => 'internal',
+                'evaluation_interval' => '12 Bulan',
+                'is_active' => true,
+            ]
+        );
+
+        $indicator = LkIndicator::firstOrCreate(
+            ['lk_id' => $lk->id, 'code' => 'DRY-REV-01'],
+            [
+                'title' => 'Notula Rapat Adhoc Kearsipan Unik Kantor XYZ 2026',
+                'order_index' => 1,
+            ]
+        );
+
+        // Dokumen dengan kemiripan ~57.50% terhadap indikator (di antara 50.0% dan 60.0%)
+        $fileContent = 'Sidang Pleno Kearsipan Unik XYZ';
+        $uploadedFile = UploadedFile::fake()->createWithContent('Sidang_Pleno_Kearsipan_Unik_XYZ.pdf', $fileContent);
+
+        /** @var DryRunMatchingService $service */
+        $service = app(DryRunMatchingService::class);
+
+        // 1. Pada review_threshold default (60.0), dokumen skor ~57.5% tidak lolos ambang
+        SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 60.0]);
+        $resultDefault = $service->evaluateUpload($uploadedFile);
+        $this->assertFalse($resultDefault['matched']);
+        $this->assertCount(0, $resultDefault['results']);
+
+        // 2. Turunkan review_threshold menjadi 50.0 lewat SystemSetting
+        // evaluateUpload harus mengikuti matching.review_threshold baru dan mengembalikan kandidat
+        SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 50.0]);
+        try {
+            $resultLower = $service->evaluateUpload($uploadedFile);
+            $this->assertTrue($resultLower['matched'], 'evaluateUpload harus menghormati penurunan matching.review_threshold ke 50.0');
+            $this->assertCount(1, $resultLower['results']);
+            $this->assertSame('DRY-REV-01', $resultLower['results'][0]['indicator_code']);
+            $this->assertSame('perlu_verifikasi', $resultLower['results'][0]['status']);
+            $this->assertEquals(57.50, $resultLower['results'][0]['score']);
+        } finally {
+            SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 60.0]);
+        }
     }
 }
