@@ -10,6 +10,7 @@ use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -197,5 +198,27 @@ class VerificationQueueLivewireTest extends TestCase
 
         $this->get('/admin/verification-queue')
             ->assertStatus(403);
+    }
+
+    public function test_dynamic_similarity_threshold_updates_badge_and_tab_labels(): void
+    {
+        $this->actingAs($this->admin);
+
+        SystemSetting::updateOrCreate(
+            ['key' => 'matching.similarity_threshold'],
+            ['value' => 80.0, 'description' => 'Ambang batas skor minimal']
+        );
+
+        try {
+            Livewire::test(VerificationQueuePage::class)
+                ->assertSee('80%')
+                ->assertSee('Otomatis (&ge; 80%)', false)
+                ->assertDontSee('&ge; 75%', false);
+        } finally {
+            SystemSetting::updateOrCreate(
+                ['key' => 'matching.similarity_threshold'],
+                ['value' => 75.0, 'description' => 'Ambang batas skor minimal']
+            );
+        }
     }
 }

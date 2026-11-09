@@ -64,7 +64,7 @@
                         Menunggu Verifikasi
                     </span>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                        Skor &ge; 75%
+                        Skor &ge; {{ number_format($similarityThreshold, 0) }}%
                     </span>
                 </div>
                 <div class="mt-2.5 flex items-baseline justify-between">
@@ -182,7 +182,7 @@
                             ? 'bg-sky-600 text-white shadow-2xs'
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
-                    <span>Otomatis (&ge; 75%)</span>
+                    <span>Otomatis (&ge; {{ number_format($similarityThreshold, 0) }}%)</span>
                     <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'auto' ? 'bg-amber-500 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
                         {{ $stats['pending'] }}
                     </span>

@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Models\DocumentMatch;
 use App\Models\LembarKerja;
 use App\Models\LkIndicator;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Matching\VerificationService;
 use Filament\Notifications\Notification;
@@ -234,12 +235,15 @@ class VerificationQueuePage extends Page
             });
         }
 
+        $simThreshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
+        $revThreshold = (float) SystemSetting::get('matching.review_threshold', 60.0);
+
         if ($this->scoreRange === 'gte_90') {
             $query->where('confidence_score', '>=', 90);
         } elseif ($this->scoreRange === 'gte_75') {
-            $query->where('confidence_score', '>=', 75);
+            $query->where('confidence_score', '>=', $simThreshold);
         } elseif ($this->scoreRange === '60_74') {
-            $query->where('confidence_score', '>=', 60)->where('confidence_score', '<', 75);
+            $query->where('confidence_score', '>=', $revThreshold)->where('confidence_score', '<', $simThreshold);
         }
 
         if (! empty($this->search)) {

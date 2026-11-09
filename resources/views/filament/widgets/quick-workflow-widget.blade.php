@@ -119,7 +119,7 @@
                         Pencocokan Cerdas &amp; Verifikasi
                     </h3>
                     <p class="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
-                        Mesin pintar ELKA membaca nomor SK dan kemiripan uraian teks. Jika skor &ge; 75%, dokumen langsung terpetakan dan siap diverifikasi oleh tim penilai.
+                        Mesin pintar ELKA membaca nomor SK dan kemiripan uraian teks. Jika skor &ge; {{ number_format(\App\Models\SystemSetting::get('matching.similarity_threshold', 75.0), 0) }}%, dokumen langsung terpetakan dan siap diverifikasi oleh tim penilai.
                     </p>
                 </div>
 
