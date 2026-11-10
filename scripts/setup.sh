@@ -108,7 +108,7 @@ set_env_key "SEEDER_SUPERADMIN_NIP" "$SEEDER_SUPERADMIN_NIP"
 echo "Membangun container dan memulai service..."
 docker compose build
 # Gunakan --wait untuk memastikan PostgreSQL dan Redis mencapai status healthy sebelum migrasi
-docker compose up -d --wait
+docker compose up -d --wait --wait-timeout 900
 
 echo "Layanan database dan antrean telah siap (healthy). Menjalankan migrasi dan seeder..."
 docker compose exec app php artisan migrate --force

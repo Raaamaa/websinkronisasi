@@ -25,6 +25,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-s", "http://127.0.0.1:8000/up"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 600s
     networks:
       - websinkronisasi_net
 
@@ -49,6 +55,8 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD wajib disetel di .env}
     depends_on:
+      app:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
