@@ -72,6 +72,11 @@ class ProcessEvidenceDocumentJob implements ShouldQueue
                     'error_message' => null,
                 ]);
             } else {
+                Log::warning('ProcessEvidenceDocumentJob extraction yielded empty text', [
+                    'document_id' => $document->id,
+                    'mime_type' => $document->mime_type,
+                ]);
+
                 // AC-07: Scan tanpa teks atau OCR gagal -> status perlu_review_manual
                 $document->update([
                     'extracted_text' => null,
@@ -80,6 +85,11 @@ class ProcessEvidenceDocumentJob implements ShouldQueue
                 ]);
             }
         } catch (Throwable $e) {
+            Log::error('ProcessEvidenceDocumentJob extraction failure: '.$e->getMessage(), [
+                'document_id' => $document->id,
+                'exception' => $e,
+            ]);
+
             // Tangkap semua exception agar antrean tidak gagal fatal / 500
             $document->update([
                 'processing_status' => 'perlu_review_manual',
