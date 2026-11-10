@@ -71,6 +71,53 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
         $this->assertGreaterThanOrEqual(4.5, $contrastActive, 'Teks tab aktif harus memiliki kontras >= 4.5:1');
     }
 
+    public function test_verification_queue_active_tab_badges_have_high_contrast_and_compiled_classes(): void
+    {
+        $viewContent = (string) file_get_contents(resource_path('views/filament/pages/verification-queue.blade.php'));
+        $compiledCss = (string) file_get_contents(public_path('css/tailwind-compiled.css'));
+        $customCss = (string) file_get_contents(public_path('css/filament-custom.css'));
+        $allCss = $compiledCss."\n".$customCss;
+
+        // 1. Badge aktif otomatis tidak boleh memakai bg-amber-500 dengan teks putih (kontras rendah 2.15:1)
+        $this->assertStringNotContainsString(
+            'bg-amber-500 text-white',
+            $viewContent,
+            'Badge tab aktif otomatis tidak boleh memakai bg-amber-500 text-white karena kontras rendah (2.15:1)'
+        );
+
+        // 2. Ekstrak semua badge counter tab status (auto, perlu_verifikasi, confirmed, rejected)
+        preg_match_all(
+            '/<span class="px-2 py-0\.5 text-xs rounded-full \{\{\s*\$statusTab === \'([a-z_]+)\'\s*\?\s*\'([^\']+)\'/s',
+            $viewContent,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        $this->assertCount(4, $matches, 'Keempat badge counter tab status harus ditemukan');
+
+        foreach ($matches as $item) {
+            $tabName = $item[1];
+            $activeClassString = $item[2];
+
+            // Pastikan menggunakan gaya kontras tinggi bg-slate-900
+            $this->assertStringContainsString(
+                'bg-slate-900',
+                $activeClassString,
+                "Badge tab aktif '{$tabName}' harus menggunakan bg-slate-900 untuk kontras tinggi ramah lansia"
+            );
+
+            // Pastikan kelas terdaftar di CSS terpakai
+            $this->assertTrue(
+                str_contains($allCss, '.bg-slate-900'),
+                'Kelas bg-slate-900 harus terdaftar di stylesheet'
+            );
+
+            // Verifikasi rasio kontras teks putih terhadap bg-slate-900 (#0f172a) >= 4.5:1
+            $contrast = $this->calculateContrastRatio('#ffffff', '#0f172a');
+            $this->assertGreaterThanOrEqual(4.5, $contrast, "Kontras badge tab aktif '{$tabName}' harus >= 4.5:1");
+        }
+    }
+
     private function calculateContrastRatio(string $hex1, string $hex2): float
     {
         $l1 = $this->relativeLuminance($hex1);

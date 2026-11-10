@@ -183,7 +183,7 @@
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
                     <span>Otomatis (&ge; {{ number_format($similarityThreshold, 0) }}%)</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'auto' ? 'bg-amber-500 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
+                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'auto' ? 'bg-slate-900 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
                         {{ $stats['pending'] }}
                     </span>
                 </button>
@@ -211,7 +211,7 @@
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
                     <span>Terkonfirmasi</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'confirmed' ? 'bg-emerald-600 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
+                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'confirmed' ? 'bg-slate-900 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
                         {{ $stats['confirmed'] }}
                     </span>
                 </button>
@@ -225,7 +225,7 @@
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
                     <span>Ditolak / Terkunci</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'rejected' ? 'bg-rose-600 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
+                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'rejected' ? 'bg-slate-900 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
                         {{ $stats['rejected'] }}
                     </span>
                 </button>
