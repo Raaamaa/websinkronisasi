@@ -193,11 +193,11 @@
                     wire:click="setTab('perlu_verifikasi')"
                     class="px-4 py-2 min-h-[44px] rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-2
                         {{ $statusTab === 'perlu_verifikasi'
-                            ? 'bg-indigo-600 text-white shadow-2xs'
+                            ? 'bg-sky-600 text-white shadow-2xs'
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
                     <span>Perlu Verifikasi (60&ndash;74%)</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'perlu_verifikasi' ? 'bg-indigo-800 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
+                    <span class="px-2 py-0.5 text-xs rounded-full {{ $statusTab === 'perlu_verifikasi' ? 'bg-slate-900 text-white font-extrabold' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold' }}">
                         {{ $stats['needs_verification'] }}
                     </span>
                 </button>

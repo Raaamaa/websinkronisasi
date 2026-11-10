@@ -572,4 +572,21 @@ html.dark .cell-unfulfilled-interactive:hover {
     background-color: #334155 !important;
 }
 
+/* --- 14. VERIFICATION QUEUE STATUS TABS (WCAG AA >= 4.5:1 CONTRAST) --- */
+button[wire\:click^="setTab"].bg-sky-600 {
+    background-color: #0369a1 !important; /* Sky-700: 5.93:1 contrast against white text */
+    color: #ffffff !important;
+}
+
+/* Guard against legacy or uncompiled indigo classes */
+.bg-indigo-600 {
+    background-color: #3730a3 !important; /* Indigo-800: 8.9:1 contrast against white text */
+    color: #ffffff !important;
+}
+
+.bg-indigo-800 {
+    background-color: #1e1b4b !important; /* Indigo-950: 16.5:1 contrast against white text */
+    color: #ffffff !important;
+}
+
 
