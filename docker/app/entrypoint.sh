@@ -15,5 +15,9 @@ if [ -f "/var/www/html/.env" ]; then
     fi
 fi
 
-exec php artisan serve --host=0.0.0.0 --port=8000
+if [ $# -gt 0 ]; then
+    exec "$@"
+else
+    exec php artisan serve --host=0.0.0.0 --port=8000
+fi
 
