@@ -48,6 +48,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --no-scripts --prefer-dist --optimize-autoloader
 
 COPY . .
+COPY docker/app/uploads.ini /usr/local/etc/php/conf.d/99-uploads.ini
 
 # Adjust storage and bootstrap permissions
 RUN chown -R appuser:appuser /var/www/html/storage /var/www/html/bootstrap/cache

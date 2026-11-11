@@ -6,7 +6,6 @@ namespace App\Services\Matching\Rules;
 
 use App\Models\EvidenceDocument;
 use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Services\Matching\DTOs\MatchCandidate;
 use App\Services\Matching\TextPreprocessor;
 
@@ -63,7 +62,7 @@ class DeterministicMatchingRule
             if (preg_match($pattern, $source)) {
                 $matchedItem = $indicator->evidenceItems->first();
                 $titleMatched = $this->isTitleMatched($document, $indicator);
-                $reviewScore = (float) SystemSetting::get('matching.review_threshold', 60.0);
+                $reviewScore = (float) config('evidence.matching_review_threshold', 60.0);
 
                 return new MatchCandidate(
                     documentId: $document->id,

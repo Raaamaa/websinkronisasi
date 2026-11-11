@@ -17,6 +17,7 @@ use App\Services\Monitor\MonitorMatrixService;
 use App\Services\Search\DocumentSearchService;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -418,12 +419,8 @@ class Phase7SearchAuditAndSettingsTest extends TestCase
 
     public function test_dynamic_similarity_threshold_setting_affects_matching_engine_immediately(): void
     {
-        // Reset setting ke 80.0 (di atas skor 59.39%)
-        $setting = SystemSetting::firstOrCreate(
-            ['key' => 'matching.similarity_threshold'],
-            ['description' => 'Test threshold', 'value' => 80.0]
-        );
-        $setting->update(['value' => 80.0]);
+        Config::set('evidence.matching_suggest_threshold', 80.0);
+        Config::set('evidence.matching_review_threshold', 70.0);
 
         $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
         $indicator = LkIndicator::firstOrCreate(
@@ -442,16 +439,23 @@ class Phase7SearchAuditAndSettingsTest extends TestCase
 
         /** @var MatchingEngineService $engine */
         $engine = app(MatchingEngineService::class);
-        $candidates = $engine->matchDocument($doc);
 
-        // Dengan threshold 80.0, dokumen dengan kemiripan ~59.4% tidak akan lolos menjadi auto
-        $this->assertEmpty($candidates);
+        try {
+            $candidates = $engine->matchDocument($doc);
 
-        // Turunkan threshold secara dinamis ke 55.0
-        $setting->update(['value' => 55.0]);
+            // Dengan threshold 80.0 / review 70.0, dokumen dengan kemiripan ~59.4% tidak akan lolos
+            $this->assertEmpty($candidates);
 
-        $candidatesLowered = $engine->matchDocument($doc);
-        $this->assertNotEmpty($candidatesLowered);
-        $this->assertEquals('auto', $candidatesLowered[0]->status);
+            // Turunkan threshold secara dinamis ke 55.0
+            Config::set('evidence.matching_suggest_threshold', 55.0);
+            Config::set('evidence.matching_review_threshold', 50.0);
+
+            $candidatesLowered = $engine->matchDocument($doc);
+            $this->assertNotEmpty($candidatesLowered);
+            $this->assertEquals('auto', $candidatesLowered[0]->status);
+        } finally {
+            Config::set('evidence.matching_suggest_threshold', 75.0);
+            Config::set('evidence.matching_review_threshold', 60.0);
+        }
     }
 }

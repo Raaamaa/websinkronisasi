@@ -7,12 +7,12 @@ namespace Tests\Feature;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Matching\MatchingEngineService;
 use App\Services\Matching\Rules\DeterministicMatchingRule;
 use App\Services\Matching\TextPreprocessor;
 use App\Services\Monitor\MonitorMatrixService;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -73,7 +73,7 @@ class DeterministicExactCodeDualOptionCTest extends TestCase
         $this->assertNotNull($candidate);
         $this->assertSame('perlu_verifikasi', $candidate->status);
         $this->assertSame('exact_code', $candidate->matchMethod);
-        $this->assertSame((float) SystemSetting::get('matching.review_threshold', 60.0), $candidate->confidenceScore);
+        $this->assertSame((float) config('evidence.matching_review_threshold', 60.0), $candidate->confidenceScore);
         $this->assertFalse($candidate->matchReasons['title_matched'] ?? true);
     }
 
@@ -99,7 +99,7 @@ class DeterministicExactCodeDualOptionCTest extends TestCase
         $this->assertNotNull($candidate);
         $this->assertSame('perlu_verifikasi', $candidate->status);
         $this->assertFalse($candidate->matchReasons['title_matched'] ?? true);
-        $this->assertSame((float) SystemSetting::get('matching.review_threshold', 60.0), $candidate->confidenceScore);
+        $this->assertSame((float) config('evidence.matching_review_threshold', 60.0), $candidate->confidenceScore);
     }
 
     public function test_exact_code_with_two_distinct_keywords_matching_yields_confirmed(): void
@@ -154,7 +154,7 @@ class DeterministicExactCodeDualOptionCTest extends TestCase
 
     public function test_perlu_verifikasi_score_follows_dynamic_system_setting(): void
     {
-        SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 65.0]);
+        Config::set('evidence.matching_review_threshold', 65.0);
 
         try {
             $indicator = new LkIndicator([
@@ -177,7 +177,7 @@ class DeterministicExactCodeDualOptionCTest extends TestCase
             $this->assertSame('perlu_verifikasi', $candidate->status);
             $this->assertSame(65.0, $candidate->confidenceScore);
         } finally {
-            SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 60.0]);
+            Config::set('evidence.matching_review_threshold', 60.0);
         }
     }
 

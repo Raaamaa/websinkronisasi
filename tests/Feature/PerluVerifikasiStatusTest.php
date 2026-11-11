@@ -8,12 +8,12 @@ use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Matching\Rules\HeuristicMatchingRule;
 use App\Services\Matching\Similarity\TrigramSimilarity;
 use App\Services\Matching\TextPreprocessor;
 use App\Services\Monitor\MonitorMatrixService;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -138,20 +138,14 @@ class PerluVerifikasiStatusTest extends TestCase
         $ind->setRelation('evidenceItems', collect());
 
         // Naikkan review_threshold ke 72.0 (di atas skor 69.7%)
-        SystemSetting::updateOrCreate(
-            ['key' => 'matching.review_threshold'],
-            ['value' => 72.0, 'description' => 'Ambang review test']
-        );
+        Config::set('evidence.matching_review_threshold', 72.0);
 
         $candidate = $this->rule->evaluate($doc, $ind);
         // Dengan review_threshold = 72.0, skor 69.7% berada di bawah threshold -> candidate null
         $this->assertNull($candidate, 'Kandidat di bawah matching.review_threshold wajib null');
 
         // Kembalikan review_threshold ke 60.0 -> kandidat diterima sebagai perlu_verifikasi
-        SystemSetting::updateOrCreate(
-            ['key' => 'matching.review_threshold'],
-            ['value' => 60.0, 'description' => 'Ambang review test']
-        );
+        Config::set('evidence.matching_review_threshold', 60.0);
 
         $candidate = $this->rule->evaluate($doc, $ind);
         $this->assertNotNull($candidate);

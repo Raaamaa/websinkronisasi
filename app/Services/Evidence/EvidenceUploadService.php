@@ -8,7 +8,6 @@ use App\Exceptions\DuplicateDocumentException;
 use App\Jobs\ProcessEvidenceDocumentJob;
 use App\Models\AuditLog;
 use App\Models\EvidenceDocument;
-use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
@@ -41,7 +40,7 @@ class EvidenceUploadService
         $fileSize = $file->getSize();
 
         // 1. Validasi Batas Ukuran Berkas (BD-02)
-        $maxSizeMb = (int) SystemSetting::get('upload.max_file_size_mb', 20);
+        $maxSizeMb = (int) config('evidence.max_file_size_mb', 50);
         $maxSizeBytes = $maxSizeMb * 1024 * 1024;
 
         if ($fileSize <= 0 || $fileSize > $maxSizeBytes) {

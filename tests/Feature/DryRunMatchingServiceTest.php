@@ -9,10 +9,10 @@ use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Matching\DryRunMatchingService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -182,14 +182,14 @@ class DryRunMatchingServiceTest extends TestCase
         $service = app(DryRunMatchingService::class);
 
         // 1. Pada review_threshold default (60.0), dokumen skor ~57.5% tidak lolos ambang
-        SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 60.0]);
+        Config::set('evidence.matching_review_threshold', 60.0);
         $resultDefault = $service->evaluateUpload($uploadedFile);
         $this->assertFalse($resultDefault['matched']);
         $this->assertCount(0, $resultDefault['results']);
 
-        // 2. Turunkan review_threshold menjadi 50.0 lewat SystemSetting
-        // evaluateUpload harus mengikuti matching.review_threshold baru dan mengembalikan kandidat
-        SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 50.0]);
+        // 2. Turunkan review_threshold menjadi 50.0 lewat config('evidence.matching_review_threshold')
+        // evaluateUpload harus mengikuti matching_review_threshold baru dan mengembalikan kandidat
+        Config::set('evidence.matching_review_threshold', 50.0);
         try {
             $resultLower = $service->evaluateUpload($uploadedFile);
             $this->assertTrue($resultLower['matched'], 'evaluateUpload harus menghormati penurunan matching.review_threshold ke 50.0');
@@ -198,7 +198,7 @@ class DryRunMatchingServiceTest extends TestCase
             $this->assertSame('perlu_verifikasi', $resultLower['results'][0]['status']);
             $this->assertEquals(57.50, $resultLower['results'][0]['score']);
         } finally {
-            SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 60.0]);
+            Config::set('evidence.matching_review_threshold', 60.0);
         }
     }
 }

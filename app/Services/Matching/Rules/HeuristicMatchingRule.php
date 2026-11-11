@@ -6,7 +6,6 @@ namespace App\Services\Matching\Rules;
 
 use App\Models\EvidenceDocument;
 use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Services\Matching\DTOs\MatchCandidate;
 use App\Services\Matching\Similarity\TrigramSimilarity;
 use App\Services\Matching\TextPreprocessor;
@@ -23,8 +22,8 @@ class HeuristicMatchingRule
      */
     public function evaluate(EvidenceDocument $document, LkIndicator $indicator): ?MatchCandidate
     {
-        $threshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
-        $reviewThreshold = (float) SystemSetting::get('matching.review_threshold', 60.0);
+        $threshold = (float) config('evidence.matching_suggest_threshold', 75.0);
+        $reviewThreshold = (float) config('evidence.matching_review_threshold', 60.0);
         $bestCandidate = null;
         $highestScore = 0.0;
 

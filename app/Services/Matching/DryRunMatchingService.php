@@ -6,7 +6,6 @@ namespace App\Services\Matching;
 
 use App\Models\EvidenceDocument;
 use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Services\Evidence\TextExtractionService;
 use App\Services\Matching\Rules\DeterministicMatchingRule;
 use App\Services\Matching\Rules\HeuristicMatchingRule;
@@ -75,8 +74,8 @@ class DryRunMatchingService
         ]);
         $transientDoc->id = (string) Str::uuid();
 
-        $autoThreshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
-        $reviewThreshold = (float) SystemSetting::get('matching.review_threshold', 60.0);
+        $autoThreshold = (float) config('evidence.matching_suggest_threshold', 75.0);
+        $reviewThreshold = (float) config('evidence.matching_review_threshold', 60.0);
 
         $indicators = LkIndicator::with(['evidenceItems', 'lembarKerja'])
             ->whereHas('lembarKerja', fn ($q) => $q->where('is_active', true))

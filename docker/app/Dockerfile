@@ -49,6 +49,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-interaction --no-scripts --prefer-dist
 
 COPY . .
+COPY docker/app/uploads.ini /usr/local/etc/php/conf.d/99-uploads.ini
 
 USER appuser
 
