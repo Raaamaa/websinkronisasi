@@ -38,6 +38,20 @@ class EvidenceDocument extends Model
         'processing_status',
         'error_message',
         'uploaded_by',
+        'approval_status',
+        'approval_notes',
+        'approved_by',
+        'approved_at',
+        'source_type',
+        'drive_file_id',
+        'drive_folder_id',
+        'drive_md5_checksum',
+        'drive_modified_at',
+    ];
+
+    protected $attributes = [
+        'approval_status' => 'menunggu',
+        'source_type' => 'upload',
     ];
 
     /**
@@ -57,6 +71,8 @@ class EvidenceDocument extends Model
         return [
             'year' => 'integer',
             'file_size_bytes' => 'integer',
+            'approved_at' => 'datetime',
+            'drive_modified_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -68,9 +84,24 @@ class EvidenceDocument extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     public function matches(): HasMany
     {
         return $this->hasMany(DocumentMatch::class, 'document_id');
+    }
+
+    public function lkLinks(): HasMany
+    {
+        return $this->hasMany(DocumentLkLink::class, 'document_id');
+    }
+
+    public function officialLkLinks(): HasMany
+    {
+        return $this->lkLinks()->whereIn('link_source', DocumentLkLink::OFFICIAL_SOURCES);
     }
 
     /**

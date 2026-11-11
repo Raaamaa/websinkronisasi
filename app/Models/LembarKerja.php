@@ -63,6 +63,16 @@ class LembarKerja extends Model
         return $this->hasMany(LkIndicator::class, 'lk_id');
     }
 
+    public function documentLinks(): HasMany
+    {
+        return $this->hasMany(DocumentLkLink::class, 'lk_id');
+    }
+
+    public function driveSyncFolders(): HasMany
+    {
+        return $this->hasMany(DriveSyncFolder::class, 'lk_id');
+    }
+
     /**
      * Import logs for this LK.
      */
