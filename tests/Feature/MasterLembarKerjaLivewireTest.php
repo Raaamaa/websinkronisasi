@@ -37,14 +37,15 @@ class MasterLembarKerjaLivewireTest extends TestCase
             ['email' => 'admin.lk.test@bps.go.id'],
             [
                 'id' => (string) Str::uuid(),
-                'name' => 'Admin Operasional LK',
-                'role' => 'admin',
+                'name' => 'Super Admin Master LK',
+                'role' => 'super_admin',
                 'is_active' => true,
             ]
         );
         if ($this->admin->trashed()) {
             $this->admin->restore();
         }
+        $this->admin->update(['role' => 'super_admin', 'is_active' => true]);
 
         $this->lk = LembarKerja::firstOrCreate(
             ['code' => 'ZI', 'period' => 2026],

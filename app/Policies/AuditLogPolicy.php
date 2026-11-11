@@ -11,12 +11,12 @@ class AuditLogPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->is_active && $user->hasPermission('audit.view');
+        return $user->is_active && $user->deleted_at === null && $user->hasPermission('audit.view');
     }
 
     public function view(User $user, AuditLog $auditLog): bool
     {
-        return $user->is_active && $user->hasPermission('audit.view');
+        return $user->is_active && $user->deleted_at === null && $user->hasPermission('audit.view');
     }
 
     public function create(User $user): bool

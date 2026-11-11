@@ -36,31 +36,7 @@ class LembarKerjaResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    public static function canViewAny(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        return $user !== null && in_array($user->role, ['super_admin', 'admin'], true) && $user->is_active;
-    }
-
-    public static function canCreate(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        return $user !== null && $user->role === 'super_admin' && $user->is_active;
-    }
-
-    public static function canEdit($record): bool
-    {
-        return self::canCreate();
-    }
-
-    public static function canDelete($record): bool
-    {
-        return self::canCreate();
-    }
+    // Otorisasi mengikuti App\Policies\LembarKerjaPolicy via Filament::can().
 
     public static function form(Form $form): Form
     {

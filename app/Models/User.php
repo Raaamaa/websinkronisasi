@@ -128,7 +128,7 @@ class User extends Authenticatable implements FilamentUser, HasName
     }
 
     /**
-     * Check granular permission based on RBAC matrix (RBAC.md Bagian 3).
+     * Check granular permission based on RBAC matrix.
      */
     public function hasPermission(string $permission): bool
     {
@@ -136,26 +136,35 @@ class User extends Authenticatable implements FilamentUser, HasName
             return false;
         }
 
-        // Super Admin memiliki semua akses KECUALI mengunggah dokumen matching (RBAC.md)
-        if ($this->isSuperAdmin()) {
-            if ($permission === 'evidence.upload') {
-                return false;
-            }
-
-            return true;
-        }
+        $superAdminPermissions = [
+            'monitor.view',
+            'evidence.view_link',
+            'evidence.delete',
+            'evidence.verify',
+            'evidence.manage_markup',
+            'lk.manage',
+            'lk.indicator_manage',
+            'lk.manage_drive_links',
+            'audit.view',
+            'settings.manage',
+            'user.manage',
+            'match.manual_create',
+            'match.manual_delete',
+            'match.rematch',
+        ];
 
         $adminPermissions = [
             'monitor.view',
             'evidence.search',
             'evidence.view_link',
             'evidence.upload',
+            'evidence.verify',
+            'evidence.manage_markup',
             'lk.manage_drive_links',
-            'match.verify',
+            'drive.sync',
             'match.manual_create',
             'match.manual_delete',
             'match.rematch',
-            'user.toggle_pegawai',
         ];
 
         $pegawaiPermissions = [
@@ -163,7 +172,12 @@ class User extends Authenticatable implements FilamentUser, HasName
             'evidence.search',
             'evidence.view_link',
             'evidence.upload',
+            'evidence.revise_own',
         ];
+
+        if ($this->isSuperAdmin()) {
+            return in_array($permission, $superAdminPermissions, true);
+        }
 
         if ($this->isAdmin()) {
             return in_array($permission, $adminPermissions, true);

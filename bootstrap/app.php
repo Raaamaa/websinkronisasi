@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Middleware\AuthorizePermission;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsurePasswordChanged;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,6 +32,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             EnsureAccountIsActive::class,
         ]);
+
+        $middleware->prependToPriorityList(
+            AuthenticatesRequests::class,
+            EnsureAccountIsActive::class,
+        );
 
         $middleware->alias([
             'active' => EnsureAccountIsActive::class,

@@ -11,12 +11,16 @@ class LkIndicatorPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->is_active;
+        return $user->is_active
+            && $user->deleted_at === null
+            && ($user->hasPermission('lk.indicator_manage') || $user->hasPermission('lk.manage_drive_links'));
     }
 
     public function view(User $user, LkIndicator $indicator): bool
     {
-        return $user->is_active;
+        return $user->is_active
+            && $user->deleted_at === null
+            && ($user->hasPermission('lk.indicator_manage') || $user->hasPermission('lk.manage_drive_links'));
     }
 
     public function create(User $user): bool

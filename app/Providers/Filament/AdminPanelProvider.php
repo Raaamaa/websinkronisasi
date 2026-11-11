@@ -55,8 +55,8 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
-                Authenticate::class,
                 EnsureAccountIsActive::class,
+                Authenticate::class,
                 EnsurePasswordChanged::class,
             ]);
     }

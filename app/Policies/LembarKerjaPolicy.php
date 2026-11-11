@@ -11,12 +11,12 @@ class LembarKerjaPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->is_active;
+        return $user->is_active && $user->deleted_at === null && $user->hasPermission('lk.manage');
     }
 
     public function view(User $user, LembarKerja $lembarKerja): bool
     {
-        return $user->is_active;
+        return $user->is_active && $user->deleted_at === null && $user->hasPermission('lk.manage');
     }
 
     public function create(User $user): bool

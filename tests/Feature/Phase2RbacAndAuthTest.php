@@ -102,7 +102,7 @@ class Phase2RbacAndAuthTest extends TestCase
      */
     public function test_super_admin_can_access_change_password_form(): void
     {
-        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $superAdmin = User::where('role', 'super_admin')->where('is_active', true)->firstOrFail();
         try {
             $superAdmin->update(['must_change_password' => true]);
 
@@ -116,7 +116,7 @@ class Phase2RbacAndAuthTest extends TestCase
 
     public function test_super_admin_can_successfully_change_password_and_clears_quarantine_flag(): void
     {
-        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $superAdmin = User::where('role', 'super_admin')->where('is_active', true)->firstOrFail();
         $origHash = $superAdmin->password_hash;
 
         try {
@@ -155,7 +155,7 @@ class Phase2RbacAndAuthTest extends TestCase
      */
     public function test_user_with_must_change_password_is_redirected_when_accessing_admin(): void
     {
-        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $superAdmin = User::where('role', 'super_admin')->where('is_active', true)->firstOrFail();
         try {
             $superAdmin->update(['must_change_password' => true]);
 
@@ -184,26 +184,25 @@ class Phase2RbacAndAuthTest extends TestCase
         );
 
         // First request is allowed
-        $this->actingAs($pegawai)->get('/test-protected-route')->assertStatus(200);
+        $this->actingAs($pegawai)->get('/admin/monitor-matrix')->assertStatus(200);
 
         // Admin deactivates pegawai
         $pegawai->update(['is_active' => false]);
 
         // Subsequent request immediately rejected with 403
-        $this->actingAs($pegawai)->get('/test-protected-route')->assertStatus(403);
+        $this->actingAs($pegawai)->get('/admin/monitor-matrix')->assertStatus(403);
         $this->assertGuest();
     }
 
     /**
-     * Slice 4: TSK-204 - Middleware AuthorizePermission blocks Pegawai from admin actions (AC-01).
+     * Slice 4: TSK-204 - RBAC server-side blocks Pegawai from admin/verifier actions (AC-01).
      */
     public function test_pegawai_cannot_access_endpoint_requiring_admin_permission_returns_403(): void
     {
         $pegawai = User::where('email', 'pegawai.sample@bps.go.id')->firstOrFail();
-        $pegawai->update(['is_active' => true]);
+        $pegawai->update(['is_active' => true, 'must_change_password' => false]);
 
-        // Permission 'evidence.upload' is only for admin & super_admin
-        $response = $this->actingAs($pegawai)->post('/test-admin-only-action');
+        $response = $this->actingAs($pegawai)->get('/admin/verification-queue');
         $response->assertStatus(403);
     }
 
@@ -221,7 +220,7 @@ class Phase2RbacAndAuthTest extends TestCase
             ]
         );
 
-        $response = $this->actingAs($admin)->post('/test-admin-only-action');
+        $response = $this->actingAs($admin)->get('/admin/verification-queue');
         $response->assertStatus(200);
     }
 
@@ -232,7 +231,7 @@ class Phase2RbacAndAuthTest extends TestCase
     {
         $admin = User::where('role', 'admin')->firstOrFail();
         $pegawai = User::where('role', 'pegawai')->firstOrFail();
-        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $superAdmin = User::where('role', 'super_admin')->where('is_active', true)->firstOrFail();
 
         $manager = app(UserManagerService::class);
 
@@ -261,7 +260,7 @@ class Phase2RbacAndAuthTest extends TestCase
 
     public function test_super_admin_cannot_deactivate_self(): void
     {
-        $superAdmin = User::where('role', 'super_admin')->firstOrFail();
+        $superAdmin = User::where('role', 'super_admin')->where('is_active', true)->firstOrFail();
         $manager = app(UserManagerService::class);
 
         $this->expectException(\InvalidArgumentException::class);

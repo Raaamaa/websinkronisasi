@@ -10,17 +10,17 @@ class UserPolicy
 {
     public function viewAny(User $actor): bool
     {
-        return $actor->is_active && ($actor->isSuperAdmin() || $actor->isAdmin());
+        return $actor->is_active && $actor->deleted_at === null && $actor->isSuperAdmin();
     }
 
     public function view(User $actor, User $target): bool
     {
-        return $actor->is_active && ($actor->isSuperAdmin() || $actor->isAdmin());
+        return $actor->is_active && $actor->deleted_at === null && $actor->isSuperAdmin();
     }
 
     public function create(User $actor): bool
     {
-        return $actor->is_active && $actor->isSuperAdmin();
+        return $actor->is_active && $actor->deleted_at === null && $actor->isSuperAdmin();
     }
 
     public function update(User $actor, User $target): bool

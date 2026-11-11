@@ -132,9 +132,7 @@ class UserManagementLivewireTest extends TestCase
     {
         $this->actingAs($this->admin);
 
-        Livewire::test(ListUsers::class)
-            ->call('openEditDrawer', (string) $this->superAdmin->id)
-            ->assertSet('editingUserId', null);
+        $this->get('/admin/users')->assertForbidden();
     }
 
     public function test_super_admin_can_add_new_user(): void

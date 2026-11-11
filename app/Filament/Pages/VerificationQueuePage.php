@@ -81,7 +81,7 @@ class VerificationQueuePage extends Page
         $user = Auth::user();
 
         // RBAC.md & MATCH-04: Hanya Super Admin dan Admin yang dapat mengakses antrean verifikasi
-        return $user !== null && $user->is_active && $user->hasPermission('match.verify');
+        return $user !== null && $user->is_active && $user->deleted_at === null && $user->hasPermission('evidence.verify');
     }
 
     /**
@@ -269,7 +269,7 @@ class VerificationQueuePage extends Page
         /** @var User|null $user */
         $user = Auth::user();
 
-        if ($user === null || ! $user->hasPermission('match.verify')) {
+        if ($user === null || ! $user->hasPermission('evidence.verify')) {
             Notification::make()
                 ->title('Akses Ditolak')
                 ->body('Anda tidak memiliki wewenang memverifikasi pencocokan.')
@@ -302,7 +302,7 @@ class VerificationQueuePage extends Page
         /** @var User|null $user */
         $user = Auth::user();
 
-        if ($user === null || ! $user->hasPermission('match.verify')) {
+        if ($user === null || ! $user->hasPermission('evidence.verify')) {
             Notification::make()
                 ->title('Akses Ditolak')
                 ->body('Anda tidak memiliki wewenang menolak pencocokan.')
@@ -335,7 +335,7 @@ class VerificationQueuePage extends Page
         /** @var User|null $user */
         $user = Auth::user();
 
-        if ($user === null || ! $user->hasPermission('match.verify')) {
+        if ($user === null || ! $user->hasPermission('evidence.verify')) {
             Notification::make()
                 ->title('Akses Ditolak')
                 ->body('Anda tidak memiliki wewenang membatalkan penolakan.')
@@ -382,7 +382,7 @@ class VerificationQueuePage extends Page
         /** @var User|null $user */
         $user = Auth::user();
 
-        if ($user === null || ! $user->hasPermission('match.verify')) {
+        if ($user === null || ! $user->hasPermission('evidence.verify')) {
             Notification::make()
                 ->title('Akses Ditolak')
                 ->body('Anda tidak memiliki wewenang memverifikasi pencocokan.')
@@ -423,7 +423,7 @@ class VerificationQueuePage extends Page
         /** @var User|null $user */
         $user = Auth::user();
 
-        if ($user === null || ! $user->hasPermission('match.verify')) {
+        if ($user === null || ! $user->hasPermission('evidence.verify')) {
             Notification::make()
                 ->title('Akses Ditolak')
                 ->body('Anda tidak memiliki wewenang menolak pencocokan.')

@@ -34,22 +34,7 @@ class UserResource extends Resource
     /**
      * Pegawai tidak berwenang melihat menu Pengguna (RBAC.md).
      */
-    public static function canViewAny(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        return $user !== null && in_array($user->role, ['super_admin', 'admin'], true) && $user->is_active;
-    }
-
-    public static function canCreate(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        // Super Admin dapat menambahkan akun admin/pengguna baru secara manual
-        return $user !== null && $user->isSuperAdmin() && $user->is_active;
-    }
+    // Otorisasi mengikuti App\Policies\UserPolicy via Filament::can().
 
     public static function form(Form $form): Form
     {

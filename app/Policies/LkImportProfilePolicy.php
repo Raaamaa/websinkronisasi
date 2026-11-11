@@ -11,36 +11,36 @@ class LkImportProfilePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->is_active && $user->isSuperAdmin();
+        return $user->is_active && $user->deleted_at === null && $user->isSuperAdmin();
     }
 
     public function view(User $user, LkImportProfile $profile): bool
     {
-        return $user->is_active && $user->isSuperAdmin();
+        return $user->is_active && $user->deleted_at === null && $user->isSuperAdmin();
     }
 
     public function create(User $user): bool
     {
-        return $user->is_active && $user->isSuperAdmin();
+        return $user->is_active && $user->deleted_at === null && $user->isSuperAdmin();
     }
 
     public function update(User $user, LkImportProfile $profile): bool
     {
-        return $user->is_active && $user->isSuperAdmin();
+        return $user->is_active && $user->deleted_at === null && $user->isSuperAdmin();
     }
 
     public function delete(User $user, LkImportProfile $profile): bool
     {
-        return $user->is_active && $user->isSuperAdmin();
+        return $user->is_active && $user->deleted_at === null && $user->isSuperAdmin();
     }
 
     public function restore(User $user, LkImportProfile $profile): bool
     {
-        return $user->is_active && $user->isSuperAdmin();
+        return $user->is_active && $user->deleted_at === null && $user->isSuperAdmin();
     }
 
     public function forceDelete(User $user, LkImportProfile $profile): bool
     {
-        return $user->is_active && $user->isSuperAdmin();
+        return $user->is_active && $user->deleted_at === null && $user->isSuperAdmin();
     }
 }

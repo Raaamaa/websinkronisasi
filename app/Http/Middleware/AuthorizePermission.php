@@ -17,7 +17,7 @@ class AuthorizePermission
     {
         $user = $request->user();
 
-        if ($user === null || ! $user->hasPermission($permission)) {
+        if ($user === null || ! $user->is_active || $user->deleted_at !== null || ! $user->hasPermission($permission)) {
             abort(403, 'Anda tidak memiliki hak akses untuk tindakan ini.');
         }
 

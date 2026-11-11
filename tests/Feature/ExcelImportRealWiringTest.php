@@ -38,10 +38,11 @@ class ExcelImportRealWiringTest extends TestCase
             [
                 'id' => (string) Str::uuid(),
                 'name' => 'Admin Real Wiring',
-                'role' => 'admin',
+                'role' => 'super_admin',
                 'is_active' => true,
             ]
         );
+        $this->admin->update(['role' => 'super_admin', 'is_active' => true]);
 
         $this->lk = LembarKerja::firstOrCreate(
             ['code' => 'TEST-WIRING', 'period' => 2026],

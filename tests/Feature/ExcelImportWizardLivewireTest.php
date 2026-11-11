@@ -42,13 +42,14 @@ class ExcelImportWizardLivewireTest extends TestCase
             [
                 'id' => (string) Str::uuid(),
                 'name' => 'Admin Wizard',
-                'role' => 'admin',
+                'role' => 'super_admin',
                 'is_active' => true,
             ]
         );
         if ($this->admin->trashed()) {
             $this->admin->restore();
         }
+        $this->admin->update(['role' => 'super_admin', 'is_active' => true]);
 
         $this->lk = LembarKerja::firstOrCreate(
             ['code' => 'ZI', 'period' => 2026],

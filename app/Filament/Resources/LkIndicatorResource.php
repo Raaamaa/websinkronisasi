@@ -7,7 +7,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\LkIndicatorResource\Pages;
 use App\Models\AuditLog;
 use App\Models\LkIndicator;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -35,32 +34,7 @@ class LkIndicatorResource extends Resource
 
     protected static ?int $navigationSort = 8;
 
-    public static function canViewAny(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        // Hanya Super Admin dan Admin yang dapat mengelola link drive LK (RBAC.md)
-        return $user !== null && in_array($user->role, ['super_admin', 'admin'], true) && $user->is_active;
-    }
-
-    public static function canCreate(): bool
-    {
-        return self::canViewAny();
-    }
-
-    public static function canEdit($record): bool
-    {
-        return self::canViewAny();
-    }
-
-    public static function canDelete($record): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        return $user !== null && $user->role === 'super_admin' && $user->is_active;
-    }
+    // Otorisasi mengikuti App\Policies\LkIndicatorPolicy via Filament::can().
 
     public static function form(Form $form): Form
     {

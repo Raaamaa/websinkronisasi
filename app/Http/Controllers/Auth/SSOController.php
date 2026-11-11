@@ -36,7 +36,7 @@ class SSOController extends Controller
     public function mockLogin(): Response
     {
         if (! app()->environment(['local', 'testing'])) {
-            abort(403, 'Halaman simulasi SSO hanya tersedia di lingkungan lokal atau testing.');
+            abort(404);
         }
 
         return response(

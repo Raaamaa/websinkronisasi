@@ -351,7 +351,7 @@ class GuciStyleLoginTest extends TestCase
     }
 
     /**
-     * 15. Halaman /auth/sso/mock ditolak 403 atau 404 saat bukan di lingkungan local/testing (T3).
+     * 15. Halaman /auth/sso/mock-login ditolak 404 saat bukan di lingkungan local/testing.
      */
     public function test_mock_login_view_is_rejected_outside_local_or_testing(): void
     {
@@ -359,8 +359,8 @@ class GuciStyleLoginTest extends TestCase
         $this->app->detectEnvironment(fn () => 'production');
 
         try {
-            $response = $this->get('/auth/sso/mock');
-            $this->assertContains($response->getStatusCode(), [403, 404]);
+            $response = $this->get('/auth/sso/mock-login');
+            $response->assertNotFound();
         } finally {
             $this->app->detectEnvironment(fn () => $origEnv);
         }

@@ -95,8 +95,8 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_01_pegawai_cannot_add_or_delete_matches(): void
     {
-        $responseAdd = $this->actingAs($this->pegawai)->post('/test-admin-only-action');
-        $responseAdd->assertForbidden();
+        $responseIndicators = $this->actingAs($this->pegawai)->get('/admin/lk-indicators');
+        $responseIndicators->assertForbidden();
 
         $responseQueue = $this->actingAs($this->pegawai)->get('/admin/verification-queue');
         $responseQueue->assertForbidden();
@@ -513,7 +513,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         ]);
 
         // First request is allowed
-        $this->actingAs($targetUser)->get('/test-protected-route')->assertOk();
+        $this->actingAs($targetUser)->get('/admin/monitor-matrix')->assertOk();
 
         // Admin deactivates targetUser
         /** @var UserManagerService $manager */
@@ -521,7 +521,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $manager->toggleActiveStatus($this->superAdmin, $targetUser, false);
 
         // Subsequent request immediately rejected with 403
-        $this->actingAs($targetUser)->get('/test-protected-route')->assertForbidden();
+        $this->actingAs($targetUser)->get('/admin/monitor-matrix')->assertForbidden();
     }
 
     /**

@@ -49,13 +49,10 @@ class CariDokumenPage extends Page
         /** @var User|null $user */
         $user = Auth::user();
 
-        // RBAC.md:83 & PRD:90: Super Admin TIDAK boleh memakai Cari Dokumen (tanpa izin evidence.upload).
-        // Hanya Admin dan Pegawai yang memiliki hak akses.
         return $user !== null
             && $user->is_active
-            && ! $user->isSuperAdmin()
-            && in_array($user->role, ['admin', 'pegawai'], true)
-            && $user->hasPermission('evidence.upload');
+            && $user->deleted_at === null
+            && $user->hasPermission('evidence.search');
     }
 
     public function boot(): void

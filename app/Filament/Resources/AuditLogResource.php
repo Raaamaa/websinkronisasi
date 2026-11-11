@@ -6,7 +6,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AuditLogResource\Pages;
 use App\Models\AuditLog;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -15,7 +14,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 
 class AuditLogResource extends Resource
 {
@@ -36,13 +34,7 @@ class AuditLogResource extends Resource
     /**
      * Jejak audit HANYA dapat diakses oleh Super Admin (AUDIT-03, RBAC.md).
      */
-    public static function canViewAny(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        return $user !== null && $user->isSuperAdmin() && $user->is_active;
-    }
+    // View authorization mengikuti App\Policies\AuditLogPolicy via Filament::can().
 
     public static function canCreate(): bool
     {

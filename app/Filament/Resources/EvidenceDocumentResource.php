@@ -33,36 +33,7 @@ class EvidenceDocumentResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    public static function canViewAny(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        return $user !== null && in_array($user->role, ['super_admin', 'admin', 'pegawai'], true) && $user->is_active;
-    }
-
-    public static function canCreate(): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        // Seluruh peran aktif (super_admin, admin, pegawai) dapat mengunggah bukti dukung
-        return $user !== null && in_array($user->role, ['super_admin', 'admin', 'pegawai'], true) && $user->is_active;
-    }
-
-    public static function canEdit($record): bool
-    {
-        return false; // Dokumen bersifat immutable setelah diunggah demi integritas audit
-    }
-
-    public static function canDelete($record): bool
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        // BD-09: Penghapusan master BD hanya oleh super admin
-        return $user !== null && $user->role === 'super_admin' && $user->is_active;
-    }
+    // Otorisasi mengikuti App\Policies\EvidenceDocumentPolicy via Filament::can().
 
     public static function form(Form $form): Form
     {
