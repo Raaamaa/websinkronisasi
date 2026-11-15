@@ -13,6 +13,7 @@ class DuplicateDocumentException extends Exception
 {
     public function __construct(
         public readonly EvidenceDocument $existingDocument,
+        public readonly ?array $existingData = null,
         string $message = 'Dokumen dengan konten identik sudah ada di sistem (Duplikat ditolak).'
     ) {
         parent::__construct($message);
