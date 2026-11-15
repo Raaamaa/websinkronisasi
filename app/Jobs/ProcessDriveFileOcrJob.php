@@ -8,6 +8,7 @@ use App\Models\EvidenceDocument;
 use App\Services\Evidence\Extractors\TesseractOcrExtractor;
 use App\Services\Matching\MatchingEngineService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -28,10 +29,22 @@ class ProcessDriveFileOcrJob implements ShouldQueue
 
     public function handle(?TesseractOcrExtractor $extractor = null, ?MatchingEngineService $matchingEngine = null): void
     {
-        // Antrean serial: kunci 1 berkas per waktu
-        Cache::lock('drive_ocr_serial_lock', 180)->block(120, function () use ($extractor, $matchingEngine): void {
-            $this->processOcr($extractor, $matchingEngine);
-        });
+        try {
+            // Antrean serial: kunci 1 berkas per waktu
+            Cache::lock('drive_ocr_serial_lock', 180)->block(120, function () use ($extractor, $matchingEngine): void {
+                $this->processOcr($extractor, $matchingEngine);
+            });
+        } catch (LockTimeoutException) {
+            EvidenceDocument::where('id', $this->documentId)->update([
+                'processing_status' => 'perlu_review_manual',
+                'error_message' => 'Antrean OCR sibuk (batas waktu kunci terlampaui). Memerlukan peninjauan manual.',
+            ]);
+        } catch (Throwable $e) {
+            EvidenceDocument::where('id', $this->documentId)->update([
+                'processing_status' => 'perlu_review_manual',
+                'error_message' => 'Kegagalan pemrosesan dokumen: '.$e->getMessage(),
+            ]);
+        }
     }
 
     protected function processOcr(?TesseractOcrExtractor $extractor, ?MatchingEngineService $matchingEngine): void

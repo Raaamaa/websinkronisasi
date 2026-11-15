@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -56,7 +57,7 @@ class GoogleDriveSyncService
     /**
      * Jalankan sinkronisasi Google Drive baca-saja.
      *
-     * @return array{new: int, updated: int, skipped: int}
+     * @return array{new: int, updated: int, skipped: int, failed: int, failed_folders: list<string>}
      */
     public function sync(?User $actor = null): array
     {
@@ -75,9 +76,13 @@ class GoogleDriveSyncService
             'new' => 0,
             'updated' => 0,
             'skipped' => 0,
+            'failed' => 0,
+            'failed_folders' => [],
         ];
 
         $visitedFolderIds = [];
+        $newFileIdsInThisRun = [];
+        $updatedFileIdsInThisRun = [];
 
         foreach ($folderMap as $folderId => $lkIds) {
             $this->syncFolder(
@@ -87,10 +92,14 @@ class GoogleDriveSyncService
                 depth: 1,
                 maxDepth: $maxDepth,
                 visitedFolderIds: $visitedFolderIds,
+                newFileIdsInThisRun: $newFileIdsInThisRun,
+                updatedFileIdsInThisRun: $updatedFileIdsInThisRun,
                 stats: $stats,
                 actor: $actor
             );
         }
+
+        $stats['failed_folders'] = array_values(array_unique($stats['failed_folders']));
 
         return $stats;
     }
@@ -150,7 +159,9 @@ class GoogleDriveSyncService
      *
      * @param  list<string>  $lkIds
      * @param  array<string, bool>  $visitedFolderIds
-     * @param  array{new: int, updated: int, skipped: int}  $stats
+     * @param  array<string, bool>  $newFileIdsInThisRun
+     * @param  array<string, bool>  $updatedFileIdsInThisRun
+     * @param  array{new: int, updated: int, skipped: int, failed: int, failed_folders: list<string>}  $stats
      */
     protected function syncFolder(
         string $folderId,
@@ -159,14 +170,20 @@ class GoogleDriveSyncService
         int $depth,
         int $maxDepth,
         array &$visitedFolderIds,
+        array &$newFileIdsInThisRun,
+        array &$updatedFileIdsInThisRun,
         array &$stats,
         ?User $actor
     ): void {
-        if ($depth > $maxDepth || isset($visitedFolderIds[$folderId])) {
+        $sortedLkIds = $lkIds;
+        sort($sortedLkIds);
+        $visitKey = $folderId.':'.sha1(implode(',', $sortedLkIds));
+
+        if ($depth > $maxDepth || isset($visitedFolderIds[$visitKey])) {
             return;
         }
 
-        $visitedFolderIds[$folderId] = true;
+        $visitedFolderIds[$visitKey] = true;
 
         $pageToken = null;
 
@@ -186,13 +203,19 @@ class GoogleDriveSyncService
                 $response = Http::timeout(30)->get('https://www.googleapis.com/drive/v3/files', $params);
 
                 if (! $response->successful()) {
-                    throw new RuntimeException("HTTP {$response->status()} saat memanggil Drive API.");
+                    throw new RuntimeException("HTTP {$response->status()} saat memanggil Drive API untuk folder {$folderId}.");
                 }
             } catch (Throwable $e) {
-                // Jangan bocorkan API key di exception message
+                // Jangan bocorkan API key di exception message atau log
                 $sanitized = preg_replace('/([?&]key=)[^&]+/', '$1[REDACTED]', $e->getMessage()) ?? 'Gagal Drive API';
                 $sanitized = str_replace($apiKey, '[REDACTED]', $sanitized);
-                throw new RuntimeException("Gagal menghubungi Google Drive: {$sanitized}");
+                Log::warning("Sinkronisasi folder Google Drive gagal: {$sanitized}");
+
+                $stats['failed']++;
+                $stats['failed_folders'][] = $folderId;
+
+                // Toleransi kesalahan: lanjutkan ke folder berikutnya
+                return;
             }
 
             $data = $response->json();
@@ -204,21 +227,34 @@ class GoogleDriveSyncService
 
                 if ($fileMime === 'application/vnd.google-apps.folder') {
                     // Subfolder: rekursi ke dalam subfolder jika belum melebihi batas
-                    if ($depth < $maxDepth && ! isset($visitedFolderIds[$file['id']])) {
+                    $subfolderId = (string) $file['id'];
+                    $subfolderVisitKey = $subfolderId.':'.sha1(implode(',', $sortedLkIds));
+
+                    if ($depth < $maxDepth && ! isset($visitedFolderIds[$subfolderVisitKey])) {
                         $this->syncFolder(
-                            folderId: (string) $file['id'],
+                            folderId: $subfolderId,
                             lkIds: $lkIds,
                             apiKey: $apiKey,
                             depth: $depth + 1,
                             maxDepth: $maxDepth,
                             visitedFolderIds: $visitedFolderIds,
+                            newFileIdsInThisRun: $newFileIdsInThisRun,
+                            updatedFileIdsInThisRun: $updatedFileIdsInThisRun,
                             stats: $stats,
                             actor: $actor
                         );
                     }
                 } else {
                     // Berkas fisik: proses simpan/perbarui
-                    $this->processDriveFile($file, $folderId, $lkIds, $stats, $actor);
+                    $this->processDriveFile(
+                        file: $file,
+                        folderId: $folderId,
+                        lkIds: $lkIds,
+                        newFileIdsInThisRun: $newFileIdsInThisRun,
+                        updatedFileIdsInThisRun: $updatedFileIdsInThisRun,
+                        stats: $stats,
+                        actor: $actor
+                    );
                 }
             }
         } while ($pageToken !== null);
@@ -232,12 +268,16 @@ class GoogleDriveSyncService
      *
      * @param  array<string, mixed>  $file
      * @param  list<string>  $lkIds
-     * @param  array{new: int, updated: int, skipped: int}  $stats
+     * @param  array<string, bool>  $newFileIdsInThisRun
+     * @param  array<string, bool>  $updatedFileIdsInThisRun
+     * @param  array{new: int, updated: int, skipped: int, failed: int, failed_folders: list<string>}  $stats
      */
     protected function processDriveFile(
         array $file,
         string $folderId,
         array $lkIds,
+        array &$newFileIdsInThisRun,
+        array &$updatedFileIdsInThisRun,
         array &$stats,
         ?User $actor
     ): void {
@@ -261,39 +301,45 @@ class GoogleDriveSyncService
         $mimeType = $file['mimeType'] ?? null;
         $fileName = (string) $file['name'];
 
-        // 2. Dokumen yang sudah ada: HANYA update metadata Drive
+        // 2. Dokumen yang sudah ada
         if ($existing !== null) {
-            $existing->update([
-                'document_name' => $fileName,
-                'original_filename' => $fileName,
-                'year' => $year ?: $existing->year,
-                'external_link' => $externalLink,
-                'drive_folder_id' => $folderId,
-                'drive_md5_checksum' => $md5Checksum ?? $existing->drive_md5_checksum,
-                'drive_modified_at' => $modifiedTime ? date('Y-m-d H:i:s', strtotime((string) $modifiedTime)) : $existing->drive_modified_at,
-                'mime_type' => $mimeType ?? $existing->mime_type,
-                'file_size_bytes' => $fileSize ?? $existing->file_size_bytes,
-            ]);
+            // Perbarui metadata Drive (hanya hitung stats updated sekali per berkas)
+            if (! isset($updatedFileIdsInThisRun[$driveFileId])) {
+                $existing->update([
+                    'document_name' => $fileName,
+                    'original_filename' => $fileName,
+                    'year' => $year ?: $existing->year,
+                    'external_link' => $externalLink,
+                    'drive_folder_id' => $folderId,
+                    'drive_md5_checksum' => $md5Checksum ?? $existing->drive_md5_checksum,
+                    'drive_modified_at' => $modifiedTime ? date('Y-m-d H:i:s', strtotime((string) $modifiedTime)) : $existing->drive_modified_at,
+                    'mime_type' => $mimeType ?? $existing->mime_type,
+                    'file_size_bytes' => $fileSize ?? $existing->file_size_bytes,
+                ]);
 
-            // Tambahkan link ke LK jika belum terhubung, tanpa menimpa link 'admin'
-            foreach ($lkIds as $lkId) {
-                $existingLink = DocumentLkLink::where('document_id', $existing->id)
-                    ->where('lk_id', $lkId)
-                    ->whereNull('indicator_id')
-                    ->first();
-
-                if ($existingLink === null) {
-                    DocumentLkLink::create([
-                        'document_id' => $existing->id,
-                        'lk_id' => $lkId,
-                        'indicator_id' => null,
-                        'link_source' => 'drive_sync',
-                        'created_by' => $actor?->id,
-                    ]);
-                }
+                $updatedFileIdsInThisRun[$driveFileId] = true;
+                $stats['updated']++;
             }
 
-            $stats['updated']++;
+            // Tambah link baru ke dokumen yang sudah ada HANYA bila dokumen dibuat dalam sinkronisasi yang sama
+            if (isset($newFileIdsInThisRun[$driveFileId])) {
+                foreach ($lkIds as $lkId) {
+                    $existingLink = DocumentLkLink::where('document_id', $existing->id)
+                        ->where('lk_id', $lkId)
+                        ->whereNull('indicator_id')
+                        ->first();
+
+                    if ($existingLink === null) {
+                        DocumentLkLink::create([
+                            'document_id' => $existing->id,
+                            'lk_id' => $lkId,
+                            'indicator_id' => null,
+                            'link_source' => 'drive_sync',
+                            'created_by' => $actor?->id,
+                        ]);
+                    }
+                }
+            }
 
             return;
         }
@@ -365,6 +411,8 @@ class GoogleDriveSyncService
 
             return $createdDoc;
         });
+
+        $newFileIdsInThisRun[$driveFileId] = true;
 
         // 4. OCR Selektif untuk nama tidak informatif & ukuran <= 50 MB
         if (

@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\VerificationQueuePage;
 use App\Jobs\ProcessDriveFileOcrJob;
+use App\Jobs\SyncGoogleDriveJob;
 use App\Models\AuditLog;
 use App\Models\DocumentLkLink;
 use App\Models\DriveSyncFolder;
@@ -16,6 +17,8 @@ use App\Models\User;
 use App\Services\Drive\GoogleDriveSyncService;
 use App\Services\Evidence\Extractors\TesseractOcrExtractor;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +39,8 @@ class Phase6DriveSyncAndSelectiveOcrTest extends TestCase
     protected LembarKerja $lk1;
 
     protected LembarKerja $lk2;
+
+    protected LembarKerja $lk3;
 
     protected function setUp(): void
     {
@@ -99,6 +104,16 @@ class Phase6DriveSyncAndSelectiveOcrTest extends TestCase
             ['code' => 'LK-P6-02', 'period' => 2026],
             [
                 'name' => 'Lembar Kerja Uji 2',
+                'category' => 'internal',
+                'evaluation_interval' => '12 Bulan',
+                'is_active' => true,
+            ]
+        );
+
+        $this->lk3 = LembarKerja::firstOrCreate(
+            ['code' => 'LK-P6-03', 'period' => 2026],
+            [
+                'name' => 'Lembar Kerja Uji 3',
                 'category' => 'internal',
                 'evaluation_interval' => '12 Bulan',
                 'is_active' => true,
@@ -766,5 +781,293 @@ class Phase6DriveSyncAndSelectiveOcrTest extends TestCase
         $this->assertDatabaseMissing('drive_sync_folders', [
             'id' => $folder->id,
         ]);
+    }
+
+    public function test_visited_folders_scoped_by_folder_and_sorted_lks_allows_revisiting_with_different_lks(): void
+    {
+        Config::set('evidence.drive_api_key', 'mock-secret-key-123');
+
+        // Root Folder A linked to LK 1
+        LkIndicator::create([
+            'lk_id' => $this->lk1->id,
+            'code' => 'IND-ROOT-A',
+            'title' => 'Indikator Root A',
+            'order_index' => 1,
+            'evidence_link' => 'https://drive.google.com/drive/folders/folderRootA',
+        ]);
+
+        // Root Folder B linked to LK 2
+        LkIndicator::create([
+            'lk_id' => $this->lk2->id,
+            'code' => 'IND-ROOT-B',
+            'title' => 'Indikator Root B',
+            'order_index' => 2,
+            'evidence_link' => 'https://drive.google.com/drive/folders/folderRootB',
+        ]);
+
+        // Child Folder X is also directly registered in drive_sync_folders with LK 3
+        DriveSyncFolder::create([
+            'folder_id' => 'folderSubX',
+            'label' => 'Subfolder X Terdaftar Sendiri',
+            'lk_id' => $this->lk3->id,
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/files*folderRootA*' => Http::response([
+                'files' => [
+                    [
+                        'id' => 'folderSubX',
+                        'name' => 'Subfolder X',
+                        'mimeType' => 'application/vnd.google-apps.folder',
+                    ],
+                ],
+                'nextPageToken' => null,
+            ], 200),
+            'https://www.googleapis.com/drive/v3/files*folderRootB*' => Http::response([
+                'files' => [
+                    [
+                        'id' => 'folderSubX',
+                        'name' => 'Subfolder X',
+                        'mimeType' => 'application/vnd.google-apps.folder',
+                    ],
+                ],
+                'nextPageToken' => null,
+            ], 200),
+            'https://www.googleapis.com/drive/v3/files*folderSubX*' => Http::response([
+                'files' => [
+                    [
+                        'id' => 'fileInsideSubX',
+                        'name' => 'Dokumen_Di_Subfolder_X.pdf',
+                        'mimeType' => 'application/pdf',
+                        'size' => 1234,
+                        'webViewLink' => 'https://drive.google.com/file/d/fileInsideSubX/view',
+                        'modifiedTime' => '2026-06-01T10:00:00Z',
+                    ],
+                ],
+                'nextPageToken' => null,
+            ], 200),
+        ]);
+
+        $service = app(GoogleDriveSyncService::class);
+        $service->sync();
+
+        $doc = EvidenceDocument::where('drive_file_id', 'fileInsideSubX')->first();
+        $this->assertNotNull($doc);
+
+        $linkedLkIds = DocumentLkLink::where('document_id', $doc->id)->pluck('lk_id')->all();
+        // Dokumen di X punya link ke LK1, LK2, DAN LK3
+        $this->assertContains($this->lk1->id, $linkedLkIds);
+        $this->assertContains($this->lk2->id, $linkedLkIds);
+        $this->assertContains($this->lk3->id, $linkedLkIds);
+        $this->assertCount(3, $linkedLkIds);
+    }
+
+    public function test_resync_does_not_resurrect_unlinked_lks_removed_by_admin(): void
+    {
+        Config::set('evidence.drive_api_key', 'mock-secret-key-123');
+
+        LkIndicator::create([
+            'lk_id' => $this->lk1->id,
+            'code' => 'IND-RS-1',
+            'title' => 'Indikator RS 1',
+            'order_index' => 1,
+            'evidence_link' => 'https://drive.google.com/drive/folders/folderRS1',
+        ]);
+
+        LkIndicator::create([
+            'lk_id' => $this->lk2->id,
+            'code' => 'IND-RS-2',
+            'title' => 'Indikator RS 2',
+            'order_index' => 2,
+            'evidence_link' => 'https://drive.google.com/drive/folders/folderRS2',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/files*folderRS1*' => Http::response([
+                'files' => [
+                    [
+                        'id' => 'fileResyncTest',
+                        'name' => 'Dokumen_Resync.pdf',
+                        'mimeType' => 'application/pdf',
+                        'size' => 1000,
+                        'webViewLink' => 'https://drive.google.com/file/d/fileResyncTest/view',
+                        'modifiedTime' => '2026-06-01T10:00:00Z',
+                    ],
+                ],
+                'nextPageToken' => null,
+            ], 200),
+            'https://www.googleapis.com/drive/v3/files*folderRS2*' => Http::response([
+                'files' => [
+                    [
+                        'id' => 'fileResyncTest',
+                        'name' => 'Dokumen_Resync.pdf',
+                        'mimeType' => 'application/pdf',
+                        'size' => 1000,
+                        'webViewLink' => 'https://drive.google.com/file/d/fileResyncTest/view',
+                        'modifiedTime' => '2026-06-01T10:00:00Z',
+                    ],
+                ],
+                'nextPageToken' => null,
+            ], 200),
+        ]);
+
+        $service = app(GoogleDriveSyncService::class);
+
+        // Run 1: First sync imports document and links to LK1 and LK2
+        $service->sync();
+
+        $doc = EvidenceDocument::where('drive_file_id', 'fileResyncTest')->first();
+        $this->assertNotNull($doc);
+        $this->assertCount(2, DocumentLkLink::where('document_id', $doc->id)->get());
+
+        // Admin modifies document: removes link LK2, marks link LK1 as 'admin', and sets approval_status to 'ditolak'
+        DocumentLkLink::where('document_id', $doc->id)->where('lk_id', $this->lk2->id)->delete();
+        DocumentLkLink::where('document_id', $doc->id)->where('lk_id', $this->lk1->id)->update(['link_source' => 'admin']);
+        $doc->update(['approval_status' => 'ditolak', 'approval_notes' => 'Ditolak admin']);
+
+        // Run 2: Next sync must NOT re-add LK2 link!
+        $stats2 = $service->sync();
+
+        $this->assertSame(0, $stats2['new']);
+        $this->assertSame(1, $stats2['updated']);
+
+        $doc->refresh();
+        $this->assertSame('ditolak', $doc->approval_status);
+
+        // Link LK2 TIDAK kembali
+        $this->assertDatabaseMissing('document_lk_links', [
+            'document_id' => $doc->id,
+            'lk_id' => $this->lk2->id,
+        ]);
+
+        // Link 'admin' pada LK1 tidak berubah
+        $link1 = DocumentLkLink::where('document_id', $doc->id)->where('lk_id', $this->lk1->id)->first();
+        $this->assertNotNull($link1);
+        $this->assertSame('admin', $link1->link_source);
+    }
+
+    public function test_error_tolerance_per_folder_continues_syncing_other_folders_and_sanitizes_key(): void
+    {
+        $secretKey = 'super-secret-drive-key-xyz';
+        Config::set('evidence.drive_api_key', $secretKey);
+
+        LkIndicator::create([
+            'lk_id' => $this->lk1->id,
+            'code' => 'IND-ERR-404',
+            'title' => 'Indikator Folder 404',
+            'order_index' => 1,
+            'evidence_link' => 'https://drive.google.com/drive/folders/folderBroken404',
+        ]);
+
+        LkIndicator::create([
+            'lk_id' => $this->lk2->id,
+            'code' => 'IND-SUCCESS',
+            'title' => 'Indikator Folder Sukses',
+            'order_index' => 2,
+            'evidence_link' => 'https://drive.google.com/drive/folders/folderWorking200',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/files*folderBroken404*' => Http::response([
+                'error' => [
+                    'code' => 404,
+                    'message' => 'File not found',
+                ],
+            ], 404),
+            'https://www.googleapis.com/drive/v3/files*folderWorking200*' => Http::response([
+                'files' => [
+                    [
+                        'id' => 'fileWorkingDoc',
+                        'name' => 'Dokumen_Sukses.pdf',
+                        'mimeType' => 'application/pdf',
+                        'size' => 500,
+                        'webViewLink' => 'https://drive.google.com/file/d/fileWorkingDoc/view',
+                        'modifiedTime' => '2026-06-01T10:00:00Z',
+                    ],
+                ],
+                'nextPageToken' => null,
+            ], 200),
+        ]);
+
+        $service = app(GoogleDriveSyncService::class);
+        $stats = $service->sync();
+
+        // Folder 404 gagal, tapi folder lain tetap tersinkron
+        $this->assertSame(1, $stats['new']);
+        $this->assertSame(1, $stats['failed']);
+        $this->assertContains('folderBroken404', $stats['failed_folders']);
+        $this->assertDatabaseHas('evidence_documents', ['drive_file_id' => 'fileWorkingDoc']);
+    }
+
+    public function test_sync_google_drive_job_prevents_overlapping_and_records_audit_on_failure(): void
+    {
+        $secretKey = 'secret-job-key-abc';
+        Config::set('evidence.drive_api_key', $secretKey);
+
+        $job = new SyncGoogleDriveJob($this->admin->id);
+
+        $this->assertSame(1, $job->tries);
+        $this->assertSame(900, $job->timeout);
+
+        // Mock service throwing exception
+        $mockService = Mockery::mock(GoogleDriveSyncService::class);
+        $mockService->shouldReceive('sync')
+            ->once()
+            ->andThrow(new \RuntimeException("Gagal panggil Drive dengan key={$secretKey}"));
+
+        try {
+            $job->handle($mockService);
+            $this->fail('Expected exception rethrown');
+        } catch (\Throwable $e) {
+            $this->assertStringContainsString('Gagal panggil Drive', $e->getMessage());
+        }
+
+        // Check audit log recorded 'drive.sync_failed' with sanitized message
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'drive.sync_failed',
+            'user_id' => $this->admin->id,
+        ]);
+
+        $audit = AuditLog::where('action', 'drive.sync_failed')->latest('id')->first();
+        $this->assertNotNull($audit);
+        $this->assertStringNotContainsString($secretKey, json_encode($audit->new_values));
+        $this->assertStringContainsString('[REDACTED]', json_encode($audit->new_values));
+    }
+
+    public function test_process_drive_file_ocr_job_sets_manual_review_when_lock_times_out(): void
+    {
+        $doc = EvidenceDocument::create([
+            'document_name' => 'SCAN_Lock_Test.pdf',
+            'original_filename' => 'SCAN_Lock_Test.pdf',
+            'year' => 2026,
+            'source_type' => 'drive',
+            'drive_file_id' => 'scanLockTestId',
+            'external_link' => 'https://drive.google.com/file/d/scanLockTestId/view',
+            'approval_status' => 'disetujui',
+            'processing_status' => 'memproses',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 2048,
+        ]);
+
+        // Mock Cache lock to throw LockTimeoutException
+        $mockLock = Mockery::mock();
+        $mockLock->shouldReceive('block')
+            ->once()
+            ->andThrow(new LockTimeoutException('Lock timeout'));
+
+        Cache::shouldReceive('lock')
+            ->with('drive_ocr_serial_lock', 180)
+            ->once()
+            ->andReturn($mockLock);
+
+        $job = new ProcessDriveFileOcrJob($doc->id);
+        $job->handle();
+
+        $doc->refresh();
+        // Bukan macet di 'memproses', melainkan 'perlu_review_manual'
+        $this->assertSame('perlu_review_manual', $doc->processing_status);
+        $this->assertNotNull($doc->error_message);
+        $this->assertStringContainsString('kunci', strtolower($doc->error_message));
     }
 }
