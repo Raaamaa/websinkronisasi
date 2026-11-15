@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Monitor;
 
 use App\Models\DocumentLkLink;
-use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Services\Search\DocumentSearchService;
@@ -199,64 +198,6 @@ class MonitorMatrixService
             'columns' => $columnGroups,
             'rows' => $rows,
             'paginator' => $paginator,
-        ];
-    }
-
-    /**
-     * Get drill-down modal details for backward compatibility.
-     *
-     * @return array<string, mixed>
-     */
-    public function getDrilldownDetails(string $documentId, string $lkId): array
-    {
-        $document = EvidenceDocument::findOrFail($documentId);
-        $lk = LembarKerja::findOrFail($lkId);
-
-        $matches = DocumentMatch::query()
-            ->with(['indicator.evidenceItems', 'matchedItem'])
-            ->where('document_id', $documentId)
-            ->whereHas('indicator', function ($q) use ($lkId): void {
-                $q->where('lk_id', $lkId)->whereNull('deleted_at');
-            })
-            ->whereIn('status', ['auto', 'confirmed'])
-            ->get();
-
-        $indicators = $matches->map(function (DocumentMatch $m) use ($document): array {
-            $rawLink = $m->indicator->evidence_link ?: $document->external_link;
-            $hasValidLink = ! empty($rawLink) && (bool) preg_match('/^https?:\/\/.+/i', $rawLink);
-
-            return [
-                'match_id' => $m->id,
-                'indicator_id' => $m->indicator_id,
-                'code' => $m->indicator->code,
-                'title' => $m->indicator->title,
-                'status' => $m->status,
-                'status_label' => $m->status === 'confirmed' ? 'Terverifikasi' : 'Otomatis',
-                'confidence_score' => $m->confidence_score,
-                'matched_item_name' => $m->matchedItem?->resolved_name ?: $m->indicator->evidenceItems->first()?->resolved_name,
-                'evidence_link' => $hasValidLink ? $rawLink : null,
-                'has_valid_link' => $hasValidLink,
-                'link_placeholder' => 'tautan belum tersedia',
-                'match_reasons' => $m->match_reasons,
-            ];
-        })->values()->toArray();
-
-        return [
-            'document' => [
-                'id' => $document->id,
-                'name' => $document->document_name,
-                'number' => $document->document_number,
-                'year' => $document->year,
-                'type' => $document->document_type,
-                'external_link' => $document->external_link,
-            ],
-            'lk' => [
-                'id' => $lk->id,
-                'code' => $lk->code,
-                'name' => $lk->name,
-                'period' => $lk->period,
-            ],
-            'indicators' => $indicators,
         ];
     }
 }

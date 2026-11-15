@@ -236,67 +236,6 @@ class Phase6MonitorAndVerificationTest extends TestCase
     }
 
     /**
-     * 4. MON-04, MON-05, MON-06, MON-10, AC-12: Drill-down modal details and safe links.
-     */
-    public function test_clicking_checkmark_returns_drilldown_details_with_safe_links_or_placeholder(): void
-    {
-        $validLink = 'https://cloud.bps.go.id/s/sk-zi-2026';
-        [$lk, $indicatorWithLink, $item] = $this->createSampleLkWithIndicator('ZI', 'internal', '1.1', $validLink);
-        [$lk2, $indicatorNoLink, $item2] = $this->createSampleLkWithIndicator('PEKPPP', 'internal', 'P02', null);
-
-        $document = EvidenceDocument::create([
-            'id' => (string) Str::uuid(),
-            'document_name' => 'SK Uji Drilldown',
-            'document_number' => '99/SK/2026',
-            'year' => 2026,
-            'file_path' => 'evidence/test_dd.pdf',
-            'original_filename' => 'sk_dd.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'hash_dd_'.uniqid()),
-            'processing_status' => 'selesai',
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $match1 = DocumentMatch::create([
-            'document_id' => $document->id,
-            'indicator_id' => $indicatorWithLink->id,
-            'matched_item_id' => $item->id,
-            'status' => 'confirmed',
-            'match_method' => 'exact_code',
-            'confidence_score' => 100.0,
-            'match_reasons' => ['rule' => 'exact_code'],
-        ]);
-
-        $match2 = DocumentMatch::create([
-            'document_id' => $document->id,
-            'indicator_id' => $indicatorNoLink->id,
-            'matched_item_id' => $item2->id,
-            'status' => 'auto',
-            'match_method' => 'title_similarity',
-            'confidence_score' => 80.0,
-            'match_reasons' => ['score_components' => ['title_score' => 80.0]],
-        ]);
-
-        $service = app(MonitorMatrixService::class);
-
-        // Drilldown untuk LK ZI (memiliki tautan valid)
-        $detailsZI = $service->getDrilldownDetails($document->id, $lk->id);
-        $this->assertSame('SK Uji Drilldown', $detailsZI['document']['name']);
-        $this->assertCount(1, $detailsZI['indicators']);
-        $this->assertSame('Terverifikasi', $detailsZI['indicators'][0]['status_label']);
-        $this->assertSame($validLink, $detailsZI['indicators'][0]['evidence_link']);
-        $this->assertTrue($detailsZI['indicators'][0]['has_valid_link']);
-
-        // Drilldown untuk LK PEKPPP (tidak memiliki tautan)
-        $detailsPEKPPP = $service->getDrilldownDetails($document->id, $lk2->id);
-        $this->assertSame('Otomatis', $detailsPEKPPP['indicators'][0]['status_label']);
-        $this->assertFalse($detailsPEKPPP['indicators'][0]['has_valid_link']);
-        // MON-06, AC-12: Keterangan jelas "tautan belum tersedia"
-        $this->assertSame('tautan belum tersedia', $detailsPEKPPP['indicators'][0]['link_placeholder']);
-    }
-
-    /**
      * 5. RBAC.md, AC-01: Pegawai cannot access verification queue (403 Forbidden).
      */
     public function test_pegawai_cannot_access_verification_queue_returns_403(): void

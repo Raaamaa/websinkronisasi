@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -41,10 +42,22 @@ class CreateEvidenceDocument extends CreateRecord
      */
     public function getRecentUploads(): Collection
     {
-        return EvidenceDocument::query()
-            ->withCount(['matches as active_matches_count' => function ($q): void {
-                $q->whereIn('status', ['auto', 'confirmed']);
-            }])
+        /** @var User|null $actor */
+        $actor = Auth::user();
+
+        $query = EvidenceDocument::query()
+            ->whereNull('deleted_at');
+
+        if ($actor !== null && $actor->role === 'pegawai') {
+            $query->where('uploaded_by', $actor->id);
+        }
+
+        return $query
+            ->withCount([
+                'officialLkLinks as official_lks_count' => function ($q): void {
+                    $q->select(DB::raw('count(distinct lk_id)'));
+                },
+            ])
             ->orderByDesc('created_at')
             ->take(3)
             ->get();

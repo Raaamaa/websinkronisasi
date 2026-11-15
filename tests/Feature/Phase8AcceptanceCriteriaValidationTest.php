@@ -421,50 +421,6 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
     }
 
     /**
-     * AC-12: Klik ✔ pada sel -> Tampil indikator yang cocok dan tautan bukti yang valid, atau keterangan "tautan belum tersedia".
-     */
-    public function test_ac_12_checkmark_drilldown_modal_returns_valid_safe_links(): void
-    {
-        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
-        $ind = LkIndicator::firstOrCreate([
-            'lk_id' => $lk->id,
-            'code' => 'ZI-AC12',
-        ], [
-            'title' => 'Indikator Detail Drilldown',
-            'evidence_link' => 'https://drive.google.com/sample-evidence-link',
-            'order_index' => 1,
-        ]);
-
-        $doc = EvidenceDocument::create([
-            'document_name' => 'Dokumen Drilldown AC12',
-            'year' => 2026,
-            'file_path' => 'evidence/ac12.pdf',
-            'original_filename' => 'ac12.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'ac12_'.uniqid()),
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        DocumentMatch::create([
-            'document_id' => $doc->id,
-            'indicator_id' => $ind->id,
-            'status' => 'confirmed',
-            'match_method' => 'manual',
-            'confidence_score' => 100.0,
-        ]);
-
-        /** @var MonitorMatrixService $matrix */
-        $matrix = app(MonitorMatrixService::class);
-        $drilldown = $matrix->getDrilldownDetails($doc->id, $lk->id);
-
-        $this->assertEquals($doc->id, $drilldown['document']['id']);
-        $this->assertEquals($lk->id, $drilldown['lk']['id']);
-        $this->assertNotEmpty($drilldown['indicators']);
-        $this->assertEquals('https://drive.google.com/sample-evidence-link', $drilldown['indicators'][0]['evidence_link']);
-    }
-
-    /**
      * AC-13: Pencarian dengan input kosong, '; DROP TABLE--, atau 10.000 karakter -> Tidak ada error 500, tidak ada injeksi, hasil kosong atau pesan validasi.
      */
     public function test_ac_13_search_handles_sql_injection_empty_and_massive_inputs_safely(): void

@@ -250,13 +250,23 @@
                                             {{ $recent->document_name }}
                                         </p>
                                         <p class="text-[10px] text-slate-500 dark:text-slate-400">
-                                            {{ $recent->created_at?->diffForHumans() ?? 'Baru saja' }} &bull; {{ number_format(($recent->file_size_bytes ?? 0) / 1024 / 1024, 1) }} MB
+                                            {{ $recent->created_at?->diffForHumans() ?? 'Baru saja' }} &bull; {{ (int) ($recent->official_lks_count ?? 0) }} LK terhubung
                                         </p>
                                     </div>
                                 </div>
                                 <div class="flex-shrink-0 ml-2">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                        ✔ {{ $recent->active_matches_count }} Match LK
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold {{ match ($recent->approval_status) {
+                                        'disetujui' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+                                        'revisi' => 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+                                        'ditolak' => 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800',
+                                        default => 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                    } }}">
+                                        {{ match ($recent->approval_status) {
+                                            'disetujui' => 'Disetujui',
+                                            'revisi' => 'Perlu Revisi',
+                                            'ditolak' => 'Ditolak',
+                                            default => 'Menunggu'
+                                        } }}
                                     </span>
                                 </div>
                             </div>

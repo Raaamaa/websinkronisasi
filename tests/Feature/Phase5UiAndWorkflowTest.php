@@ -8,6 +8,7 @@ use App\Filament\Pages\CariDokumenPage;
 use App\Filament\Pages\MonitorMatrixPage;
 use App\Filament\Pages\VerificationQueuePage;
 use App\Filament\Resources\EvidenceDocumentResource;
+use App\Filament\Resources\EvidenceDocumentResource\Pages\CreateEvidenceDocument;
 use App\Models\DocumentLkLink;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
@@ -466,5 +467,86 @@ class Phase5UiAndWorkflowTest extends TestCase
         );
 
         $this->assertLessThanOrEqual(5, count($candidates));
+    }
+
+    public function test_recent_uploads_scopes_to_own_for_pegawai_and_all_for_admin(): void
+    {
+        $docA = EvidenceDocument::create([
+            'document_name' => 'Dokumen Terbaru A '.Str::random(6),
+            'year' => 2026,
+            'source_type' => 'upload',
+            'approval_status' => 'menunggu',
+            'uploaded_by' => $this->pegawaiA->id,
+            'file_hash' => hash('sha256', Str::random(16)),
+            'file_path' => 'evidence/test_recent_a.pdf',
+            'original_filename' => 'recent_a.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'processing_status' => 'selesai',
+        ]);
+
+        $docB = EvidenceDocument::create([
+            'document_name' => 'Dokumen Terbaru B '.Str::random(6),
+            'year' => 2026,
+            'source_type' => 'upload',
+            'approval_status' => 'menunggu',
+            'uploaded_by' => $this->pegawaiB->id,
+            'file_hash' => hash('sha256', Str::random(16)),
+            'file_path' => 'evidence/test_recent_b.pdf',
+            'original_filename' => 'recent_b.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'processing_status' => 'selesai',
+        ]);
+
+        // Pegawai A hanya melihat dokumennya sendiri di recent uploads
+        $this->actingAs($this->pegawaiA);
+        $recentA = app(CreateEvidenceDocument::class)->getRecentUploads()->pluck('id')->toArray();
+        $this->assertContains($docA->id, $recentA);
+        $this->assertNotContains($docB->id, $recentA);
+
+        // Admin melihat semua dokumen
+        $this->actingAs($this->admin);
+        $recentAdmin = app(CreateEvidenceDocument::class)->getRecentUploads()->pluck('id')->toArray();
+        $this->assertContains($docA->id, $recentAdmin);
+        $this->assertContains($docB->id, $recentAdmin);
+    }
+
+    public function test_recent_uploads_lk_count_counts_official_distinct_links(): void
+    {
+        $doc = EvidenceDocument::create([
+            'document_name' => 'Dokumen Multi Link Resmi '.Str::random(6),
+            'year' => 2026,
+            'source_type' => 'upload',
+            'approval_status' => 'disetujui',
+            'uploaded_by' => $this->admin->id,
+            'file_hash' => hash('sha256', Str::random(16)),
+            'file_path' => 'evidence/test_recent_lk.pdf',
+            'original_filename' => 'recent_lk.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'processing_status' => 'selesai',
+        ]);
+
+        $ind1 = LkIndicator::firstOrCreate(['lk_id' => $this->lkX->id, 'code' => 'P5-REC-1'], ['title' => 'Ind 1', 'order_index' => 1]);
+        $ind2 = LkIndicator::firstOrCreate(['lk_id' => $this->lkX->id, 'code' => 'P5-REC-2'], ['title' => 'Ind 2', 'order_index' => 2]);
+
+        // 2 link resmi untuk lkX (indikator berbeda)
+        DocumentLkLink::create(['document_id' => $doc->id, 'lk_id' => $this->lkX->id, 'indicator_id' => $ind1->id, 'link_source' => 'backfill']);
+        DocumentLkLink::create(['document_id' => $doc->id, 'lk_id' => $this->lkX->id, 'indicator_id' => $ind2->id, 'link_source' => 'backfill']);
+
+        // 1 link resmi untuk lkY
+        DocumentLkLink::create(['document_id' => $doc->id, 'lk_id' => $this->lkY->id, 'link_source' => 'admin']);
+
+        // 1 link non-resmi 'proposed' untuk lkX (dilarang dihitung)
+        DocumentLkLink::create(['document_id' => $doc->id, 'lk_id' => $this->lkX->id, 'link_source' => 'proposed']);
+
+        $this->actingAs($this->admin);
+        $recents = app(CreateEvidenceDocument::class)->getRecentUploads();
+        $targetDoc = $recents->firstWhere('id', $doc->id);
+
+        $this->assertNotNull($targetDoc);
+        // Harus tepat 2 LK resmi yang berbeda (lkX dan lkY)
+        $this->assertEquals(2, $targetDoc->official_lks_count);
     }
 }
