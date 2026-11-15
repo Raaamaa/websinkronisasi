@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -102,6 +103,22 @@ class EvidenceDocument extends Model
     public function officialLkLinks(): HasMany
     {
         return $this->lkLinks()->whereIn('link_source', DocumentLkLink::OFFICIAL_SOURCES);
+    }
+
+    /**
+     * Lembar Kerja resmi terkait bukti dukung (hanya sumber resmi: admin, drive_sync, backfill; tanpa duplikasi LK).
+     *
+     * @return BelongsToMany<LembarKerja>
+     */
+    public function lembarKerja(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            LembarKerja::class,
+            'document_lk_links',
+            'document_id',
+            'lk_id'
+        )->whereIn('document_lk_links.link_source', DocumentLkLink::OFFICIAL_SOURCES)
+            ->distinct();
     }
 
     /**

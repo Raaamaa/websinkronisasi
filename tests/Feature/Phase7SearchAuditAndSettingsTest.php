@@ -90,6 +90,7 @@ class Phase7SearchAuditAndSettingsTest extends TestCase
             'extracted_text' => 'Berdasarkan rapat evaluasi internal Reformasi Birokrasi BPS tahun 2026 ditetapkan susunan pengelola akuntabilitas kinerja.',
             'processing_status' => 'selesai',
             'uploaded_by' => $this->admin->id,
+            'approval_status' => 'disetujui',
         ], $attributes));
     }
 

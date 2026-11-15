@@ -65,9 +65,11 @@ class DocumentSearchService
                 "to_tsvector('indonesian', coalesce(document_name, '') || ' ' || coalesce(document_number, '') || ' ' || coalesce(extracted_text, '')) @@ plainto_tsquery('indonesian', ?)",
                 [$sanitized]
             )
-            // 2. Substring matching for name and document number
+            // 2. Substring matching for name, document number, and external link
                 ->orWhere('document_name', 'ilike', $likeParam)
                 ->orWhere('document_number', 'ilike', $likeParam)
+                ->orWhere('external_link', 'ilike', $likeParam)
+                ->orWhere('original_filename', 'ilike', $likeParam)
             // 3. Typo-tolerant Trigram similarity search (SEARCH-02)
                 ->orWhereRaw('similarity(document_name, ?) >= ?', [$sanitized, $threshold])
                 ->orWhereRaw("similarity(coalesce(document_number, ''), ?) >= ?", [$sanitized, $threshold])
@@ -90,7 +92,13 @@ class DocumentSearchService
         }
 
         $query = EvidenceDocument::query()
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->where('approval_status', 'disetujui')
+            ->with([
+                'uploader',
+                'lembarKerja',
+                'officialLkLinks.lembarKerja',
+            ]);
 
         $this->applySearchFilter($query, $sanitized);
 
@@ -98,6 +106,15 @@ class DocumentSearchService
             $query->limit($limit);
         }
 
-        return $query->orderByDesc('created_at')->get();
+        /** @var Collection<int, EvidenceDocument> $results */
+        $results = $query->orderByDesc('created_at')->get();
+
+        $results->each(function (EvidenceDocument $doc): void {
+            if ($doc->relationLoaded('lembarKerja')) {
+                $doc->setRelation('lembarKerja', $doc->lembarKerja->unique('id')->values());
+            }
+        });
+
+        return $results;
     }
 }

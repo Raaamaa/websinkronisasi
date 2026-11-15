@@ -7,10 +7,13 @@ namespace Tests\Feature;
 use App\Models\LembarKerja;
 use Database\Seeders\DemoIndicatorAndSampleDocumentsSeeder;
 use Database\Seeders\InitialLkSeeder;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class IndicatorSeederIntervalTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_seeded_lembar_kerja_maintain_proper_evaluation_intervals_and_indicators(): void
     {
         $this->seed(InitialLkSeeder::class);
