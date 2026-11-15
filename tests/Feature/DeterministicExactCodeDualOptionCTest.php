@@ -218,6 +218,7 @@ class DeterministicExactCodeDualOptionCTest extends TestCase
             'document_name' => 'Daftar Hadir Rekonsiliasi Kas Kantor ZI-2.5',
             'original_filename' => 'rekon_kas_ZI-2.5.pdf',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/rekon.pdf',
             'mime_type' => 'application/pdf',
             'file_size_bytes' => 2048,

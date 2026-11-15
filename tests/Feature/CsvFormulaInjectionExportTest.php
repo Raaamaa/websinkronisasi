@@ -53,6 +53,7 @@ class CsvFormulaInjectionExportTest extends TestCase
             'document_name' => "=cmd|'/C calc'!A0",
             'document_number' => '+628123456789',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/test_injection.pdf',
             'original_filename' => 'injection.pdf',
             'mime_type' => 'application/pdf',

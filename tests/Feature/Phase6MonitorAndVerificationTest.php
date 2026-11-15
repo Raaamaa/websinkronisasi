@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\DocumentLkLink;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
@@ -113,6 +114,7 @@ class Phase6MonitorAndVerificationTest extends TestCase
             'id' => (string) Str::uuid(),
             'document_name' => 'Dokumen Multi Match Uji',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/test_m1.pdf',
             'original_filename' => 'doc_multi.pdf',
             'mime_type' => 'application/pdf',
@@ -121,6 +123,9 @@ class Phase6MonitorAndVerificationTest extends TestCase
             'processing_status' => 'selesai',
             'uploaded_by' => $this->admin->id,
         ]);
+
+        DocumentLkLink::create(['document_id' => $document->id, 'lk_id' => $lkZI->id, 'link_source' => 'admin']);
+        DocumentLkLink::create(['document_id' => $document->id, 'lk_id' => $lkPEKPPP->id, 'link_source' => 'admin']);
 
         // Match 1: ZI status 'auto'
         DocumentMatch::create([
@@ -171,6 +176,7 @@ class Phase6MonitorAndVerificationTest extends TestCase
             'id' => (string) Str::uuid(),
             'document_name' => 'Dokumen Tanpa Match & Rejected',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/test_m2.pdf',
             'original_filename' => 'doc_blank.pdf',
             'mime_type' => 'application/pdf',
@@ -368,6 +374,7 @@ class Phase6MonitorAndVerificationTest extends TestCase
             'id' => (string) Str::uuid(),
             'document_name' => 'Dokumen Tolak Uji',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/test_rej.pdf',
             'original_filename' => 'rej.pdf',
             'mime_type' => 'application/pdf',

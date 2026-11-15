@@ -46,4 +46,3 @@ class DriveSyncFolder extends Model
         return $this->belongsTo(LembarKerja::class, 'lk_id');
     }
 }
-

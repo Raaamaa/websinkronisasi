@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Exceptions\DuplicateDocumentException;
 use App\Jobs\ProcessEvidenceDocumentJob;
+use App\Models\DocumentLkLink;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
@@ -272,6 +273,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $doc = EvidenceDocument::create([
             'document_name' => 'Dokumen Multi LK AC08',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/ac08.pdf',
             'original_filename' => 'ac08.pdf',
             'mime_type' => 'application/pdf',
@@ -279,6 +281,9 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
             'file_hash' => hash('sha256', 'ac08_'.uniqid()),
             'uploaded_by' => $this->admin->id,
         ]);
+
+        DocumentLkLink::create(['document_id' => $doc->id, 'lk_id' => $lk1->id, 'link_source' => 'admin']);
+        DocumentLkLink::create(['document_id' => $doc->id, 'lk_id' => $lk2->id, 'link_source' => 'admin']);
 
         DocumentMatch::create(['document_id' => $doc->id, 'indicator_id' => $ind1->id, 'status' => 'auto', 'match_method' => 'exact_code', 'confidence_score' => 100.0]);
         DocumentMatch::create(['document_id' => $doc->id, 'indicator_id' => $ind2->id, 'status' => 'confirmed', 'match_method' => 'manual', 'confidence_score' => 100.0]);
@@ -301,6 +306,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $doc = EvidenceDocument::create([
             'document_name' => 'Dokumen Tanpa Relasi AC09',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/ac09.pdf',
             'original_filename' => 'ac09.pdf',
             'mime_type' => 'application/pdf',
@@ -331,12 +337,19 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $doc = EvidenceDocument::create([
             'document_name' => 'Dokumen Auto Match AC10',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/ac10.pdf',
             'original_filename' => 'ac10.pdf',
             'mime_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'file_hash' => hash('sha256', 'ac10_'.uniqid()),
             'uploaded_by' => $this->admin->id,
+        ]);
+
+        DocumentLkLink::create([
+            'document_id' => $doc->id,
+            'lk_id' => $lk->id,
+            'link_source' => 'admin',
         ]);
 
         DocumentMatch::create([
@@ -368,6 +381,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $doc = EvidenceDocument::create([
             'document_name' => 'Dokumen Rejection AC11',
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'file_path' => 'evidence/ac11.pdf',
             'original_filename' => 'ac11.pdf',
             'mime_type' => 'application/pdf',

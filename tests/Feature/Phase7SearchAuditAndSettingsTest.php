@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\DocumentLkLink;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
@@ -234,6 +235,12 @@ class Phase7SearchAuditAndSettingsTest extends TestCase
             'status' => 'confirmed',
             'confidence_score' => 100.0,
             'match_method' => 'manual',
+        ]);
+
+        DocumentLkLink::create([
+            'document_id' => $doc->id,
+            'lk_id' => $lk->id,
+            'link_source' => 'admin',
         ]);
 
         /** @var MonitorMatrixService $matrixService */

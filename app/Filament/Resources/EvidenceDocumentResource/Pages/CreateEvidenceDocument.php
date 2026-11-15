@@ -59,6 +59,33 @@ class CreateEvidenceDocument extends CreateRecord
     {
         /** @var User $actor */
         $actor = Auth::user();
+        $sourceType = $data['source_type'] ?? 'upload';
+        $lkIds = (array) ($data['lk_ids'] ?? []);
+
+        $uploadService = app(EvidenceUploadService::class);
+
+        if ($sourceType === 'link') {
+            $metadata = [
+                'document_name' => $data['document_name'],
+                'document_number' => $data['document_number'] ?? null,
+                'year' => (int) $data['year'],
+                'document_type' => $data['document_type'] ?? 'Lainnya',
+                'external_link' => $data['external_link'],
+                'description' => $data['description'] ?? null,
+            ];
+
+            try {
+                return $uploadService->createLinkSubmission($metadata, $actor, $lkIds);
+            } catch (Throwable $e) {
+                Notification::make()
+                    ->title('Gagal Menyimpan Pengajuan Tautan')
+                    ->body($e->getMessage())
+                    ->danger()
+                    ->send();
+
+                $this->halt();
+            }
+        }
 
         $attachmentRelativePath = $data['attachment'] ?? null;
 
@@ -79,26 +106,33 @@ class CreateEvidenceDocument extends CreateRecord
         $uploadedFile = new UploadedFile(
             $fullPath,
             $originalFilename,
-            mime_content_type($fullPath) ?: null,
+            null,
             null,
             true // mode test / bypass is_uploaded_file check untuk file lokal yang dipindahkan Filament
         );
 
-        $uploadService = app(EvidenceUploadService::class);
+        $metadata = [
+            'document_name' => $data['document_name'],
+            'document_number' => $data['document_number'] ?? null,
+            'year' => (int) $data['year'],
+            'document_type' => $data['document_type'] ?? 'Lainnya',
+            'external_link' => $data['external_link'] ?? null,
+            'description' => $data['description'] ?? null,
+        ];
 
         try {
-            $document = $uploadService->upload($uploadedFile, $data, $actor);
+            $document = $uploadService->upload($uploadedFile, $metadata, $actor, $lkIds);
 
-            // Bersihkan berkas sementara dari directory evidence_temp
             Storage::disk('private')->delete($attachmentRelativePath);
 
             return $document;
         } catch (DuplicateDocumentException $e) {
             Storage::disk('private')->delete($attachmentRelativePath);
 
+            $existingDocName = $e->existingDocument?->document_name ?? 'Dokumen Terdaftar';
             Notification::make()
                 ->title('Unggah Ditolak (Duplikasi Dokumen)')
-                ->body("Dokumen identik sudah ada di sistem dengan nama: '{$e->existingDocument->document_name}'.")
+                ->body("Dokumen identik sudah ada di sistem dengan nama: '{$existingDocName}'.")
                 ->danger()
                 ->persistent()
                 ->send();

@@ -100,6 +100,11 @@ class EvidenceDocument extends Model
         return $this->hasMany(DocumentLkLink::class, 'document_id');
     }
 
+    public function proposedLkLinks(): HasMany
+    {
+        return $this->lkLinks()->where('link_source', 'proposed');
+    }
+
     public function officialLkLinks(): HasMany
     {
         return $this->lkLinks()->whereIn('link_source', DocumentLkLink::OFFICIAL_SOURCES);

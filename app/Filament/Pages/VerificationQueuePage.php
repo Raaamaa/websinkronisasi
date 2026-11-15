@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Models\DocumentMatch;
+use App\Models\AuditLog;
+use App\Models\DocumentLkLink;
+use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
-use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Models\User;
-use App\Services\Matching\VerificationService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class VerificationQueuePage extends Page
 {
@@ -22,23 +23,11 @@ class VerificationQueuePage extends Page
 
     protected static ?string $navigationLabel = 'Antrean Verifikasi';
 
-    protected static ?string $title = 'Antrean Verifikasi Hasil Pencocokan';
+    protected static ?string $title = 'Antrean Verifikasi Bukti Dukung';
 
     protected static ?string $navigationGroup = null;
 
     protected static ?int $navigationSort = 3;
-
-    public static function getNavigationBadge(): ?string
-    {
-        $count = DocumentMatch::whereIn('status', ['auto', 'perlu_verifikasi'])->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
 
     protected static ?string $slug = 'verification-queue';
 
@@ -49,496 +38,284 @@ class VerificationQueuePage extends Page
         return '';
     }
 
-    // Filter properties
-    public string|int|null $period = null;
+    public static function getNavigationBadge(): ?string
+    {
+        $count = EvidenceDocument::whereNull('deleted_at')->where('approval_status', 'menunggu')->count();
 
-    public ?string $lkId = null;
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public string $statusFilter = 'menunggu'; // 'menunggu', 'revisi', 'ditolak', 'all'
 
     public ?string $search = null;
-
-    public string $statusTab = 'auto'; // 'auto', 'confirmed', 'rejected', 'all'
-
-    public ?string $scoreRange = null; // null, 'gte_90', 'gte_75'
-
-    public ?string $picFilter = null;
 
     public int $perPage = 10;
 
     public int $page = 1;
 
-    // Selection properties
-    /** @var array<string> */
-    public array $selectedMatches = [];
+    /** @var array<string, list<string>> */
+    public array $selectedLks = [];
 
-    public bool $selectAll = false;
-
-    // Modal inspection properties
-    public ?string $inspectMatchId = null;
+    /** @var array<string, string> */
+    public array $notes = [];
 
     public static function canAccess(): bool
     {
         /** @var User|null $user */
         $user = Auth::user();
 
-        // RBAC.md & MATCH-04: Hanya Super Admin dan Admin yang dapat mengakses antrean verifikasi
         return $user !== null && $user->is_active && $user->deleted_at === null && $user->hasPermission('evidence.verify');
     }
 
     /**
-     * @return array{pending: int, needs_verification: int, confirmed: int, rejected: int}
+     * @return array{menunggu: int, revisi: int, ditolak: int, disetujui: int}
      */
     public function getStats(): array
     {
-        $baseQuery = DocumentMatch::query()
-            ->when($this->period !== null, function ($q) {
-                $isYear = is_numeric($this->period);
-                $q->whereHas('indicator.lembarKerja', function ($lq) use ($isYear) {
-                    if ($isYear) {
-                        $lq->where('period', (int) $this->period);
-                    } else {
-                        $lq->where('evaluation_interval', $this->period);
-                    }
-                });
-            });
-
         return [
-            'pending' => (clone $baseQuery)->where('status', 'auto')->count(),
-            'needs_verification' => (clone $baseQuery)->where('status', 'perlu_verifikasi')->count(),
-            'confirmed' => (clone $baseQuery)->where('status', 'confirmed')->count(),
-            'rejected' => (clone $baseQuery)->where('status', 'rejected')->count(),
+            'menunggu' => EvidenceDocument::whereNull('deleted_at')->where('approval_status', 'menunggu')->count(),
+            'revisi' => EvidenceDocument::whereNull('deleted_at')->where('approval_status', 'revisi')->count(),
+            'ditolak' => EvidenceDocument::whereNull('deleted_at')->where('approval_status', 'ditolak')->count(),
+            'disetujui' => EvidenceDocument::whereNull('deleted_at')->where('approval_status', 'disetujui')->count(),
         ];
     }
 
-    public function setTab(string $tab): void
+    public function setFilter(string $status): void
     {
-        $this->statusTab = $tab;
+        $this->statusFilter = $status;
         $this->page = 1;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
-    }
-
-    public function updatedSelectAll(bool $value): void
-    {
-        if ($value) {
-            $matches = $this->getMatches();
-            $this->selectedMatches = $matches->pluck('id')->map(fn ($id) => (string) $id)->toArray();
-        } else {
-            $this->selectedMatches = [];
-        }
-    }
-
-    public function clearSelection(): void
-    {
-        $this->selectedMatches = [];
-        $this->selectAll = false;
-    }
-
-    public function updatedPeriod(): void
-    {
-        $this->page = 1;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
-    }
-
-    public function updatedLkId(): void
-    {
-        $this->page = 1;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
     }
 
     public function updatedSearch(): void
     {
         $this->page = 1;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
     }
 
-    public function updatedScoreRange(): void
+    /**
+     * @return Collection<int, LembarKerja>
+     */
+    public function getAvailableLembarKerjas(): Collection
     {
-        $this->page = 1;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
+        return LembarKerja::query()
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->orderBy('code')
+            ->get();
     }
 
-    public function updatedPicFilter(): void
+    public function getDocuments(): LengthAwarePaginator
     {
-        $this->page = 1;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
-    }
-
-    public function updatedPerPage(): void
-    {
-        $this->page = 1;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
-    }
-
-    public function gotoPage(int $page): void
-    {
-        $this->page = $page;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
-    }
-
-    public function nextPage(): void
-    {
-        $this->page++;
-        $this->selectedMatches = [];
-        $this->selectAll = false;
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-            $this->selectedMatches = [];
-            $this->selectAll = false;
-        }
-    }
-
-    public function getMatches(): LengthAwarePaginator
-    {
-        $query = DocumentMatch::query()
+        $query = EvidenceDocument::query()
+            ->whereNull('deleted_at')
             ->with([
-                'document.uploader',
-                'indicator.lembarKerja',
-                'matchedItem',
-                'verifier',
+                'uploader',
+                'lkLinks.lembarKerja',
+                'matches.indicator.lembarKerja',
             ]);
 
-        if ($this->statusTab !== 'all') {
-            $query->where('status', $this->statusTab);
-        }
-
-        if ($this->period !== null) {
-            $isYear = is_numeric($this->period);
-            $query->whereHas('indicator.lembarKerja', function ($q) use ($isYear) {
-                if ($isYear) {
-                    $q->where('period', (int) $this->period);
-                } else {
-                    $q->where('evaluation_interval', $this->period);
-                }
-            });
-        }
-
-        if (! empty($this->lkId)) {
-            $query->whereHas('indicator', function ($q) {
-                $q->where('lk_id', $this->lkId);
-            });
-        }
-
-        if (! empty($this->picFilter)) {
-            $query->whereHas('indicator', function ($q) {
-                $q->where('pic', $this->picFilter);
-            });
-        }
-
-        $simThreshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
-        $revThreshold = (float) SystemSetting::get('matching.review_threshold', 60.0);
-
-        if ($this->scoreRange === 'gte_90') {
-            $query->where('confidence_score', '>=', 90);
-        } elseif ($this->scoreRange === 'gte_75') {
-            $query->where('confidence_score', '>=', $simThreshold);
-        } elseif ($this->scoreRange === '60_74') {
-            $query->where('confidence_score', '>=', $revThreshold)->where('confidence_score', '<', $simThreshold);
+        if ($this->statusFilter !== 'all') {
+            $query->where('approval_status', $this->statusFilter);
         }
 
         if (! empty($this->search)) {
-            $searchTerm = '%'.trim($this->search).'%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->whereHas('document', function ($docQ) use ($searchTerm) {
-                    $docQ->where('document_name', 'ilike', $searchTerm)
-                        ->orWhere('document_number', 'ilike', $searchTerm);
-                })->orWhereHas('indicator', function ($indQ) use ($searchTerm) {
-                    $indQ->where('code', 'ilike', $searchTerm)
-                        ->orWhere('title', 'ilike', $searchTerm);
-                });
+            $escaped = addcslashes(trim($this->search), '%_\\');
+            $query->where(function ($q) use ($escaped): void {
+                $q->where('document_name', 'ilike', "%{$escaped}%")
+                    ->orWhere('document_number', 'ilike', "%{$escaped}%");
             });
         }
 
-        return $query->orderByDesc('confidence_score')
-            ->orderBy('created_at')
-            ->paginate($this->perPage, ['*'], 'page', $this->page);
-    }
+        $paginator = $query->orderByDesc('created_at')->paginate($this->perPage, ['*'], 'page', $this->page);
 
-    public function confirmMatch(string $matchId): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        if ($user === null || ! $user->hasPermission('evidence.verify')) {
-            Notification::make()
-                ->title('Akses Ditolak')
-                ->body('Anda tidak memiliki wewenang memverifikasi pencocokan.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $verificationService = app(VerificationService::class);
-            $verificationService->confirmMatch($matchId, $user);
-
-            Notification::make()
-                ->title('Pencocokan Dikonfirmasi')
-                ->body('Status pencocokan telah diubah menjadi Terverifikasi (confirmed).')
-                ->success()
-                ->send();
-        } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Gagal Memverifikasi')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function rejectMatch(string $matchId): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        if ($user === null || ! $user->hasPermission('evidence.verify')) {
-            Notification::make()
-                ->title('Akses Ditolak')
-                ->body('Anda tidak memiliki wewenang menolak pencocokan.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $verificationService = app(VerificationService::class);
-            $verificationService->rejectMatch($matchId, $user);
-
-            Notification::make()
-                ->title('Pencocokan Ditolak')
-                ->body('Pencocokan telah ditolak (rejected) dan tidak akan dicocokkan otomatis lagi.')
-                ->warning()
-                ->send();
-        } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Gagal Menolak')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function unrejectMatch(string $matchId): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        if ($user === null || ! $user->hasPermission('evidence.verify')) {
-            Notification::make()
-                ->title('Akses Ditolak')
-                ->body('Anda tidak memiliki wewenang membatalkan penolakan.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $verificationService = app(VerificationService::class);
-            $verificationService->unrejectMatch($matchId, $user);
-
-            Notification::make()
-                ->title('Penolakan Dibatalkan')
-                ->body('Pencocokan berhasil dipulihkan ke antrean verifikasi.')
-                ->success()
-                ->send();
-        } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Gagal Membatalkan Penolakan')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function unrejectSingleMatch(string $matchId): void
-    {
-        $this->unrejectMatch($matchId);
-    }
-
-    public function unrejectInspectedMatch(): void
-    {
-        if ($this->inspectMatchId !== null) {
-            $id = $this->inspectMatchId;
-            $this->closeInspectModal();
-            $this->unrejectMatch($id);
-        }
-    }
-
-    public function confirmSelected(): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        if ($user === null || ! $user->hasPermission('evidence.verify')) {
-            Notification::make()
-                ->title('Akses Ditolak')
-                ->body('Anda tidak memiliki wewenang memverifikasi pencocokan.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        if (empty($this->selectedMatches)) {
-            return;
-        }
-
-        $verificationService = app(VerificationService::class);
-        $count = 0;
-
-        foreach ($this->selectedMatches as $matchId) {
-            try {
-                $verificationService->confirmMatch((string) $matchId, $user);
-                $count++;
-            } catch (\Throwable) {
-                // Lanjutkan jika ada yang gagal
+        // Inisialisasi selectedLks awal dari usulan LK (proposed) jika belum ada di state
+        foreach ($paginator->items() as $doc) {
+            if (! isset($this->selectedLks[$doc->id])) {
+                $this->selectedLks[$doc->id] = $doc->lkLinks->pluck('lk_id')->toArray();
             }
         }
 
-        $this->selectedMatches = [];
-        $this->selectAll = false;
+        return $paginator;
+    }
+
+    public function approveDocument(string $docId, array $lkIds = []): void
+    {
+        abort_if(! static::canAccess(), 403);
+
+        // Jika lkIds kosong dari parameter, ambil dari state form
+        if (empty($lkIds)) {
+            $lkIds = $this->selectedLks[$docId] ?? [];
+        }
+
+        if (empty($lkIds)) {
+            $this->addError("selectedLks.{$docId}", 'Pilih minimal satu Lembar Kerja untuk menyetujui dokumen.');
+            Notification::make()
+                ->title('Persetujuan Gagal')
+                ->body('Wajib memilih minimal satu Lembar Kerja sebelum menyetujui.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        /** @var User $actor */
+        $actor = Auth::user();
+        $doc = EvidenceDocument::findOrFail($docId);
+
+        DB::transaction(function () use ($doc, $lkIds, $actor): void {
+            // Hapus link yang tidak dipilih (termasuk usulan 'proposed')
+            DocumentLkLink::where('document_id', $doc->id)
+                ->whereNotIn('lk_id', $lkIds)
+                ->delete();
+
+            // Pilihan akhir diset menjadi link_source = 'admin'
+            foreach ($lkIds as $lkId) {
+                $existing = DocumentLkLink::where('document_id', $doc->id)->where('lk_id', $lkId)->first();
+                if ($existing) {
+                    $existing->update([
+                        'link_source' => 'admin',
+                        'verified_at' => now(),
+                    ]);
+                } else {
+                    DocumentLkLink::create([
+                        'document_id' => $doc->id,
+                        'lk_id' => $lkId,
+                        'link_source' => 'admin',
+                        'verified_at' => now(),
+                    ]);
+                }
+            }
+
+            $doc->update([
+                'approval_status' => 'disetujui',
+                'approved_by' => $actor->id,
+                'approved_at' => now(),
+                'approval_notes' => null,
+            ]);
+
+            AuditLog::create([
+                'user_id' => $actor->id,
+                'action' => 'bd.approved',
+                'entity_type' => 'EvidenceDocument',
+                'entity_id' => $doc->id,
+                'new_values' => [
+                    'approval_status' => 'disetujui',
+                    'approved_by' => $actor->id,
+                    'approved_at' => now()->toIso8601String(),
+                    'lk_ids' => $lkIds,
+                ],
+            ]);
+        });
 
         Notification::make()
-            ->title('Verifikasi Berhasil')
-            ->body("{$count} pencocokan berhasil dikonfirmasi permanen (confirmed).")
+            ->title('Dokumen Berhasil Disetujui')
+            ->body("Dokumen '{$doc->document_name}' resmi disetujui untuk LK terkait.")
             ->success()
             ->send();
     }
 
-    public function rejectSelected(): void
+    public function requestRevision(string $docId, string $notes = ''): void
     {
-        /** @var User|null $user */
-        $user = Auth::user();
+        abort_if(! static::canAccess(), 403);
 
-        if ($user === null || ! $user->hasPermission('evidence.verify')) {
+        if (empty($notes)) {
+            $notes = (string) ($this->notes[$docId] ?? '');
+        }
+
+        $trimmed = trim($notes);
+        if ($trimmed === '') {
+            $this->addError("notes.{$docId}", 'Catatan revisi wajib diisi agar pengunggah memahami kekurangan.');
             Notification::make()
-                ->title('Akses Ditolak')
-                ->body('Anda tidak memiliki wewenang menolak pencocokan.')
+                ->title('Catatan Wajib Diisi')
+                ->body('Catatan revisi wajib diisi untuk meminta perbaikan.')
                 ->danger()
                 ->send();
 
             return;
         }
 
-        if (empty($this->selectedMatches)) {
-            return;
-        }
+        /** @var User $actor */
+        $actor = Auth::user();
+        $doc = EvidenceDocument::findOrFail($docId);
 
-        $verificationService = app(VerificationService::class);
-        $count = 0;
+        DB::transaction(function () use ($doc, $trimmed, $actor): void {
+            $doc->update([
+                'approval_status' => 'revisi',
+                'approval_notes' => $trimmed,
+            ]);
 
-        foreach ($this->selectedMatches as $matchId) {
-            try {
-                $verificationService->rejectMatch((string) $matchId, $user);
-                $count++;
-            } catch (\Throwable) {
-                // Lanjutkan jika ada yang gagal
-            }
-        }
-
-        $this->selectedMatches = [];
-        $this->selectAll = false;
+            AuditLog::create([
+                'user_id' => $actor->id,
+                'action' => 'bd.revision_requested',
+                'entity_type' => 'EvidenceDocument',
+                'entity_id' => $doc->id,
+                'new_values' => [
+                    'approval_status' => 'revisi',
+                    'approval_notes' => $trimmed,
+                ],
+            ]);
+        });
 
         Notification::make()
-            ->title('Penolakan Berhasil (MATCH-06)')
-            ->body("{$count} pencocokan ditolak (rejected) dan dikunci permanen.")
+            ->title('Permintaan Revisi Terkirim')
+            ->body("Pengajuan '{$doc->document_name}' dikembalikan ke pengunggah.")
             ->warning()
             ->send();
     }
 
-    public function inspectMatch(string $matchId): void
+    public function rejectDocument(string $docId, string $notes = ''): void
     {
-        $this->inspectMatchId = $matchId;
-    }
+        abort_if(! static::canAccess(), 403);
 
-    public function closeInspectModal(): void
-    {
-        $this->inspectMatchId = null;
-    }
-
-    public function getInspectedMatchProperty(): ?DocumentMatch
-    {
-        if (empty($this->inspectMatchId)) {
-            return null;
+        if (empty($notes)) {
+            $notes = (string) ($this->notes[$docId] ?? '');
         }
 
-        return DocumentMatch::with([
-            'document.uploader',
-            'indicator.lembarKerja',
-            'matchedItem',
-            'verifier',
-        ])->find($this->inspectMatchId);
-    }
+        $trimmed = trim($notes);
+        if ($trimmed === '') {
+            $this->addError("notes.{$docId}", 'Catatan penolakan wajib diisi.');
+            Notification::make()
+                ->title('Catatan Wajib Diisi')
+                ->body('Catatan penolakan wajib diisi untuk menolak pengajuan.')
+                ->danger()
+                ->send();
 
-    public function confirmInspectedMatch(): void
-    {
-        if ($this->inspectMatchId !== null) {
-            $id = $this->inspectMatchId;
-            $this->closeInspectModal();
-            $this->confirmMatch($id);
+            return;
         }
+
+        /** @var User $actor */
+        $actor = Auth::user();
+        $doc = EvidenceDocument::findOrFail($docId);
+
+        DB::transaction(function () use ($doc, $trimmed, $actor): void {
+            $doc->update([
+                'approval_status' => 'ditolak',
+                'approval_notes' => $trimmed,
+            ]);
+
+            AuditLog::create([
+                'user_id' => $actor->id,
+                'action' => 'bd.rejected',
+                'entity_type' => 'EvidenceDocument',
+                'entity_id' => $doc->id,
+                'new_values' => [
+                    'approval_status' => 'ditolak',
+                    'approval_notes' => $trimmed,
+                ],
+            ]);
+        });
+
+        Notification::make()
+            ->title('Pengajuan Ditolak')
+            ->body("Pengajuan '{$doc->document_name}' ditolak.")
+            ->danger()
+            ->send();
     }
 
-    public function rejectInspectedMatch(): void
-    {
-        if ($this->inspectMatchId !== null) {
-            $id = $this->inspectMatchId;
-            $this->closeInspectModal();
-            $this->rejectMatch($id);
-        }
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function getLkOptions(): array
-    {
-        return LembarKerja::query()
-            ->when($this->period !== null, function ($q) {
-                if (is_numeric($this->period)) {
-                    $q->where('period', (int) $this->period);
-                } else {
-                    $q->where('evaluation_interval', $this->period);
-                }
-            })
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->toArray();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function getPicOptions(): array
-    {
-        return LkIndicator::query()
-            ->whereNotNull('pic')
-            ->where('pic', '!=', '')
-            ->distinct()
-            ->orderBy('pic')
-            ->pluck('pic', 'pic')
-            ->toArray();
-    }
-
-    /**
-     * Highlight matched keywords in text preview for inspection drawer.
-     *
-     * @param  array<string>|null  $keywords
-     */
     public function highlightKeywords(string $text, ?array $keywords): string
     {
         if (empty($keywords)) {

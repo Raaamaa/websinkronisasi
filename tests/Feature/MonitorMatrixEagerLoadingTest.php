@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\DocumentLkLink;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
@@ -73,6 +74,7 @@ class MonitorMatrixEagerLoadingTest extends TestCase
                 'id' => (string) Str::uuid(),
                 'document_name' => "Dokumen Eager Loading Ke-{$i}",
                 'year' => 2026,
+                'approval_status' => 'disetujui',
                 'file_path' => "evidence/test_eager_{$i}.pdf",
                 'original_filename' => "doc_eager_{$i}.pdf",
                 'mime_type' => 'application/pdf',
@@ -83,6 +85,12 @@ class MonitorMatrixEagerLoadingTest extends TestCase
             ]);
 
             $this->createdDocIds[] = $doc->id;
+
+            DocumentLkLink::create([
+                'document_id' => $doc->id,
+                'lk_id' => $lk->id,
+                'link_source' => 'admin',
+            ]);
 
             DocumentMatch::create([
                 'id' => (string) Str::uuid(),

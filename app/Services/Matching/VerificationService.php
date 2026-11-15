@@ -6,7 +6,6 @@ namespace App\Services\Matching;
 
 use App\Models\AuditLog;
 use App\Models\DocumentMatch;
-use App\Models\SystemSetting;
 use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -88,48 +87,6 @@ class VerificationService
                 'new_values' => [
                     'status' => 'rejected',
                     'verified_by' => $actor->id,
-                ],
-            ]);
-
-            return $match;
-        });
-    }
-
-    /**
-     * Un-reject a rejected match (TASK-21b), restoring it to active verification status.
-     */
-    public function unrejectMatch(string $matchId, User $actor): DocumentMatch
-    {
-        return DB::transaction(function () use ($matchId, $actor): DocumentMatch {
-            /** @var DocumentMatch $match */
-            $match = DocumentMatch::where('id', $matchId)->lockForUpdate()->firstOrFail();
-            $oldStatus = $match->status;
-
-            if ($oldStatus !== 'rejected') {
-                return $match;
-            }
-
-            // Pulihkan status: jika skor >= similarity_threshold -> auto, jika tidak -> perlu_verifikasi
-            $threshold = (float) SystemSetting::get('matching.similarity_threshold', 75.0);
-            $newStatus = $match->confidence_score >= $threshold ? 'auto' : 'perlu_verifikasi';
-
-            $match->update([
-                'status' => $newStatus,
-                'verified_by' => null,
-                'verified_at' => null,
-            ]);
-
-            AuditLog::create([
-                'user_id' => $actor->id,
-                'action' => 'bd.match_unrejected',
-                'entity_type' => 'DocumentMatch',
-                'entity_id' => $match->id,
-                'old_values' => [
-                    'status' => 'rejected',
-                ],
-                'new_values' => [
-                    'status' => $newStatus,
-                    'unrejected_by' => $actor->id,
                 ],
             ]);
 

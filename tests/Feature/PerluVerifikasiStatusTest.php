@@ -81,6 +81,7 @@ class PerluVerifikasiStatusTest extends TestCase
             'file_path' => 'private/documents/'.Str::uuid().'.pdf',
             'uploaded_by' => $user->id,
             'processing_status' => 'selesai',
+            'approval_status' => 'disetujui',
             'year' => $lk->period,
         ]);
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\DocumentLkLink;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
@@ -173,6 +174,7 @@ class NewRequirementsTest extends TestCase
         $doc = EvidenceDocument::create([
             'document_name' => 'SK PPID Kantor 2026 '.$code,
             'year' => 2026,
+            'approval_status' => 'disetujui',
             'mime_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'file_path' => 'evidence/sk_ppid.pdf',
@@ -180,6 +182,13 @@ class NewRequirementsTest extends TestCase
             'file_hash' => hash('sha256', 'drive_test_'.uniqid()),
             'processing_status' => 'selesai',
             'uploaded_by' => $this->pegawai->id,
+        ]);
+
+        DocumentLkLink::create([
+            'document_id' => $doc->id,
+            'lk_id' => $lk->id,
+            'indicator_id' => $indicator->id,
+            'link_source' => 'admin',
         ]);
 
         DocumentMatch::create([
