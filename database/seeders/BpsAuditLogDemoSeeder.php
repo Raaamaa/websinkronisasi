@@ -86,18 +86,17 @@ class BpsAuditLogDemoSeeder extends Seeder
         $now = Carbon::parse('2026-11-02 14:15:08');
 
         $logs = [
-            // Row 1: Verifikasi Matching
+            // Row 1: Persetujuan Verifikasi Bukti Dukung
             [
                 'user_id' => $userIds['rere'],
-                'action' => 'match.confirmed',
-                'entity_type' => 'DocumentMatch',
+                'action' => 'bd.approved',
+                'entity_type' => 'EvidenceDocument',
                 'entity_id' => (string) Str::uuid(),
-                'old_values' => json_encode(['status' => 'auto', 'similarity_score' => 0.92]),
+                'old_values' => json_encode(['approval_status' => 'menunggu']),
                 'new_values' => json_encode([
-                    'status' => 'confirmed',
-                    'file_name' => 'SK-Tim-ZI-2026.pdf',
-                    'indicator_code' => 'A11i',
-                    'similarity_score' => 0.92,
+                    'approval_status' => 'disetujui',
+                    'document_name' => 'SK Tim Kerja Pembangunan ZI Tahun 2026',
+                    'lk_codes' => ['ZI'],
                     'actor_title' => 'Admin Operasional',
                 ]),
                 'ip_address' => '10.128.4.15',
@@ -107,15 +106,16 @@ class BpsAuditLogDemoSeeder extends Seeder
             // Row 2: Unggah Bukti
             [
                 'user_id' => $userIds['bambang'],
-                'action' => 'evidence.uploaded',
+                'action' => 'bd.uploaded',
                 'entity_type' => 'EvidenceDocument',
                 'entity_id' => (string) Str::uuid(),
                 'old_values' => null,
                 'new_values' => json_encode([
-                    'file_name' => 'Laporan_Evaluasi_PST_Triwulan_IV.pdf',
-                    'file_size' => '12.4 MB',
+                    'document_name' => 'Laporan Evaluasi PST Triwulan IV',
+                    'file_size_bytes' => 13002342,
                     'file_hash' => 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-                    'actor_title' => 'Operator ZI',
+                    'approval_status' => 'menunggu',
+                    'source_type' => 'upload',
                 ]),
                 'ip_address' => '10.128.12.88',
                 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Edge/122.0.0.0',

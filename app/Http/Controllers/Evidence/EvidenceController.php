@@ -72,11 +72,27 @@ class EvidenceController extends Controller
 
         $document = EvidenceDocument::findOrFail($id);
 
-        if (! Storage::disk('private')->exists($document->file_path)) {
+        if (! $user->can('view', $document)) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengunduh dokumen ini.');
+        }
+
+        if (in_array($document->source_type, ['drive', 'link'], true)) {
+            try {
+                $safeUrl = $this->uploadService->validateExternalLink($document->external_link);
+            } catch (\Illuminate\Validation\ValidationException) {
+                abort(422, 'Tautan eksternal bukti dukung tidak valid atau memiliki skema yang tidak diizinkan.');
+            }
+
+            return redirect()->away($safeUrl);
+        }
+
+        if (empty($document->file_path) || ! Storage::disk('private')->exists($document->file_path)) {
             abort(404, 'Berkas fisik tidak ditemukan di penyimpanan server.');
         }
 
-        return Storage::disk('private')->download($document->file_path, $document->original_filename);
+        $downloadName = $this->uploadService->buildDownloadFilename($document);
+
+        return Storage::disk('private')->download($document->file_path, $downloadName);
     }
 
     /**

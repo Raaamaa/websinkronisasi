@@ -11,7 +11,6 @@ use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
 use App\Models\User;
-use App\Services\Matching\ManualMatchService;
 use App\Services\Matching\VerificationService;
 use App\Services\Monitor\MonitorMatrixService;
 use Illuminate\Support\Facades\Storage;
@@ -352,111 +351,6 @@ class Phase6MonitorAndVerificationTest extends TestCase
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->admin->id,
             'action' => 'match.rejected',
-            'entity_type' => 'DocumentMatch',
-            'entity_id' => $match->id,
-        ]);
-    }
-
-    /**
-     * 9. MATCH-05: Admin can manually add match as confirmed.
-     */
-    public function test_admin_can_manually_add_match_as_confirmed(): void
-    {
-        [$lk, $indicator, $item] = $this->createSampleLkWithIndicator('SAKIP', 'internal', 'SK01');
-
-        $document = EvidenceDocument::create([
-            'id' => (string) Str::uuid(),
-            'document_name' => 'Laporan Akuntabilitas Manual',
-            'year' => 2026,
-            'file_path' => 'evidence/test_man.pdf',
-            'original_filename' => 'lakip_man.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'hash_man_'.uniqid()),
-            'processing_status' => 'selesai',
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $manualService = app(ManualMatchService::class);
-        $match = $manualService->addMatch($document->id, $indicator->id, $this->admin);
-
-        $this->assertSame('confirmed', $match->status);
-        $this->assertSame('manual', $match->match_method);
-        $this->assertEquals(100.0, $match->confidence_score);
-        $this->assertSame($this->admin->id, $match->verified_by);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $this->admin->id,
-            'action' => 'match.manual_created',
-            'entity_type' => 'DocumentMatch',
-            'entity_id' => $match->id,
-        ]);
-    }
-
-    /**
-     * 10. AC-16: Concurrent manual match creation does not duplicate or throw 500.
-     */
-    public function test_concurrent_manual_match_creation_does_not_duplicate_or_throw_500(): void
-    {
-        [$lk, $indicator, $item] = $this->createSampleLkWithIndicator('PEKPPP', 'internal', 'P99');
-
-        $document = EvidenceDocument::create([
-            'id' => (string) Str::uuid(),
-            'document_name' => 'Dokumen Race Condition Test',
-            'year' => 2026,
-            'file_path' => 'evidence/test_race.pdf',
-            'original_filename' => 'race.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'hash_race_'.uniqid()),
-            'processing_status' => 'selesai',
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $manualService = app(ManualMatchService::class);
-
-        // Simulasikan dua admin menambahkan match yang persis sama secara berurutan/bersamaan
-        $match1 = $manualService->addMatch($document->id, $indicator->id, $this->admin);
-        $match2 = $manualService->addMatch($document->id, $indicator->id, $this->superAdmin);
-
-        // AC-16: Hanya satu record unik tersimpan, tidak ada 500 error
-        $this->assertSame($match1->id, $match2->id);
-        $this->assertSame(1, DocumentMatch::where('document_id', $document->id)->where('indicator_id', $indicator->id)->count());
-    }
-
-    /**
-     * 11. MATCH-05, MATCH-06: Admin can delete match manually setting status to rejected.
-     */
-    public function test_admin_can_manually_delete_match_setting_status_to_rejected(): void
-    {
-        [$lk, $indicator, $item] = $this->createSampleLkWithIndicator('KIP', 'internal', 'K88');
-
-        $document = EvidenceDocument::create([
-            'id' => (string) Str::uuid(),
-            'document_name' => 'Dokumen Hapus Manual Test',
-            'year' => 2026,
-            'file_path' => 'evidence/test_del.pdf',
-            'original_filename' => 'del.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'hash_del_'.uniqid()),
-            'processing_status' => 'selesai',
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $manualService = app(ManualMatchService::class);
-        $match = $manualService->addMatch($document->id, $indicator->id, $this->admin);
-
-        // Hapus match manual
-        $manualService->deleteMatch($document->id, $indicator->id, $this->admin);
-
-        $fresh = $match->fresh();
-        // Sesuai MATCH-06, match dihapus dengan mengubah status menjadi 'rejected'
-        $this->assertSame('rejected', $fresh->status);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $this->admin->id,
-            'action' => 'match.manual_deleted',
             'entity_type' => 'DocumentMatch',
             'entity_id' => $match->id,
         ]);

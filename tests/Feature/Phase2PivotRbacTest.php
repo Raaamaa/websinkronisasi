@@ -47,7 +47,7 @@ class Phase2PivotRbacTest extends TestCase
         $this->assertTrue($superAdmin->hasPermission('evidence.delete'));
         $this->assertTrue($superAdmin->hasPermission('lk.manage'));
         $this->assertTrue($superAdmin->hasPermission('audit.view'));
-        $this->assertTrue($superAdmin->hasPermission('settings.manage'));
+        $this->assertTrue($superAdmin->hasPermission('user.manage'));
         $this->assertTrue($superAdmin->hasPermission('monitor.view'));
         $this->assertFalse($superAdmin->hasPermission('evidence.upload'));
         $this->assertFalse($superAdmin->hasPermission('evidence.search'));

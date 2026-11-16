@@ -11,7 +11,6 @@ use App\Models\AuditLog;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkImportProfile;
-use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -191,10 +190,6 @@ class FilamentRbacAuthorizationMatrixTest extends TestCase
 
     public function test_master_lk_and_system_settings_policies_are_super_admin_only(): void
     {
-        $this->assertTrue(Gate::forUser($this->superAdmin)->allows('viewAny', SystemSetting::class));
-        $this->assertFalse(Gate::forUser($this->admin)->allows('viewAny', SystemSetting::class));
-        $this->assertFalse(Gate::forUser($this->pegawai)->allows('viewAny', SystemSetting::class));
-
         $this->assertTrue(Gate::forUser($this->superAdmin)->allows('create', LembarKerja::class));
         $this->assertFalse(Gate::forUser($this->admin)->allows('create', LembarKerja::class));
         $this->assertFalse(Gate::forUser($this->pegawai)->allows('create', LembarKerja::class));

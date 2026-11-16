@@ -146,11 +146,7 @@ class User extends Authenticatable implements FilamentUser, HasName
             'lk.indicator_manage',
             'lk.manage_drive_links',
             'audit.view',
-            'settings.manage',
             'user.manage',
-            'match.manual_create',
-            'match.manual_delete',
-            'match.rematch',
         ];
 
         $adminPermissions = [
@@ -162,9 +158,6 @@ class User extends Authenticatable implements FilamentUser, HasName
             'evidence.manage_markup',
             'lk.manage_drive_links',
             'drive.sync',
-            'match.manual_create',
-            'match.manual_delete',
-            'match.rematch',
         ];
 
         $pegawaiPermissions = [

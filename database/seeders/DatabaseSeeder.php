@@ -16,7 +16,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SuperAdminSeeder::class,
             InitialLkSeeder::class,
+            BpsDemoUserSeeder::class,
             DemoIndicatorAndSampleDocumentsSeeder::class,
+            BpsAuditLogDemoSeeder::class,
         ]);
     }
 }

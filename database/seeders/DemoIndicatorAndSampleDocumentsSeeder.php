@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\DocumentLkLink;
+use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use ZipArchive;
 
 class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
@@ -147,7 +151,10 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'DAN WILAYAH BIROKRASI BERSIH DAN MELAYANI (WBBM)',
             'BPS KABUPATEN TEGAL TAHUN 2026',
         ]);
-        file_put_contents($sampleDir.'/SK_Tim_Pembangunan_Zona_Integritas_2026.pdf', $pdf1);
+        $pdf1Path = $sampleDir.'/SK_Tim_Pembangunan_Zona_Integritas_2026.pdf';
+        if (! is_file($pdf1Path)) {
+            file_put_contents($pdf1Path, $pdf1);
+        }
 
         // File 2: Standar Pelayanan Publik PEKPPP
         $pdf2 = $this->createMultilinePdf([
@@ -158,7 +165,10 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'PEMANTAUAN DAN EVALUASI KINERJA PENYELENGGARA PELAYANAN PUBLIK (PEKPPP-01)',
             'BPS KABUPATEN TEGAL TAHUN 2026',
         ]);
-        file_put_contents($sampleDir.'/Standar_Pelayanan_Publik_BPS_2026.pdf', $pdf2);
+        $pdf2Path = $sampleDir.'/Standar_Pelayanan_Publik_BPS_2026.pdf';
+        if (! is_file($pdf2Path)) {
+            file_put_contents($pdf2Path, $pdf2);
+        }
 
         // File 3: Laporan Kinerja LKjIP SAKIP
         $pdf3 = $this->createMultilinePdf([
@@ -168,15 +178,125 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
             'SURAT PENGANTAR KEPALA BPS NOMOR B-305/3328/OT.010/2026',
             'BPS KABUPATEN TEGAL TAHUN 2026',
         ]);
-        file_put_contents($sampleDir.'/Laporan_Kinerja_Instansi_Pemerintah_LKjIP_2026.pdf', $pdf3);
+        $pdf3Path = $sampleDir.'/Laporan_Kinerja_Instansi_Pemerintah_LKjIP_2026.pdf';
+        if (! is_file($pdf3Path)) {
+            file_put_contents($pdf3Path, $pdf3);
+        }
 
         // File 4: Daftar Informasi Publik DOCX KIP
-        $this->createDocxFile(
-            $sampleDir.'/Daftar_Informasi_Publik_DIP_PPID_2026.docx',
-            'BADAN PUSAT STATISTIK KABUPATEN TEGAL. '.
-            'SURAT KEPUTUSAN STRUKTUR PPID DAN PENETAPAN DAFTAR INFORMASI PUBLIK (DIP) KETERBUKAAN INFORMASI PUBLIK (KIP-01) '.
-            'SELF ASSESSMENT QUESTIONNAIRE NOMOR B-402/3328/HM.100/2026 TAHUN 2026.'
-        );
+        $docxPath = $sampleDir.'/Daftar_Informasi_Publik_DIP_PPID_2026.docx';
+        if (! is_file($docxPath)) {
+            $this->createDocxFile(
+                $docxPath,
+                'BADAN PUSAT STATISTIK KABUPATEN TEGAL. '.
+                'SURAT KEPUTUSAN STRUKTUR PPID DAN PENETAPAN DAFTAR INFORMASI PUBLIK (DIP) KETERBUKAAN INFORMASI PUBLIK (KIP-01) '.
+                'SELF ASSESSMENT QUESTIONNAIRE NOMOR B-402/3328/HM.100/2026 TAHUN 2026.'
+            );
+        }
+
+        // 3. Daftarkan dokumen bukti dukung demo berstatus disetujui beserta document_lk_links resmi
+        $actor = User::whereIn('role', ['admin', 'pegawai', 'super_admin'])->where('is_active', true)->first()
+            ?? User::create([
+                'id' => (string) Str::uuid(),
+                'name' => 'Admin Demo BPS',
+                'email' => 'admin.demo.seeder@bps.go.id',
+                'role' => 'admin',
+                'is_active' => true,
+                'must_change_password' => false,
+                'auth_provider' => 'sso',
+            ]);
+
+        $demoDocs = [
+            [
+                'lk_code' => 'ZI',
+                'document_name' => 'SK Tim Kerja Pembangunan Zona Integritas Tahun 2026',
+                'document_number' => 'B-105/3328/KP.010/2026',
+                'document_type' => 'SK',
+                'original_filename' => 'SK_Tim_Pembangunan_Zona_Integritas_2026.pdf',
+                'mime_type' => 'application/pdf',
+                'content' => $pdf1,
+                'extracted_text' => 'KEPUTUSAN KEPALA BPS NOMOR B-105/3328/KP.010/2026 TENTANG PEMBENTUKAN TIM KERJA PEMBANGUNAN ZONA INTEGRITAS (ZI-1.1)',
+            ],
+            [
+                'lk_code' => 'PEKPPP',
+                'document_name' => 'SK Standar Pelayanan Statistik Terpadu dan Maklumat Pelayanan 2026',
+                'document_number' => 'B-201/3328/VS.020/2026',
+                'document_type' => 'SK',
+                'original_filename' => 'Standar_Pelayanan_Publik_BPS_2026.pdf',
+                'mime_type' => 'application/pdf',
+                'content' => $pdf2,
+                'extracted_text' => 'SURAT KEPUTUSAN KEPALA BPS NOMOR B-201/3328/VS.020/2026 TENTANG PENETAPAN STANDAR PELAYANAN STATISTIK TERPADU (PEKPPP-01)',
+            ],
+            [
+                'lk_code' => 'SAKIP',
+                'document_name' => 'Laporan Kinerja Instansi Pemerintah (LKjIP) Tahun 2026',
+                'document_number' => 'B-305/3328/OT.010/2026',
+                'document_type' => 'Laporan',
+                'original_filename' => 'Laporan_Kinerja_Instansi_Pemerintah_LKjIP_2026.pdf',
+                'mime_type' => 'application/pdf',
+                'content' => $pdf3,
+                'extracted_text' => 'LAPORAN KINERJA INSTANSI PEMERINTAH (LKjIP) TAHUN 2026 EVALUASI SISTEM AKUNTABILITAS KINERJA INSTANSI PEMERINTAH (SAKIP-01)',
+            ],
+        ];
+
+        foreach ($demoDocs as $item) {
+            $hash = hash('sha256', $item['content']);
+            $doc = EvidenceDocument::withTrashed()->where('file_hash', $hash)->first();
+
+            if ($doc !== null && $doc->trashed()) {
+                $doc->restore();
+            }
+
+            if ($doc === null) {
+                $docUuid = (string) Str::uuid();
+                $doc = EvidenceDocument::create([
+                    'id' => $docUuid,
+                    'document_name' => $item['document_name'],
+                    'document_number' => $item['document_number'],
+                    'year' => 2026,
+                    'document_type' => $item['document_type'],
+                    'file_path' => "evidence/{$docUuid}.pdf",
+                    'original_filename' => $item['original_filename'],
+                    'mime_type' => $item['mime_type'],
+                    'file_size_bytes' => strlen($item['content']),
+                    'file_hash' => $hash,
+                    'extracted_text' => $item['extracted_text'],
+                    'processing_status' => 'selesai',
+                    'approval_status' => 'disetujui',
+                    'approved_by' => $actor->id,
+                    'approved_at' => now(),
+                    'source_type' => 'upload',
+                    'uploaded_by' => $actor->id,
+                ]);
+            } else {
+                $doc->update([
+                    'approval_status' => 'disetujui',
+                    'approved_by' => $actor->id,
+                    'approved_at' => now(),
+                    'source_type' => 'upload',
+                ]);
+            }
+
+            $lk = LembarKerja::where('code', $item['lk_code'])->where('period', 2026)->first();
+            if ($lk !== null) {
+                $existingLink = DocumentLkLink::where('document_id', $doc->id)
+                    ->where('lk_id', $lk->id)
+                    ->whereNull('indicator_id')
+                    ->first();
+
+                if ($existingLink !== null) {
+                    $existingLink->update(['link_source' => 'admin', 'created_by' => $actor->id]);
+                } else {
+                    DocumentLkLink::create([
+                        'document_id' => $doc->id,
+                        'lk_id' => $lk->id,
+                        'indicator_id' => null,
+                        'link_source' => 'admin',
+                        'created_by' => $actor->id,
+                    ]);
+                }
+            }
+        }
     }
 
     /**

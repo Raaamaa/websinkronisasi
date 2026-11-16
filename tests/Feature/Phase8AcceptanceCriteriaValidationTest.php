@@ -12,7 +12,6 @@ use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkImportProfile;
 use App\Models\LkIndicator;
-use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Auth\UserManagerService;
 use App\Services\Evidence\EvidenceUploadService;
@@ -20,7 +19,6 @@ use App\Services\Evidence\TextExtractionService;
 use App\Services\LkImport\ExcelParserService;
 use App\Services\LkImport\LkImportService;
 use App\Services\LkImport\Resolvers\YearPlaceholderResolver;
-use App\Services\Matching\ManualMatchService;
 use App\Services\Matching\MatchingEngineService;
 use App\Services\Matching\VerificationService;
 use App\Services\Monitor\MonitorMatrixService;
@@ -87,7 +85,6 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
 
     protected function tearDown(): void
     {
-        SystemSetting::where('key', 'matching.similarity_threshold')->update(['value' => 75.0]);
         parent::tearDown();
     }
 
@@ -495,42 +492,13 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
     }
 
     /**
-     * AC-16: Dua admin menambah match yang sama bersamaan -> Hanya satu record tersimpan (unique constraint), tidak ada error 500.
-     */
-    public function test_ac_16_concurrent_manual_match_creation_does_not_duplicate_or_fail(): void
-    {
-        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
-        $ind = LkIndicator::firstOrCreate(['lk_id' => $lk->id, 'code' => 'ZI-AC16'], ['title' => 'Indikator AC16', 'order_index' => 1]);
-
-        $doc = EvidenceDocument::create([
-            'document_name' => 'Dokumen Konkuren AC16',
-            'year' => 2026,
-            'file_path' => 'evidence/ac16.pdf',
-            'original_filename' => 'ac16.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'ac16_'.uniqid()),
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        /** @var ManualMatchService $service */
-        $service = app(ManualMatchService::class);
-
-        $match1 = $service->addMatch($doc->id, $ind->id, $this->admin);
-        $match2 = $service->addMatch($doc->id, $ind->id, $this->superAdmin);
-
-        $this->assertEquals($match1->id, $match2->id);
-        $this->assertEquals(1, DocumentMatch::where('document_id', $doc->id)->where('indicator_id', $ind->id)->count());
-    }
-
-    /**
      * AC-17: Setiap aksi pada AC-05 s.d. AC-16 yang mengubah data -> Tercatat di audit log.
      */
     public function test_ac_17_all_data_mutation_actions_are_recorded_in_audit_logs(): void
     {
         $this->assertDatabaseHas('audit_logs', ['action' => 'user.deactivated']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'match.rejected']);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'match.manual_created']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'bd.uploaded']);
     }
 
     /**

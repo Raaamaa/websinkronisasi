@@ -30,7 +30,7 @@ class EvidenceDocumentPolicy
             return true;
         }
 
-        if ($user->hasPermission('evidence.search')) {
+        if ($user->hasPermission('evidence.search') || $user->hasPermission('evidence.view_link')) {
             return $evidenceDocument->approval_status === 'disetujui'
                 || ($evidenceDocument->uploaded_by !== null && (string) $evidenceDocument->uploaded_by === (string) $user->id);
         }
