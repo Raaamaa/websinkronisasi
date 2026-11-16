@@ -3,46 +3,49 @@
 
 | Atribut | Nilai |
 |---|---|
-| Versi Dokumen | 1.0 |
-| Tanggal | 29 Oktober 2026 |
-| Basis PRD | `PRD.md` Versi 1.1 (Bagian 5, 6, 7.1, 9, 10, 11) |
-| Basis Basis Data | `DATABASE.md` Versi 1.0 (Tabel `users`, `audit_logs`) |
+| Versi Dokumen | 2.0 |
+| Tanggal | 16 November 2026 |
+| Basis PRD | `PRD.md` Versi 2.0 |
+| Basis Basis Data | `DATABASE.md` Versi 2.0 (Tabel `users`, `evidence_documents`, `document_lk_links`, `audit_logs`) |
 | Prinsip Utama | *Defense in Depth*, *Least Privilege*, *Server-Side Strict Enforcement* (NFR-01) |
 
 ---
 
 ## 1. Pendahuluan & Prinsip Keamanan
 
-Dokumen ini mengatur arsitektur Autentikasi dan Otorisasi (RBAC) untuk aplikasi Websinkronisasi. Menjawab kebutuhan **NFR-01**, pengamanan hak akses **wajib ditegakkan di sisi server** pada setiap *request/endpoint*. Menyembunyikan komponen tombol, menu, atau elemen UI di sisi klien **bukan** merupakan mekanisme pengamanan, melainkan sekadar kenyamanan tampilan (*UX affordance*).
+Dokumen ini mengatur arsitektur Autentikasi dan Otorisasi (RBAC) untuk aplikasi Websinkronisasi (ELKA). Menjawab kebutuhan **NFR-01**, pengamanan hak akses **wajib ditegakkan di sisi server** pada setiap *request*, controller, halaman Filament/Livewire, dan Policy. Menyembunyikan tombol atau menu di sisi klien **bukan** merupakan mekanisme pengamanan, melainkan sekadar kenyamanan tampilan (*UX affordance*).
 
 ### 1.1 Prinsip-Prinsip Desain RBAC:
-1. **Least Privilege (Hak Akses Terkecil):** Pengguna hanya diberi wewenang terkecil yang dibutuhkan untuk menjalankan tugasnya. Peran `pegawai` bersifat *read-only* mutlak.
-2. **Server-Side Active Session Check (AUTH-07, AC-15, AC-18):** Status keaktifan akun (`is_active`) wajib diperiksa di sisi server pada setiap permintaan, bukan hanya saat proses *handshake* login awal. Akun yang dinonaktifkan akan segera diputus sesinya seketika.
+1. **Least Privilege (Hak Akses Terarah Sesuai Peran):** Pengguna hanya diberi wewenang yang sesuai dengan tanggung jawab operasionalnya:
+   * **Pegawai:** Mencari dokumen yang sudah disetujui (`CariDokumenPage`), mengunggah/mengajukan bukti dukung baru (berkas maks 50 MB atau tautan), melihat dan merevisi pengajuan miliknya sendiri saat diminta revisi (`approval_status = 'revisi'`), melihat Matriks Monitor, serta mengunduh dokumen yang telah disetujui atau pengajuan miliknya sendiri.
+   * **Admin:** Menjalankan seluruh fungsi operasional Pegawai ditambah memverifikasi pengajuan di Antrean Verifikasi (`VerificationQueuePage`), mengelola tautan Google Drive indikator LK, serta mengelola dan menyinkronkan folder Google Drive (`drive.sync`).
+   * **Super Admin:** Mengelola master Lembar Kerja, profil & impor Excel, indikator LK, manajemen pengguna/role, jejak audit (`AuditLogResource`), menghapus dokumen bukti dukung (`evidence.delete`), serta ikut memverifikasi di Antrean Verifikasi (`evidence.verify`). Super Admin **tidak** mengunggah bukti dukung, **tidak** membuka halaman Cari Dokumen (`evidence.search`), dan **tidak** menjalankan sinkronisasi Google Drive (`drive.sync`).
+2. **Server-Side Active Session Check (AUTH-07, AC-15, AC-18):** Status keaktifan akun (`is_active`) dan `deleted_at IS NULL` wajib diperiksa di sisi server pada setiap permintaan melalui `EnsureAccountIsActive`. Akun yang dinonaktifkan segera diputus sesinya seketika.
 3. **Portal Tunggal Terpadu (*Unified Single Portal* — AUTH-01, AUTH-03, AUTH-11, D6, D7):**
-   * Aplikasi menggunakan satu portal login bersama di rute `/login` dengan desain antarmuka berbasis Hallmark (tema Cobalt).
-   * **Opsi 1 (SSO BPS):** Pegawai dan Admin BPS masuk via SSO Keycloak BPS (`https://sso.bps.go.id`). Jika diakses dari luar kantor, memerlukan koneksi aktif FortiClient VPN.
-   * **Opsi 2 (Formulir Lokal):** Khusus Super Admin awal masuk via kredensial lokal dengan kewajiban ganti password saat login pertama (`must_change_password = true`).
-   * **Penegakan AUTH-11:** Pegawai dilarang keras login melalui formulir lokal; akun ber-role pegawai atau ber-provider `sso` yang mencoba form lokal ditolak otomatis oleh sistem.
-4. **Pencegahan Kunci Diri / Self-Lockout (AUTH-06, AC-04):** Sistem secara absolut menolak penonaktifan atau penurunan role dari Super Admin terakhir yang aktif, serta menolak pengguna menonaktifkan akunnya sendiri.
-5. **Auditability (AUDIT-01):** Setiap peristiwa yang berkaitan dengan keamanan (login, logout, pergantian role, aktivasi/penonaktifan akun, kegagalan otorisasi) wajib dicatat dalam tabel `audit_logs`.
+   * Aplikasi menggunakan satu portal login di rute `/login`.
+   * **Opsi 1 (SSO BPS):** Pegawai dan Admin BPS masuk via SSO Keycloak BPS (`BpsKeycloakOidcProvider`, atau `MockSSOProvider` pada lingkungan `local`/`testing`).
+   * **Opsi 2 (Formulir Lokal):** Khusus Super Admin (dan akun pengelola lokal) masuk via kredensial lokal. Akun Super Admin awal hasil seeder wajib mengganti password saat login pertama (`must_change_password = true`, Invarian #8).
+   * **Penegakan AUTH-11:** Akun ber-role `pegawai` dilarang login melalui formulir password lokal.
+4. **Pencegahan Kunci Diri / Self-Lockout (AUTH-06, AC-04, Invarian #4):** Sistem secara absolut menolak penonaktifan, penghapusan, atau penurunan role dari satu-satunya Super Admin aktif yang tersisa, serta menolak pengguna menonaktifkan akunnya sendiri.
+5. **Auditability (AUDIT-01, AUDIT-02, Invarian #5):** Setiap peristiwa keamanan dan mutasi data (login, logout, pergantian role, aktivasi/penonaktifan akun, unggah/revisi/verifikasi/hapus dokumen, impor LK) wajib dicatat secara *append-only* dalam tabel `audit_logs`.
 
 ---
 
 ## 2. Definisi Peran (Roles) & Hierarki
 
-Sistem membagi pengguna ke dalam 3 peran (*role*) diskret dan 1 status akun (*state*):
+Sistem membagi pengguna ke dalam 3 peran (*role*) diskret dan 1 status pembekuan akun:
 
 ```mermaid
 graph TD
     subgraph Status Akun
-        ACTIVE[is_active = TRUE]
-        INACTIVE[is_active = FALSE<br/>Ditolak di setiap endpoint]
+        ACTIVE[is_active = TRUE & deleted_at IS NULL]
+        INACTIVE[is_active = FALSE / Soft-Deleted<br/>Ditolak di setiap endpoint]
     end
 
     subgraph Peran Sistem
-        SA[Super Admin<br/>Hak Akses Penuh & Master Data]
-        ADM[Admin<br/>Operasional Matching & Upload]
-        PGW[Pegawai<br/>Read-Only Monitor & Pencarian]
+        SA[Super Admin<br/>Master Data, Pengguna, Audit & Verifikasi]
+        ADM[Admin<br/>Verifikasi, Sinkron Drive, Upload & Cari]
+        PGW[Pegawai<br/>Cari Dokumen, Upload & Revisi Milik Sendiri]
     end
 
     ACTIVE --> SA
@@ -58,259 +61,92 @@ graph TD
 
 | Peran (`role`) | Deskripsi & Batas Kewenangan | Metode Autentikasi | Sumber Pembuatan Akun |
 |---|---|---|---|
-| **Super Admin** | Pengelola sistem dan hak akses admin. Berwenang mengelola admin (tambah, nonaktifkan, ubah peran), mengelola (menambah, mengubah, menghapus) tautan Google Drive LK di database, mengelola master LK, dan melihat jejak audit. **Dilarang keras mengunggah berkas SK/bukti untuk pencocokan dokumen.** | Kredensial lokal (dummy seeder) / Ditugaskan oleh Super Admin lain via SSO | Seeder awal (lokal) atau promosi akun SSO oleh Super Admin |
-| **Admin** | Pengelola operasional LK dan link drive. Berwenang mengunggah berkas SK/bukti dukung untuk mencari kesamaan pada LK, mengelola (menambah, mengubah, menghapus) tautan Google Drive LK di database, serta memverifikasi kecocokan. Tidak dapat mengangkat/mengubah akun orang lain menjadi admin. | SSO Kantor | Dipromosikan dari role Pegawai oleh Super Admin |
-| **Pegawai** | Pengguna operasional pencocokan. Berwenang mengunggah berkas SK/bukti dukung untuk mencari kesamaan dengan indikator LK secara otomatis, melihat matriks monitor indikator, dan mengklik simbol centang untuk langsung membuka Google Drive. Tidak dapat mengelola link drive LK maupun akun pengguna. | SSO Kantor | *Auto-provisioning* otomatis saat login pertama via SSO (AUTH-10, A11) |
-| **Akun Nonaktif** (`is_active = false`) | Bukan sebuah peran, melainkan status pembekuan akun. Tidak dapat login, sesi yang sedang berjalan diputus seketika, dan seluruh pemanggilan API ditolak dengan respons HTTP 403 (AUTH-07, D4). | - | Dibekukan oleh Admin (untuk Pegawai) atau Super Admin (untuk semua) |
+| **Super Admin** (`super_admin`) | Pengelola sistem, master LK, profil impor Excel, pengguna, dan audit log. Ikut memiliki akses ke Antrean Verifikasi (`evidence.verify`) dan berhak melakukan soft-delete dokumen (`evidence.delete`). **Tidak mengunggah bukti dukung, tidak membuka halaman Cari Dokumen, dan tidak menjalankan sinkronisasi Google Drive.** | Kredensial lokal (`SuperAdminSeeder`) / SSO | Seeder awal (lokal) atau promosi oleh Super Admin lain |
+| **Admin** (`admin`) | Verifikator dan operator harian. Berwenang memverifikasi pengajuan di Antrean Verifikasi (setujui + pilih LK resmi, minta revisi, atau tolak), menjalankan sinkronisasi baca-saja Google Drive, mengatur tautan Drive indikator LK, mencari dokumen, mengunggah bukti dukung, dan mengaktifkan/menonaktifkan akun Pegawai. | SSO Kantor / Lokal | Dipromosikan oleh Super Admin |
+| **Pegawai** (`pegawai`) | Pengguna operasional kantor. Berwenang mencari dokumen yang sudah disetujui (`CariDokumenPage`), mengunggah berkas bukti dukung (maks 50 MB) atau mengirim tautan eksternal beserta usulan LK (`proposed`), merevisi pengajuan miliknya sendiri yang berstatus `revisi`, melihat Matriks Monitor, dan mengunduh dokumen resmi. | SSO Kantor | *Auto-provisioning* otomatis saat login pertama via SSO (AUTH-10, AC-21) |
+| **Akun Nonaktif** (`is_active = false`) | Status pembekuan akun. Tidak dapat login, sesi aktif diputus seketika, dan seluruh pemanggilan endpoint ditolak dengan HTTP 403 (AUTH-07, AC-15, AC-18). | - | Dibekukan oleh Admin (khusus Pegawai) atau Super Admin (semua role kecuali Super Admin aktif terakhir) |
 
 ---
 
-## 3. Katalog Izin Granular (Permissions Matrix)
+## 3. Matriks Izin Granular (`User::hasPermission`)
 
-Untuk menjaga modularitas kode dan mempermudah pengujian otorisasi, hak akses didefinisikan ke dalam bentuk *granular permissions*:
-
-```
-<resource>.<action>
-```
-
-### 3.1 Daftar Permission
+Seluruh pengecekan izin granular diimplementasikan di `App\Models\User::hasPermission(string $permission): bool`. Berikut matriks izin resmi sesuai kode aktual:
 
 | Kode Permission | Deskripsi Aksi | Super Admin | Admin | Pegawai |
 |---|---|:---:|:---:|:---:|
-| `monitor.view` | Melihat tabel matriks centang indikator LK | ✔ | ✔ | ✔ |
-| `evidence.search` | Melakukan pencarian (FTS/fuzzy) bukti dukung | ✔ | ✔ | ✔ |
-| `evidence.view_link` | Membuka tautan eksternal / Google Drive langsung dari centang | ✔ | ✔ | ✔ |
-| `evidence.upload` | Mengunggah berkas SK/bukti untuk mencari kesamaan (matching) | ✘ | ✔ | ✔ |
+| `monitor.view` | Melihat halaman Matriks Monitor Dokumen x LK & ekspor CSV | ✔ | ✔ | ✔ |
+| `evidence.view_link` | Mengakses tautan bukti / endpoint unduhan dokumen (dengan validasi `EvidenceDocumentPolicy::view`) | ✔ | ✔ | ✔ |
+| `evidence.search` | Membuka halaman Cari Dokumen (`CariDokumenPage`) & mencari bukti dukung | ✘ | ✔ | ✔ |
+| `evidence.upload` | Mengunggah berkas bukti dukung atau mengirim tautan eksternal | ✘ | ✔ | ✔ |
+| `evidence.revise_own` | Merevisi pengajuan bukti dukung milik sendiri yang berstatus `revisi` | ✘ | ✘ | ✔ |
+| `evidence.verify` | Membuka Antrean Verifikasi (`VerificationQueuePage`) & memverifikasi pengajuan (setujui/revisi/tolak) | ✔ | ✔ | ✘ |
+| `evidence.manage_markup` | Mengelola metadata dan pemetaan LK pada dokumen bukti dukung | ✔ | ✔ | ✘ |
 | `evidence.delete` | Melakukan soft-delete master dokumen bukti dukung | ✔ | ✘ | ✘ |
-| `lk.manage_drive_links` | Menambah, mengubah, dan menghapus link Google Drive LK di database | ✔ | ✔ | ✘ |
-| `match.verify` | Mengonfirmasi atau menolak match hasil otomatis (`auto`) | ✔ | ✔ | ✘ |
-| `match.manual_create` | Menambahkan relasi BD ↔ LK secara manual | ✔ | ✔ | ✘ |
-| `match.manual_delete` | Menghapus relasi BD ↔ LK secara manual | ✔ | ✔ | ✘ |
-| `match.rematch` | Memicu matching ulang otomatis pada satu BD atau LK | ✔ | ✔ | ✘ |
-| `lk.manage` | Tambah, ubah, dan soft-delete master Lembar Kerja | ✔ | ✘ | ✘ |
-| `lk.indicator_manage` | Tambah, ubah, dan soft-delete indikator & item bukti | ✔ | ✘ | ✘ |
-| `lk.import_excel` | Mengunggah & mengimpor file Excel LK dengan Profil Impor | ✔ | ✘ | ✘ |
-| `user.change_role` | Mengubah role pengguna (Pegawai ↔ Admin) / Angkat Admin | ✔ | ✘ | ✘ |
-| `user.toggle_pegawai` | Mengaktifkan / menonaktifkan akun role Pegawai | ✔ | ✔ | ✘ |
-| `user.toggle_admin` | Mengaktifkan / menonaktifkan akun role Admin | ✔ | ✘ | ✘ |
-| `audit.view` | Melihat riwayat jejak audit sistem (`audit_logs`) | ✔ | ✘ | ✘ |
-| `settings.manage` | Mengubah ambang batas matching & setting sistem | ✔ | ✘ | ✘ |
+| `lk.manage_drive_links` | Mengelola tautan Google Drive (`evidence_link`) pada indikator LK | ✔ | ✔ | ✘ |
+| `drive.sync` | Mengelola daftar folder Google Drive & memicu sinkronisasi Drive (`SyncGoogleDriveJob`) | ✘ | ✔ | ✘ |
+| `lk.manage` | Menambah, mengubah, menghapus master Lembar Kerja & mengimpor Excel LK | ✔ | ✘ | ✘ |
+| `lk.indicator_manage` | Menambah, mengubah, dan menghapus master Indikator LK | ✔ | ✘ | ✘ |
+| `audit.view` | Melihat dan mengekspor riwayat jejak audit (`AuditLogResource`) | ✔ | ✘ | ✘ |
+| `user.manage` | Mengelola akun pengguna dan mengubah role di `UserResource` | ✔ | ✘ | ✘ |
+
+> **Catatan Pembersihan Izin Lama:** Izin warisan `settings.manage`, `match.manual_create`, `match.manual_delete`, dan `match.rematch` telah dihapus dari sistem karena pengaturan kini berbasis `config('evidence.*')` dan verifikasi dilakukan pada level dokumen-ke-LK di `VerificationQueuePage`.
 
 ---
 
-## 4. Arsitektur Autentikasi
+## 4. Kebijakan Otorisasi Dokumen (`EvidenceDocumentPolicy`) & Unduhan Aman
 
-### 4.1 Lapisan Abstraksi SSO Kantor (NFR-16, AUTH-01)
-Mengingat protokol SSO instansi (OIDC, SAML 2.0, atau CAS) dikonfigurasi melalui variabel lingkungan (*environment*), sistem menggunakan antarmuka kontrak `SSOProviderInterface`.
+Selain pemeriksaan permission dasar, akses terhadap rekaman `EvidenceDocument` ditegakkan oleh `App\Policies\EvidenceDocumentPolicy` dan `EvidenceController::download`:
 
-```
-                  ┌─────────────────────────────────────────┐
-                  │          SSOProviderInterface           │
-                  ├─────────────────────────────────────────┤
-                  │ + getRedirectUrl(): string              │
-                  │ + handleCallback(request): SSOUserData  │
-                  │ + logout(sessionId): void               │
-                  └─────────────────────────────────────────┘
-                                       ▲
-                                       │ implements
-         ┌─────────────────────────────┼─────────────────────────────┐
-         │                             │                             │
-┌──────────────────┐         ┌───────────────────┐         ┌──────────────────┐
-│  OIDCProvider    │         │   SAML2Provider   │         │   MockProvider   │
-│  (OAuth2 / OIDC) │         │ (Enterprise IdP)  │         │ (Local Dev Test) │
-└──────────────────┘         └───────────────────┘         └──────────────────┘
-```
-
-#### Struktur Data Pengguna SSO (`SSOUserData`):
-* `identifier`: string unik stabil (email atau NIP)
-* `email`: string
-* `name`: string
-* `nip`: string (opsional/nullable)
-
-### 4.2 Alur Login & *Auto-Provisioning* Pegawai (AUTH-10, AC-21)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Pegawai / Admin
-    participant App as Websinkronisasi App
-    participant IdP as SSO Server Kantor
-    participant DB as PostgreSQL Database
-
-    User->>App: Akses Halaman Login SSO (/auth/sso/login)
-    App->>IdP: Redirect ke IdP SSO kantor
-    User->>IdP: Input Kredensial SSO / VPN Auth
-    IdP-->>App: Redirect balik dengan auth code / SAML assertion (/auth/sso/callback)
-    App->>IdP: Validasi token & tukar atribut profil (email, nama, nip)
-    
-    App->>DB: Query tabel users WHERE email = :email AND deleted_at IS NULL
-    alt Akun Belum Ada (Login Pertama Kali)
-        App->>DB: INSERT INTO users (email, name, nip, role='pegawai', is_active=true, auth_provider='sso')
-        App->>DB: INSERT INTO audit_logs ('user.create_auto')
-    else Akun Sudah Ada
-        App->>App: Cek flag users.is_active
-        alt is_active == FALSE (Akun Nonaktif)
-            App-->>User: HTTP 403 / Halaman "Akun dinonaktifkan, hubungi admin" (AUTH-07, AC-18)
-            Note over App,User: Tidak ada sesi yang dibentuk
-        end
-    end
-
-    App->>App: Terbitkan Session ID (Server-Side Session Store)
-    App->>DB: INSERT INTO audit_logs ('auth.login', user_id, ip_address)
-    App-->>User: Redirect ke Halaman Monitor dengan Session Cookie (HttpOnly, Secure, SameSite)
-```
-
-### 4.3 Alur Autentikasi Dummy Super Admin (AUTH-03, AUTH-04, D6, AC-03)
-
-1. **Inisialisasi via Seeder:**
-   * Kredensial dibaca dari file environment:
-     * `SEEDER_SUPERADMIN_EMAIL=superadmin@kantor.local`
-     * `SEEDER_SUPERADMIN_PASSWORD=RahasiaAwal123!`
-   * Disimpan ke database dengan password ter-hash menggunakan `Argon2id` atau `Bcrypt` (work factor minimal 12).
-   * Flag akun: `auth_provider = 'local'`, `must_change_password = TRUE`.
-2. **Karantina Login Pertama (AC-03):**
-   * Super Admin login melalui form khusus: `POST /auth/local/login`.
-   * Sistem mendeteksi `must_change_password == TRUE`.
-   * Sesi diberikan status sementara (`PENDING_PASSWORD_CHANGE`).
-   * Akses ke seluruh endpoint selain `POST /auth/change-password` diblokir (HTTP 403 Forbidden).
-   * Setelah password baru dikonfirmasi, hash diperbarui, `must_change_password` diubah menjadi `FALSE`, dan sesi penuh diterbitkan.
-3. **Proteksi Brute-Force (AUTH-09):**
-   * Endpoint login lokal dibatasi maksimal 5 percobaan gagal per 15 menit per IP address (*rate limiting*).
+1. **`view(User $user, EvidenceDocument $doc)` & `GET /evidence/download/{id}`:**
+   * Pengguna wajib aktif (`is_active = true`, `deleted_at = null`) dan memiliki izin `evidence.view_link`.
+   * Dokumen yang sudah di-*soft-delete* selalu mengembalikan **HTTP 404**.
+   * **Super Admin** dan **Admin** (serta pemegang `evidence.verify`) diizinkan melihat/mengunduh seluruh dokumen aktif pada status apa pun.
+   * **Pegawai** hanya diizinkan melihat/mengunduh dokumen apabila:
+     * `approval_status === 'disetujui'`, **ATAU**
+     * `uploaded_by === $user->id` (pemilik pengajuan sendiri, misalnya saat status masih `'menunggu'`, `'revisi'`, atau `'ditolak'`).
+   * Pegawai yang mencoba melihat atau mengunduh dokumen milik pengguna lain yang belum berstatus `'disetujui'` ditolak dengan **HTTP 403 Forbidden**.
+2. **`update(User $user, EvidenceDocument $doc)`:**
+   * Diizinkan bagi pemegang `evidence.verify` / `evidence.manage_markup` (Admin & Super Admin).
+   * Bagi Pegawai (`evidence.revise_own`), hanya diizinkan jika `uploaded_by === $user->id` **DAN** `approval_status === 'revisi'`.
+3. **`delete(User $user, EvidenceDocument $doc)`:**
+   * Hanya diizinkan bagi pengguna aktif yang memiliki `evidence.delete` (**Super Admin**).
 
 ---
 
-## 5. Siklus Hidup Akun & Sesi (Session Lifecycle & Invalidation)
+## 5. Arsitektur Autentikasi & Siklus Hidup Sesi
 
-### 5.1 Validasi Sesi di Sisi Server pada Setiap Permintaan (AUTH-07, AC-15)
-Untuk memenuhi syarat bahwa penonaktifan akun bekerja secara seketika (*instant*):
+### 5.1 Abstraksi SSO Kantor (`SSOProviderInterface` — NFR-16, AUTH-01)
+Sistem mengabstraksi protokol SSO melalui `App\Services\Auth\Contracts\SSOProviderInterface` yang diikat di `AppServiceProvider`:
+* **`BpsKeycloakOidcProvider`:** Integrasi OpenID Connect (OIDC) Keycloak BPS (`services.sso.driver = keycloak`).
+* **`MockSSOProvider`:** Simulasi login SSO untuk lingkungan `local` dan `testing` (diblokir keras di `production`).
 
-1. **Penyimpanan Sesi:** Sesi disimpan di sisi server (Database `sessions` table atau Redis store) yang memetakan `session_id` ke `user_id`.
-2. **Pemeriksaan Status di Middleware:**
-   Pada setiap HTTP Request yang masuk:
-   ```text
-   Ambil session_id -> Ambil user_id -> Ambil data user dari cache/DB
-   IF user.deleted_at IS NOT NULL OR user.is_active == FALSE THEN
-       Hancurkan sesi di session store (Revoke session)
-       Hapus cookie di response
-       Kembalikan respons HTTP 403: "Akun Anda telah dinonaktifkan. Silakan hubungi Administrator."
-   END IF
-   ```
-3. **Session Idle Timeout (AUTH-09):** Sesi kedaluwarsa secara otomatis jika tidak ada aktivitas pengguna selama **120 menit** berturut-turut.
+### 5.2 Karantina Password Pertama Super Admin Seeder (AUTH-03, AC-03, Invarian #8)
+* `SuperAdminSeeder` membaca kredensial dari `.env` (`SEEDER_SUPERADMIN_EMAIL`, `SEEDER_SUPERADMIN_PASSWORD`) dan membuat akun `super_admin` dengan `auth_provider = 'local'` serta `must_change_password = true`.
+* Middleware `EnsurePasswordChanged` mengalihkan seluruh request pengguna yang memiliki `must_change_password = true` ke rute `/auth/password/change` hingga password baru disimpan.
 
-### 5.2 Aturan Bisnis Perubahan Status & Role (Guard Rails)
-
-#### Aturan 1: Mutasi Role Pengguna (AUTH-05, D5, AC-19)
-* **Hanya Super Admin** yang dapat mengubah role pengguna (`POST /api/v1/users/{id}/role`).
-* Admin atau Pegawai yang mencoba mengakses endpoint ini **HARUS DITOLAK** dengan respons `HTTP 403 Forbidden`.
-* Perubahan role yang sah:
-  * `pegawai` ➔ `admin`
-  * `admin` ➔ `pegawai`
-  * Role `super_admin` tidak dapat diturunkan jika tersisa hanya 1 orang.
-
-#### Aturan 2: Penonaktifan Akun Bertingkat (AUTH-08, D4, D5, AC-19, AC-20)
-* **Admin** hanya memiliki izin menonaktifkan/mengaktifkan akun ber-role `pegawai`.
-* Jika Admin mencoba menonaktifkan akun ber-role `admin` atau `super_admin`, sistem **HARUS MENOLAK** dengan respons `HTTP 403 Forbidden` (AC-19).
-* **Super Admin** dapat menonaktifkan/mengaktifkan akun ber-role `pegawai` dan `admin`.
-
-#### Aturan 3: Proteksi Super Admin Terakhir & Self-Action (AUTH-06, AC-04)
-* Pengguna dilarang menonaktifkan akunnya sendiri (`user_id == current_auth_user.id`).
-* Sistem melakukan pengecekan `COUNT(id) FROM users WHERE role = 'super_admin' AND is_active = TRUE AND deleted_at IS NULL`. Jika hasilnya `1`, penonaktifan atau penurunan role terhadap Super Admin tersebut ditolak keras:
-  ```json
-  {
-    "status": "error",
-    "message": "Operasi ditolak: Sistem harus memiliki setidaknya satu Super Admin aktif."
-  }
-  ```
+### 5.3 Pencabutan Sesi Seketika & Proteksi Super Admin Terakhir (AUTH-06, AUTH-07, AC-04, AC-15)
+* Middleware `EnsureAccountIsActive` memeriksa `is_active` pada setiap request; jika akun dinonaktifkan saat sedang login, sesi langsung diputus dan mengembalikan **HTTP 403**.
+* `UserPolicy`, `UserManagerService`, dan trigger PostgreSQL mencegah penghapusan, penonaktifan, atau penurunan role dari satu-satunya Super Admin aktif yang tersisa.
 
 ---
 
-## 6. Pipeline Middleware Penegakan Otorisasi Server-Side
+## 6. Pemetaan Rute Web & Halaman Panel Filament
 
-Setiap panggilan API dan halaman web melewati pipeline middleware berurutan berikut:
-
-```mermaid
-flowchart TD
-    REQ[HTTP Request Masuk] --> M1[1. AuthenticateMiddleware]
-    M1 -->|Token/Cookie Tidak Valid| E401[HTTP 401 Unauthorized]
-    
-    M1 -->|Valid| M2[2. EnsureAccountIsActiveMiddleware]
-    M2 -->|is_active == false| E403A[HTTP 403 Forbidden<br/>'Akun Dinonaktifkan']
-    
-    M2 -->|is_active == true| M3[3. EnsurePasswordChangedMiddleware]
-    M3 -->|must_change_password == true & endpoint != change-pw| E403B[HTTP 403 Forbidden<br/>'Wajib Ubah Password']
-    
-    M3 -->|must_change_password == false| M4[4. AuthorizePermissionMiddleware]
-    M4 -->|Role tidak memiliki permission| E403C[HTTP 403 Forbidden<br/>'Akses Ditolak']
-    
-    M4 -->|Permission Valid| CTRL[Controller / Action Handler]
-```
-
-### 6.1 Spesifikasi Tugas Middleware
-
-1. **`AuthenticateMiddleware`:**
-   * Memvalidasi keabsahan session cookie atau bearer token.
-   * Mengaitkan objek `current_user` ke konteks request.
-   * Gagal ➔ Mengembalikan HTTP 401.
-2. **`EnsureAccountIsActiveMiddleware` (AUTH-07, AC-15):**
-   * Mengambil status `is_active` pengguna terkini dari database/cache cepat.
-   * Jika bernilai `FALSE`, sesi segera dihapus (*session destroyed*), dan mengembalikan HTTP 403 dengan kode error `ACCOUNT_DEACTIVATED`.
-3. **`EnsurePasswordChangedMiddleware` (AUTH-03, AC-03):**
-   * Jika `current_user.must_change_password == TRUE`, hanya rute `POST /auth/change-password` dan `POST /auth/logout` yang diizinkan lewat. Rute lain dialihkan atau ditolak dengan HTTP 403 `PASSWORD_CHANGE_REQUIRED`.
-4. **`AuthorizePermissionMiddleware(permission)` (NFR-01, AC-01, AC-02):**
-   * Memeriksa apakah `current_user.role` memiliki permission yang disyaratkan untuk endpoint tersebut (berdasarkan Matriks Bab 3).
-   * Jika tidak cocok ➔ Mengembalikan HTTP 403 `ACCESS_DENIED`.
-
----
-
-## 7. Pemetaan Endpoint API & Guard Otorisasi
-
-Tabel ini menjadi panduan mutlak bagi implementasi rute backend:
-
-| Method | Endpoint URI | Required Permission | Role yang Diizinkan | Audit Log Action |
-|---|---|---|---|---|
-| **GET** | `/login` | *Public* | Semua | - |
-| **POST** | `/login` | *Public (Rate Limited)* | Dummy Super Admin / Admin Lokal | `auth.login_local` |
-| **POST** | `/logout` | `authenticated` | Super Admin, Admin, Pegawai | `auth.logout` |
-| **GET** | `/auth/sso/login` | *Public* | Semua (Opsi 1 SSO BPS) | - |
-| **GET** | `/auth/sso/callback` | *Public* | Semua (Opsi 1 SSO BPS) | `auth.login_sso` |
-| **GET/POST**| `/auth/password/change` | `authenticated` | Super Admin (Karantina) | `auth.password_changed` |
-| **GET** | `/api/v1/monitor` | `monitor.view` | Super Admin, Admin, Pegawai | - |
-| **GET** | `/api/v1/evidence` | `evidence.search` | Super Admin, Admin, Pegawai | - |
-| **GET** | `/api/v1/evidence/{id}` | `evidence.search` | Super Admin, Admin, Pegawai | - |
-| **POST** | `/api/v1/evidence/upload` | `evidence.upload` | Super Admin, Admin | `bd.upload` |
-| **DELETE**| `/api/v1/evidence/{id}` | `evidence.delete` | **Super Admin** | `bd.delete` |
-| **GET** | `/api/v1/matches/queue` | `match.verify` | Super Admin, Admin | - |
-| **POST** | `/api/v1/matches/{id}/confirm`| `match.verify` | Super Admin, Admin | `match.confirmed` |
-| **POST** | `/api/v1/matches/{id}/reject` | `match.verify` | Super Admin, Admin | `match.rejected` |
-| **POST** | `/api/v1/matches` | `match.manual_create` | Super Admin, Admin | `match.manual_created` |
-| **DELETE**| `/api/v1/matches/{id}` | `match.manual_delete` | Super Admin, Admin | `match.manual_deleted` |
-| **POST** | `/api/v1/matches/rematch` | `match.rematch` | Super Admin, Admin | `match.rematch_triggered` |
-| **GET** | `/api/v1/lk` | `monitor.view` | Super Admin, Admin, Pegawai | - |
-| **POST** | `/api/v1/lk` | `lk.manage` | **Super Admin** | `lk.created` |
-| **PUT** | `/api/v1/lk/{id}` | `lk.manage` | **Super Admin** | `lk.updated` |
-| **DELETE**| `/api/v1/lk/{id}` | `lk.manage` | **Super Admin** | `lk.deleted` |
-| **POST** | `/api/v1/lk/import/preview` | `lk.import_excel` | **Super Admin** | - |
-| **POST** | `/api/v1/lk/import/commit` | `lk.import_excel` | **Super Admin** | `lk.import_committed` |
-| **GET** | `/api/v1/users` | `user.toggle_pegawai` | Super Admin, Admin | - |
-| **PUT** | `/api/v1/users/{id}/role` | `user.change_role` | **Super Admin** | `user.role_changed` |
-| **POST** | `/api/v1/users/{id}/toggle-status`| Dinamis (Cek Bab 5.2) | Super Admin (Semua), Admin (Hanya Pegawai) | `user.status_toggled` |
-| **GET** | `/api/v1/audit-logs` | `audit.view` | **Super Admin** | - |
-| **GET** | `/api/v1/settings` | `settings.manage` | **Super Admin** | - |
-| **PUT** | `/api/v1/settings` | `settings.manage` | **Super Admin** | `settings.updated` |
-
----
-
-## 8. Verifikasi Terhadap Acceptance Criteria (AC Checklist)
-
-| Kode AC | Persyaratan Pengujian | Cara RBAC Menjamin Keberhasilan | Status |
-|---|---|---|:---:|
-| **AC-01** | Pegawai memanggil endpoint tambah/hapus match secara langsung | `AuthorizePermissionMiddleware` menolak karena Pegawai tidak memiliki `match.manual_create` / `match.manual_delete` ➔ Mengembalikan HTTP 403 Forbidden. | ✔ Terpenuhi |
-| **AC-02** | Admin membuka kelola LK, impor LK, atau ubah role | Route dilindungi oleh `lk.manage`, `lk.import_excel`, dan `user.change_role` yang hanya dimiliki Super Admin ➔ Mengembalikan HTTP 403 Forbidden. | ✔ Terpenuhi |
-| **AC-03** | Login super admin dummy pertama kali | `EnsurePasswordChangedMiddleware` mengkarantina sesi sampai password lokal diganti via `/auth/change-password`. | ✔ Terpenuhi |
-| **AC-04** | Super admin terakhir menonaktifkan dirinya | Logika validasi di endpoint `toggle-status` memeriksa `COUNT(super_admin)` dan menolak jika tersisa 1 orang ➔ HTTP 422 Unprocessable Entity. | ✔ Terpenuhi |
-| **AC-15** | Akun dinonaktifkan saat sedang login | `EnsureAccountIsActiveMiddleware` memeriksa status database pada setiap panggilan request. Sesi seketika dihancurkan ➔ HTTP 403 Forbidden. | ✔ Terpenuhi |
-| **AC-18** | Pengguna nonaktif login via SSO | Callback SSO mendeteksi `is_active == false` pada record pengguna ➔ Tidak membuat sesi dan langsung menampilkan pesan error akun nonaktif. | ✔ Terpenuhi |
-| **AC-19** | Admin mengubah role pegawai atau menonaktifkan Admin lain | `user.change_role` dicegah di middleware (khusus Super Admin). Penonaktifan akun Admin oleh Admin dicegah di level validasi service ➔ HTTP 403 Forbidden. | ✔ Terpenuhi |
-| **AC-20** | Admin menonaktifkan & mengaktifkan kembali akun Pegawai | Admin memiliki izin `user.toggle_pegawai`. Logika memverifikasi target adalah Pegawai ➔ Berhasil dan tercatat di `audit_logs`. | ✔ Terpenuhi |
-| **AC-21** | Pegawai SSO pertama kali masuk | Callback SSO otomatis menjalankan auto-provisioning `role = 'pegawai'` dan `is_active = true`. | ✔ Terpenuhi |
-
+| Rute / Halaman | Kelas Pengendali / Halaman | Guard & Izin Server-Side | Role yang Diizinkan |
+|---|---|---|---|
+| `GET /login`, `POST /login` | `LoginController` | Guest / Rate Limited (tolak `pegawai` di form lokal) | Semua (SSO), Super Admin/Admin Lokal |
+| `GET /auth/sso/login`, `/callback` | `SSOController` | Web | Pegawai, Admin (SSO) |
+| `GET /auth/sso/mock-login` | `SSOController::mockLogin` | Hanya environment `local`/`testing` (404 di `production`) | Uji lokal/otomatis |
+| `GET/POST /auth/password/change` | `ForceChangePasswordController` | `auth` | Akun dengan `must_change_password = true` |
+| `POST /evidence/upload` | `EvidenceController::upload` | `auth` + `evidence.upload` | Admin, Pegawai |
+| `GET /evidence/download/{id}` | `EvidenceController::download` | `auth` + `evidence.view_link` + `EvidenceDocumentPolicy::view` | Semua (dokumen `disetujui`), Pemilik/Admin/SA (non-`disetujui`) |
+| `DELETE /evidence/{id}` | `EvidenceController::destroy` | `auth` + `isSuperAdmin()` (`evidence.delete`) | Super Admin |
+| `/admin/monitor-matrix` | `MonitorMatrixPage` | `monitor.view` | Super Admin, Admin, Pegawai |
+| `/admin/cari-dokumen` | `CariDokumenPage` | `evidence.search` | Admin, Pegawai (Super Admin = 403) |
+| `/admin/evidence-documents` | `EvidenceDocumentResource` | `EvidenceDocumentPolicy` (Pegawai di-scope `uploaded_by` sendiri) | Super Admin (lihat/hapus), Admin, Pegawai (milik sendiri & unggah) |
+| `/admin/verification-queue` | `VerificationQueuePage` | `evidence.verify` (aksi Drive butuh `drive.sync`) | Super Admin, Admin (Drive sync khusus Admin) |
+| `/admin/lembar-kerjas` | `LembarKerjaResource` | `LembarKerjaPolicy` (`lk.manage`) | Super Admin |
+| `/admin/lk-import-profiles` | `LkImportProfileResource` | `LkImportProfilePolicy` (`lk.manage`) | Super Admin |
+| `/admin/lk-indicators` | `LkIndicatorResource` | `LkIndicatorPolicy` (`lk.indicator_manage` / `lk.manage_drive_links`) | Super Admin (CRUD penuh), Admin (kelola tautan Drive) |
+| `/admin/users` | `UserResource` | `UserPolicy` (`user.manage` / kelola status Pegawai) | Super Admin |
+| `/admin/audit-logs` | `AuditLogResource` | `AuditLogPolicy` (`audit.view`) | Super Admin |

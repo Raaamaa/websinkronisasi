@@ -3,55 +3,52 @@
 
 | Atribut | Nilai |
 |---|---|
-| Versi Dokumen | 1.0 |
-| Tanggal | 29 Oktober 2026 |
-| Basis PRD | `PRD.md` Versi 1.1 (Bagian 7, 8, 9, 11) |
-| Dokumen Terkait | `DATABASE.md`, `RBAC.md`, `MATCHING_ALGORITHM.md` |
-| Rekomendasi Stack | Laravel 11 + Filament v3 + PostgreSQL 15 + Redis + Tesseract OCR |
-| Pola Arsitektur | *Layered Clean Architecture* (Controller ➔ Service ➔ Repository/Domain) |
+| Versi Dokumen | 2.0 |
+| Tanggal | 16 November 2026 |
+| Basis PRD | `PRD.md` Versi 2.0 |
+| Dokumen Terkait | `DATABASE.md`, `RBAC.md`, `MATCHING_ALGORITHM.md`, `AGENTS.md` |
+| Stack Resmi | Laravel 11 (PHP 8.3+) + Filament v3 (Livewire 3) + PostgreSQL 15+ + Redis 7+ + Tesseract OCR 5+ |
+| Pola Arsitektur | *Layered Clean Architecture* (Controller/Filament Page ➔ Service ➔ Model/Storage) |
 
 ---
 
 ## 1. Ringkasan Sistem & Diagram Konteks
 
-Sistem Websinkronisasi adalah aplikasi web terpusat yang memetakan dokumen Bukti Dukung (SK, laporan, data) ke indikator penilaian pada berbagai Lembar Kerja (LK) internal dan eksternal. Aplikasi di-deploy di server kantor (*on-premise*) dan diakses melalui jaringan intranet atau VPN kantor (D8, NFR-15).
+Websinkronisasi (ELKA) adalah aplikasi web internal kantor untuk mengumpulkan, memverifikasi, mencari, dan memetakan dokumen Bukti Dukung ke berbagai Lembar Kerja (LK) penilaian.
 
 ```mermaid
 graph TD
     subgraph Pengguna
-        PGW[Pegawai]
-        ADM[Admin]
-        SA[Super Admin]
+        PGW[Pegawai<br/>Cari, Unggah & Revisi]
+        ADM[Admin<br/>Verifikasi, Sinkron Drive, Cari & Unggah]
+        SA[Super Admin<br/>Master LK, Pengguna, Audit & Verifikasi]
     end
 
-    subgraph Batas Jaringan Kantor / VPN
-        VPN[FortiClient VPN / Intranet]
-        SSO[IdP SSO Kantor OIDC/SAML]
-        
-        subgraph Server Aplikasi Websinkronisasi
-            NGINX[Nginx Reverse Proxy HTTPS]
-            APP[Laravel 11 Application]
-            WORKER[Queue Worker Asinkron]
-            TESS[Tesseract OCR Engine]
-        end
-
-        subgraph Penyimpanan Data
-            PG[(PostgreSQL 15+)]
-            REDIS[(Redis Cache & Queue)]
-            DISK[Private File Storage /var/storage/evidence]
-        end
+    subgraph Eksternal
+        SSO[SSO Keycloak BPS]
+        GDRIVE[Google Drive API v3<br/>Read-Only via DRIVE_API_KEY]
     end
 
-    Pengguna --> VPN
-    VPN --> NGINX
-    NGINX --> APP
+    subgraph Server Aplikasi ELKA
+        NGINX[Nginx Reverse Proxy<br/>client_max_body_size 60M]
+        APP[Laravel 11 + Filament v3]
+        WORKER[Redis Queue Worker<br/>queue-worker]
+        TESS[Tesseract OCR + PDF/DOCX Parser]
+    end
+
+    subgraph Penyimpanan Data
+        PG[(PostgreSQL 15+)]
+        REDIS[(Redis 7+)]
+        DISK[Private Storage<br/>storage/app/private/evidence]
+    end
+
+    Pengguna --> NGINX --> APP
     APP <--> SSO
     APP --> PG
     APP --> REDIS
     APP --> DISK
-    
     REDIS --> WORKER
-    WORKER --> APP
+    WORKER --> GDRIVE
     WORKER --> TESS
     WORKER --> PG
     WORKER --> DISK
@@ -59,192 +56,96 @@ graph TD
 
 ---
 
-## 2. Pemilihan Teknologi (Technology Stack)
+## 2. Alur Kerja Utama
 
-Sesuai rekomendasi pada **PRD Bagian 11.3 (Q4)**, stack teknologi dipilih dengan mempertimbangkan produktivitas, stabilitas jangka panjang di lingkungan pemerintahan, kemudahan audit keamanan, dan integrasi PostgreSQL tingkat lanjut:
+### 2.1 Alur Pengajuan Bukti Dukung ➔ Menunggu ➔ Verifikasi Admin ➔ Disetujui
+1. **Pengajuan (`EvidenceDocumentResource` / `EvidenceUploadService`):**
+   * Pegawai atau Admin memilih metode pengajuan:
+     * **Unggah Berkas (`source_type = 'upload'`):** Maksimal **50 MB** (`config('evidence.max_file_size_mb')`). Berkas divalidasi dengan MIME *magic bytes* sniffing (`finfo`), dihitung hash SHA-256 (`findIdenticalByHash`), dan disimpan ke disk `private` dengan nama acak UUID.
+     * **Tempel Tautan (`source_type = 'link'`):** Untuk berkas $> 50\text{ MB}$ atau video/tautan Drive. Wajib menggunakan skema `http://` atau `https://`.
+   * Pengunggah memilih satu atau lebih Lembar Kerja tujuan yang disimpan ke `document_lk_links` dengan `link_source = 'proposed'` dalam satu transaksi database (`DB::transaction`).
+   * Saat mengetik nama dokumen, `DocumentSimilarityService` menampilkan peringatan maksimal 5 kandidat dokumen serupa.
+   * Dokumen baru berstatus `approval_status = 'menunggu'`. Untuk berkas unggahan, `ProcessEvidenceDocumentJob` dieksekusi di antrean untuk mengekstrak teks/OCR dan menghasilkan saran indikator di `document_matches`.
+2. **Verifikasi Admin (`VerificationQueuePage`):**
+   * Admin atau Super Admin memeriksa pengajuan pada Antrean Verifikasi beserta saran indikator dan usulan LK.
+   * **Setujui (`approveDocument`):** Verifikator memilih minimal satu LK resmi. Usulan yang tidak dipilih dihapus, LK yang dipilih disimpan di `document_lk_links` dengan `link_source = 'admin'`, dan dokumen berubah menjadi `approval_status = 'disetujui'`.
+   * **Minta Revisi (`requestRevision`):** Wajib mengisi catatan revisi; status berubah menjadi `'revisi'`. Pengunggah asli dapat memperbaiki metadata/berkas melalui `reviseSubmission()` (menangani konflik hash unik & menghapus berkas lama hanya setelah transaksi DB *commit*), yang mengembalikan status ke `'menunggu'`.
+   * **Tolak (`rejectDocument`):** Wajib mengisi catatan penolakan; status berubah menjadi `'ditolak'`.
 
-| Komponen | Pilihan Teknologi | Justifikasi Teknis |
-|---|---|---|
-| **Core Framework** | **Laravel 11 (PHP 8.3+)** | Framework enterprise dengan ekosistem matang, dukungan native untuk job queues, caching, storage abstraction, middleware pipeline, dan database migrations. |
-| **Admin & UI Kit** | **Filament v3 (Livewire 3 + Alpine.js + Tailwind CSS)** | Menyediakan komponen tabel data dinamis, form builder, dan dashboard reaktif. Sangat ideal untuk membangun Matriks Monitor centang, antrean verifikasi, dan pratinjau impor Excel tanpa overhead API terpisah. |
-| **Basis Data** | **PostgreSQL 15+** | Dukungan native tipe `JSONB`, ekstensi `pg_trgm` (pencarian fuzzy nama/nomor SK), Full-Text Search bahasa Indonesia, dan check constraints ketat (NFR-09, NFR-10). |
-| **Queue & Caching** | **Redis 7+** | Manajemen antrean asinkron berkecepatan tinggi untuk pemrosesan file, OCR, dan matching pipeline (MATCH-01, NFR-06). |
-| **Ekstraksi PDF** | **`smalot/pdfparser` / Poppler `pdftotext`** | Ekstraksi teks cepat untuk PDF digital native tanpa beban komputasi OCR. |
-| **OCR Engine** | **Tesseract OCR 5+ (`tessdata/ind`)** | Ekstraksi teks dari file scan (JPG, PNG, PDF raster) bahasa Indonesia (A5, BD-07). |
-| **Excel Parser** | **`PhpSpreadsheet`** | Membaca file `.xlsx` multiformat, mendukung ekstraksi teks dan objek hyperlink sel (LKIMP-09, LKIMP-10). |
-| **Storage Engine** | **Local Private Filesystem** | Penyimpanan file fisik di luar direktori publik web (`storage/app/private/`), diberi nama acak UUID untuk mencegah *path traversal* (NFR-04, BD-10). |
+### 2.2 Pencarian Dokumen (`CariDokumenPage` & `DocumentSearchService`)
+* Diakses oleh Pegawai dan Admin (`evidence.search`).
+* Hanya mencari dan menampilkan dokumen aktif yang telah berstatus **`approval_status = 'disetujui'`**.
+* Menggunakan gabungan PostgreSQL Full-Text Search (`to_tsvector('indonesian', ...)`), pencarian substring (`ILIKE`), dan kemiripan trigram (`pg_trgm`) pada nama dokumen, nomor dokumen, dan isi teks hasil ekstraksi/OCR, dilengkapi filter LK dan tahun serta badge LK resmi (`DocumentLkLink::OFFICIAL_SOURCES`).
 
----
+### 2.3 Matriks Monitor Dokumen x LK & Unduh CSV (`MonitorMatrixPage` & `MonitorMatrixService`)
+* Diakses oleh seluruh peran aktif (`monitor.view`).
+* **Baris = Dokumen Bukti Dukung yang telah disetujui (`approval_status = 'disetujui'`)**, **Kolom = Lembar Kerja (Internal & Eksternal)** sesuai periode/interval evaluasi.
+* Sel menampilkan tanda centang (**✔**) hanya jika terdapat tautan resmi di `document_lk_links` (`link_source` IN `'admin'`, `'drive_sync'`, `'backfill'`). Sel tanpa tautan resmi dikosongkan murni.
+* Menyediakan fitur **Unduh CSV** (`exportCsv`) dengan sanitasi anti-*CSV Formula Injection* serta banner peringatan kapasitas disk bagi Super Admin jika pemakaian disk melewati `config('evidence.storage_warning_percent')` (default 80%).
 
-## 3. Arsitektur Komponen Perangkat Lunak (Layered Architecture)
+### 2.4 Sinkronisasi Google Drive Baca-Saja & OCR Selektif (`GoogleDriveSyncService`)
+* Dikelola oleh Admin (`drive.sync`) melalui panel folder Drive di `VerificationQueuePage` atau perintah CLI `php artisan evidence:sync-drive` (`SyncGoogleDriveJob`).
+* Mengambil metadata berkas secara rekursif (kedalaman maks `config('evidence.drive_sync_max_depth', 5)`) menggunakan `config('evidence.drive_api_key')` tanpa pernah menulis/mengubah Google Drive (Invarian #7).
+* **Propagasi LK Folder:** Jika `drive_sync_folders.lk_id` terisi, dokumen **baru** yang ditemukan di folder tersebut (maupun subfolder di dalamnya) otomatis disimpan dengan `approval_status = 'disetujui'` dan `document_lk_links` (`link_source = 'drive_sync'`). Jika berkas sudah ada di database, sinkronisasi ulang hanya memperbarui metadata tanpa menghidupkan kembali link LK yang pernah dihapus admin.
+* **OCR Selektif (`ProcessDriveFileOcrJob`):** Jika nama berkas Drive terlalu pendek/generik dan berkas berupa PDF/gambar $\le 50\text{ MB}$, worker mengunduh berkas ke direktori sementara, menjalankan ekstraksi teks/OCR, menyimpan `extracted_text`, lalu menghapus berkas sementara di blok `finally`.
 
-Aplikasi dibangun menggunakan pola arsitektur berlapis untuk memastikan pemisahan tanggung jawab (*Separation of Concerns*):
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Presentation Layer (Filament Pages, Livewire, Controllers)│
-│    - MonitorMatrixPage, VerificationQueuePage               │
-│    - ExcelImportWizard, DocumentUploadForm                  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ memanggil
-┌──────────────────────────────▼──────────────────────────────┐
-│ 2. Middleware & Security Layer                              │
-│    - Authenticate, EnsureAccountIsActive, EnsurePasswordSet  │
-│    - AuthorizePermission (RBAC Guard)                       │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ memanggil
-┌──────────────────────────────▼──────────────────────────────┐
-│ 3. Application Services Layer                               │
-│    - EvidenceProcessingService (validasi MIME, hash, save)   │
-│    - MatchingEngineService (deterministic & heuristic engine)│
-│    - ExcelImportService (profiling, parse, preview, commit) │
-│    - SSOService (SSOProviderInterface adapter)              │
-│    - AuditLoggerService (append-only logging)               │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ memanggil
-┌──────────────────────────────▼──────────────────────────────┐
-│ 4. Domain & Model Layer (Eloquent Models & Business Entities)│
-│    - EvidenceDocument, LembarKerja, LkIndicator             │
-│    - LkEvidenceItem, DocumentMatch, AuditLog                │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ memanggil
-┌──────────────────────────────▼──────────────────────────────┐
-│ 5. Infrastructure & Drivers Layer                           │
-│    - PostgreSQL Connection, Redis Queue Driver              │
-│    - Tesseract OCR Wrapper, PdfParser Wrapper               │
-│    - Private File Storage Driver                            │
-└─────────────────────────────────────────────────────────────┘
-```
+### 2.5 Unduhan Aman Berawalan Kode LK Resmi (`EvidenceController::download`)
+* Endpoint `GET /evidence/download/{id}` memvalidasi izin `evidence.view_link` dan `EvidenceDocumentPolicy::view` (dokumen `disetujui`, pemilik dokumen sendiri, atau Admin/Super Admin; dokumen *soft-deleted* = 404).
+* Untuk `source_type` `'drive'` atau `'link'`: melakukan redirect aman (`redirect()->away()`) ke `$document->external_link` hanya jika skema `http`/`https` valid (selain itu abort 422), tanpa pernah membaca URL tujuan dari parameter request.
+* Untuk `source_type` `'upload'`: melakukan streaming dari `Storage::disk('private')->download()` menggunakan nama dari `EvidenceUploadService::buildDownloadFilename()`:
+  * Mengambil kode LK resmi (`link_source` IN `'admin'`, `'drive_sync'`, `'backfill'`; `'proposed'` diabaikan), `DISTINCT`, unik, urut abjad, maksimal **4 kode** dipisah `_` (contoh: `KIP_ZI_SK_Program_Kunjungan.pdf`).
+  * Jika belum memiliki link resmi, menggunakan awalan `DRAFT_` (contoh: `DRAFT_SK_Program_Kunjungan.pdf`).
+  * Karakter ilegal (`/ \ : * ? " < > |` dan karakter kontrol) disanitasi, panjang total nama dibatasi **$\le 150$ karakter** dengan ekstensi tervalidasi tetap utuh.
 
 ---
 
-## 4. Alur Kerja Data Kunci (Sequence Diagrams)
+## 3. Komponen Warisan yang Telah Dihapus (Pembersihan Sistem)
 
-### 4.1 Alur Upload Bukti Dukung & Asynchronous Matching (BD-01 s.d. MATCH-03)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Admin as Admin / Super Admin
-    participant Web as Web Controller (Upload)
-    participant Disk as Private Storage
-    participant DB as PostgreSQL
-    participant Queue as Redis Queue
-    participant Worker as Background Worker
-    participant Engine as MatchingEngineService
-    participant Tesseract as OCR / PDF Parser
-
-    Admin->>Web: Upload File (PDF/DOCX/Scan) + Metadata
-    Web->>Web: Validasi MIME Sniffing & Ukuran <= 20MB (BD-02, BD-03)
-    Web->>Web: Hitung SHA-256 Hash File (BD-04)
-    Web->>DB: Cek Hash di evidence_documents (BD-05)
-    alt Hash Sudah Ada (Duplikat)
-        Web-->>Admin: HTTP 409 / Tolak Upload, Tampilkan Dokumen yang Sudah Ada
-    else Hash Belum Ada
-        Web->>Disk: Simpan file fisik dengan nama acak UUID (NFR-04, BD-10)
-        Web->>DB: INSERT INTO evidence_documents (status='memproses')
-        Web->>DB: INSERT INTO audit_logs ('bd.upload')
-        Web->>Queue: Dispatch Job ProcessEvidenceDocument(doc_id)
-        Web-->>Admin: Upload Sukses, Status: Sedang Diproses (Respons Asinkron)
-    end
-
-    Note over Queue,Worker: Proses Berjalan di Background
-    Queue->>Worker: Ambil Job ProcessEvidenceDocument(doc_id)
-    Worker->>Disk: Baca File Fisik
-    Worker->>Tesseract: Ekstrak Teks (Digital Parser / OCR)
-    Worker->>DB: UPDATE evidence_documents SET extracted_text=...
-    
-    Worker->>Engine: Run Matching Pipeline(doc_id)
-    Engine->>DB: Evaluasi Aturan Deterministic (Kode & No SK)
-    Engine->>DB: Evaluasi Aturan Heuristic (Trigram & Keywords)
-    Engine->>DB: UPSERT INTO document_matches (Filter Status != 'rejected')
-    Worker->>DB: UPDATE evidence_documents SET status='selesai'
-```
+Untuk menjaga kode tetap ramping dan bebas *dead code*, komponen-komponen lama berikut telah dihapus permanen:
+* **Matriks per Indikator & Drilldown Modal Lama:** Digantikan oleh Matriks Dokumen x LK + Unduh CSV.
+* **Antrean Verifikasi Match Indikator Lama & `ManualMatchService`:** Digantikan oleh verifikasi pengajuan dokumen-ke-LK di `VerificationQueuePage`.
+* **Panel Uji / Simulasi (`DryRunMatchingService`, `QuickWorkflowWidget`):** Dihapus beserta view dan tesnya.
+* **Antarmuka Pengaturan Sistem (`SystemSettingResource`, `SystemSettingObserver`, `SystemSettingPolicy`):** Dihapus; seluruh konfigurasi kini dikelola melalui `config/evidence.php` dan `.env`.
 
 ---
 
-### 4.2 Alur Impor Lembar Kerja dari Excel (LKIMP-01 s.d. LKIMP-08)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor SA as Super Admin
-    participant Wizard as Filament Import Wizard
-    participant Importer as ExcelImportService
-    participant DB as PostgreSQL
-    participant Queue as Redis Queue
-
-    SA->>Wizard: Pilih LK, Periode, File .xlsx, & Profil Impor
-    Wizard->>Importer: Parse Sheet Sesuai Profil (LKIMP-02)
-    Importer->>Importer: Filter baris non-indikator, judul, narasi (LKIMP-05)
-    Importer->>Importer: Resolusi placeholder tahun [t], [t-1] (LK-05, AC-26)
-    Importer->>Importer: Validasi skema tautan http/https (LK-09, AC-25)
-    Importer-->>Wizard: Return Data Pratinjau (Indikator Valid, Baris Dilewati)
-    
-    Wizard-->>SA: Tampilkan Layar Pratinjau (Preview Gate LKIMP-04)
-    SA->>Wizard: Klik 'Konfirmasi Simpan'
-    Wizard->>DB: BEGIN TRANSACTION
-    Wizard->>DB: Upsert Indikator & Evidence Items (Idempoten LKIMP-07)
-    Wizard->>DB: INSERT INTO lk_import_logs
-    Wizard->>DB: INSERT INTO audit_logs ('lk.import_committed')
-    Wizard->>DB: COMMIT TRANSACTION
-    
-    Wizard->>Queue: Dispatch Job RematchActiveDocumentsForLk(lk_id) (MATCH-07)
-    Wizard-->>SA: Impor Berhasil Disimpan
-```
-
----
-
-## 5. Keamanan Sistem & Hardening (Security Engineering)
-
-Menjamin kepatuhan terhadap kebutuhan non-fungsional keamanan:
-
-1. **Penyimpanan Berkas Terisolasi (NFR-04, BD-10):**
-   * Berkas fisik tidak disimpan di direktori `public/`.
-   * Nama file di-hash/random: `/var/storage/evidence/2026/10/d3b07384-d113-4660-9080-a20078028f08.pdf`.
-   * Akses unduh file hanya dilayani melalui Controller khusus yang memeriksa `evidence.search` permission (`GET /api/v1/evidence/{id}/download`).
-2. **Sanitasi File Excel & Anti-Macro (LKIMP-10):**
-   * Hanya file berekstensi `.xlsx` (MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`) yang diizinkan.
-   * File `.xlsm` (macro-enabled) ditolak keras.
-   * `PhpSpreadsheet` diatur dalam mode *read data only* (`$reader->setReadDataOnly(true)`), menonaktifkan eksekusi formula atau macro.
-3. **Pembersihan Tautan & Anti-XSS (LK-09, AC-25, MON-10):**
-   * Kolom tautan bukti divalidasi dengan regex `^https?://.+`. Tautan dengan skema `javascript:`, `data:`, atau `file:` ditolak saat impor.
-   * Seluruh output teks yang dirender di-escape otomatis oleh Blade templating engine (`{{ $text }}`).
-   * Tautan eksternal pada monitor selalu dibuka dengan atribut `target="_blank" rel="noopener noreferrer"`.
-4. **Pencegahan SQL Injection (SEARCH-05):**
-   * Seluruh kueri basis data menggunakan Eloquent ORM atau Query Builder terparameter (*prepared statements*). Input pencarian bebas disanitasi sebelum dimasukkan ke query Full-Text Search.
-
----
-
-## 6. Struktur Direktori Proyek
+## 4. Struktur Direktori Proyek Aktual
 
 ```text
 websinkronisasi/
 ├── app/
-│   ├── Enums/                     # UserRole, MatchStatus, MatchMethod, dll.
-│   ├── Http/
-│   │   ├── Controllers/           # AuthController, EvidenceDownloadController
-│   │   └── Middleware/            # Authenticate, EnsureAccountIsActive, AuthorizePermission
+│   ├── Console/Commands/          # SyncGoogleDriveCommand, CleanupDevTestLembarKerjaCommand
+│   ├── Exceptions/                # DuplicateDocumentException
 │   ├── Filament/
-│   │   ├── Pages/                 # MonitorMatrix, VerificationQueue, ExcelImportWizard
-│   │   └── Resources/             # UserResource, LembarKerjaResource, EvidenceResource
-│   ├── Jobs/                      # ProcessEvidenceDocumentJob, RematchActiveDocumentsJob
-│   ├── Models/                    # User, LembarKerja, LkIndicator, EvidenceDocument, DocumentMatch
+│   │   ├── Pages/                 # Dashboard, MonitorMatrixPage, VerificationQueuePage, CariDokumenPage
+│   │   └── Resources/             # EvidenceDocumentResource, LembarKerjaResource, LkImportProfileResource,
+│   │                              # LkIndicatorResource, UserResource, AuditLogResource
+│   ├── Http/
+│   │   ├── Controllers/           # Auth/ (LoginController, SSOController, ForceChangePasswordController),
+│   │   │                          # Evidence/EvidenceController
+│   │   └── Middleware/            # EnsureAccountIsActive, EnsurePasswordChanged, AuthorizePermission
+│   ├── Jobs/                      # ProcessEvidenceDocumentJob, SyncGoogleDriveJob,
+│   │                              # ProcessDriveFileOcrJob, RematchActiveDocumentsJob
+│   ├── Models/                    # User, LembarKerja, LkIndicator, LkEvidenceItem, EvidenceDocument,
+│   │                              # DocumentLkLink, DriveSyncFolder, DocumentMatch, AuditLog, SystemSetting
+│   ├── Policies/                  # EvidenceDocumentPolicy, LembarKerjaPolicy, LkImportProfilePolicy,
+│   │                              # LkIndicatorPolicy, UserPolicy, AuditLogPolicy
 │   └── Services/
-│       ├── Auth/                  # SSOProviderInterface, OIDCProvider, SAML2Provider
-│       ├── Evidence/              # EvidenceProcessingService, TextExtractionService
-│       ├── Import/                # ExcelImportService, ParsingStrategies/
-│       └── Matching/              # MatchingEngineService, SimilarityEvaluator
-├── config/                        # auth.php, sso.php, queue.php, settings.php
+│       ├── Audit/                 # AuditLogService
+│       ├── Auth/                  # SSOProviderInterface, BpsKeycloakOidcProvider, MockSSOProvider,
+│       │                          # UserManagerService, SessionManagerService
+│       ├── Drive/                 # GoogleDriveSyncService
+│       ├── Evidence/              # EvidenceUploadService, DocumentSimilarityService, TextExtractionService
+│       ├── LkImport/              # LkImportService, ExcelParserService, Strategies/, Resolvers/
+│       ├── Matching/              # MatchingEngineService, MatchingRepository, VerificationService, Rules/
+│       ├── Monitor/               # MonitorMatrixService
+│       └── Search/                # DocumentSearchService
+├── config/                        # evidence.php, livewire.php, services.php, filesystems.php, ...
 ├── database/
-│   ├── migrations/                # Migration DDL PostgreSQL
-│   └── seeders/                   # SuperAdminSeeder, InitialLkSeeder
-├── storage/
-│   └── app/
-│       └── private/evidence/      # Penyimpanan berkas bukti dukung (aman)
-├── tests/
-│   ├── Feature/                   # Pengujian endpoint, otorisasi RBAC, upload
-│   └── Unit/                      # Pengujian formula matching, parser Excel
-└── Md/                            # Dokumentasi resmi proyek (PRD, DATABASE, RBAC, dll.)
+│   ├── migrations/                # Migrasi PostgreSQL (termasuk skema pivot & backfill)
+│   └── seeders/                   # SuperAdminSeeder, InitialLkSeeder, BpsDemoUserSeeder,
+│                                  # DemoIndicatorAndSampleDocumentsSeeder, BpsAuditLogDemoSeeder
+├── resources/views/               # View Blade halaman login, monitor-matrix, verification-queue, cari-dokumen
+├── routes/                        # web.php, console.php
+└── tests/                         # Unit & Feature test suite (305 tests)
 ```
-
