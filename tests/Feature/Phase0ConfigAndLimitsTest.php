@@ -4,19 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\EvidenceDocument;
-use App\Models\LembarKerja;
-use App\Models\LkIndicator;
 use App\Models\SystemSetting;
 use App\Services\Evidence\EvidenceUploadService;
-use App\Services\Matching\Rules\DeterministicMatchingRule;
-use App\Services\Matching\Rules\HeuristicMatchingRule;
-use App\Services\Matching\Similarity\TrigramSimilarity;
-use App\Services\Matching\TextPreprocessor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -26,13 +18,9 @@ class Phase0ConfigAndLimitsTest extends TestCase
 
     public function test_evidence_config_loads_expected_defaults(): void
     {
+        $this->assertSame(['max_file_size_mb', 'storage_warning_percent'], array_keys(config('evidence')));
         $this->assertSame(20, config('evidence.max_file_size_mb'));
         $this->assertSame(80, config('evidence.storage_warning_percent'));
-        $this->assertSame(75.0, (float) config('evidence.matching_suggest_threshold'));
-        $this->assertSame(60.0, (float) config('evidence.matching_review_threshold'));
-        $this->assertArrayNotHasKey('drive_api_key', config('evidence'));
-        $this->assertArrayNotHasKey('drive_sync_max_depth', config('evidence'));
-        $this->assertArrayNotHasKey('drive_sync_schedule_enabled', config('evidence'));
     }
 
     public function test_livewire_config_is_fully_published_with_20mb_rules_and_preserved_subkeys(): void
@@ -76,56 +64,6 @@ class Phase0ConfigAndLimitsTest extends TestCase
         }
     }
 
-    public function test_matching_rules_read_thresholds_from_config_not_system_setting(): void
-    {
-        SystemSetting::updateOrCreate(['key' => 'matching.review_threshold'], ['value' => 99.0]);
-        SystemSetting::updateOrCreate(['key' => 'matching.similarity_threshold'], ['value' => 99.0]);
-
-        Config::set('evidence.matching_review_threshold', 65.0);
-        Config::set('evidence.matching_suggest_threshold', 75.0);
-
-        $deterministicRule = new DeterministicMatchingRule(new TextPreprocessor);
-        $indicator = new LkIndicator([
-            'code' => 'ZI-1.1',
-            'title' => 'Pembangunan Zona Integritas Menuju WBK',
-            'order_index' => 1,
-        ]);
-        $indicator->id = (string) Str::uuid();
-        $indicator->setRelation('evidenceItems', collect());
-
-        $doc = new EvidenceDocument([
-            'document_name' => 'Laporan Monitoring Zona ZI-1.1',
-            'original_filename' => 'laporan_zona_ZI-1.1.pdf',
-        ]);
-        $doc->id = (string) Str::uuid();
-
-        $candidate = $deterministicRule->evaluateExactCode($doc, $indicator);
-        $this->assertNotNull($candidate);
-        $this->assertSame(65.0, $candidate->confidenceScore);
-
-        Config::set('evidence.matching_review_threshold', 60.0);
-        $lk = new LembarKerja(['period' => 2026]);
-        $heuristicDoc = new EvidenceDocument([
-            'document_name' => 'SK Penetapan Pengelola Informasi dan Dokumentasi',
-            'year' => 2026,
-        ]);
-        $heuristicDoc->id = (string) Str::uuid();
-
-        $heuristicInd = new LkIndicator([
-            'code' => 'KIP-TEST-REV',
-            'title' => 'Penetapan Struktur PPID dan Penetapan Daftar Informasi Publik',
-            'order_index' => 1,
-        ]);
-        $heuristicInd->id = (string) Str::uuid();
-        $heuristicInd->setRelation('lembarKerja', $lk);
-        $heuristicInd->setRelation('evidenceItems', collect());
-
-        $heuristicRule = new HeuristicMatchingRule(new TextPreprocessor, new TrigramSimilarity);
-        $heuristicCandidate = $heuristicRule->evaluate($heuristicDoc, $heuristicInd);
-        $this->assertNotNull($heuristicCandidate);
-        $this->assertSame('perlu_verifikasi', $heuristicCandidate->status);
-    }
-
     public function test_infra_upload_configs_and_php_settings_are_updated_to_20mb_plus_overhead(): void
     {
         $nginxConf = file_get_contents(base_path('deploy/nginx/websinkronisasi.conf'));
@@ -139,14 +77,8 @@ class Phase0ConfigAndLimitsTest extends TestCase
         $this->assertStringContainsString('upload_max_filesize = 25M', $uploadsIni);
         $this->assertStringContainsString('post_max_size = 30M', $uploadsIni);
 
-        foreach ([
-            app_path('Services/Evidence/EvidenceUploadService.php'),
-            app_path('Services/Matching/Rules/DeterministicMatchingRule.php'),
-            app_path('Services/Matching/Rules/HeuristicMatchingRule.php'),
-        ] as $serviceFile) {
-            $contents = file_get_contents($serviceFile);
-            $this->assertNotFalse($contents);
-            $this->assertStringNotContainsString('SystemSetting::', $contents);
-        }
+        $contents = file_get_contents(app_path('Services/Evidence/EvidenceUploadService.php'));
+        $this->assertNotFalse($contents);
+        $this->assertStringNotContainsString('SystemSetting::', $contents);
     }
 }

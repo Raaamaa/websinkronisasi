@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\LkImport;
 
-use App\Jobs\RematchActiveDocumentsJob;
 use App\Models\AuditLog;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
@@ -152,9 +151,6 @@ class LkImportService
 
             return $importLog;
         });
-
-        // Memicu pencocokan ulang otomatis untuk seluruh dokumen terhadap LK ini (MATCH-07, AC-27)
-        RematchActiveDocumentsJob::dispatch($lk->id);
 
         return $log;
     }

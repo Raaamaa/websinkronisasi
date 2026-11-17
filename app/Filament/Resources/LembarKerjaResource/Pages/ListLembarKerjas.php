@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\LembarKerjaResource\Pages;
 
 use App\Filament\Resources\LembarKerjaResource;
-use App\Jobs\RematchActiveDocumentsJob;
 use App\Models\AuditLog;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
@@ -397,9 +396,6 @@ class ListLembarKerjas extends ListRecords
                 'items_count' => count($activeResolvedNames),
             ],
         ]);
-
-        // Trigger rematch queue (LK-07)
-        RematchActiveDocumentsJob::dispatch($indicator->lk_id);
 
         $this->closeIndicatorDrawer();
 

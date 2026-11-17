@@ -11,9 +11,6 @@ use App\Models\LembarKerja;
 use App\Models\LkIndicator;
 use App\Models\User;
 use App\Services\Evidence\DocumentSimilarityService;
-use App\Services\Matching\DTOs\MatchCandidate;
-use App\Services\Matching\MatchingEngineService;
-use App\Services\Matching\MatchingRepository;
 use App\Services\Search\DocumentSearchService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
@@ -278,104 +275,7 @@ class Phase3PivotSearchMatchingSimilarityTest extends TestCase
     }
 
     /**
-     * 5. MatchingEngine & MatchingRepository hanya menulis SARAN ke document_matches;
-     * dilarang menyentuh document_lk_links maupun approval_status.
-     */
-    public function test_matching_engine_only_writes_suggestions_and_never_touches_lk_links_or_approval_status(): void
-    {
-        $lk = $this->createSampleLk();
-        $indicator = $this->createSampleIndicator($lk, [
-            'code' => 'ZI-PH3.'.Str::random(3),
-            'title' => 'Pembentukan Tim Reformasi Internal',
-        ]);
-
-        $doc = $this->createSampleDocument([
-            'document_name' => 'Surat Keputusan '.$indicator->code,
-            'approval_status' => 'menunggu',
-        ]);
-
-        $initialLinkCount = DocumentLkLink::count();
-
-        /** @var MatchingEngineService $engine */
-        $engine = app(MatchingEngineService::class);
-        $matches = $engine->matchDocument($doc);
-
-        $this->assertNotEmpty($matches);
-        $this->assertTrue($matches->contains('indicator_id', $indicator->id));
-
-        // 1. document_matches bertambah sebagai saran
-        $matchRecord = DocumentMatch::where('document_id', $doc->id)
-            ->where('indicator_id', $indicator->id)
-            ->first();
-        $this->assertNotNull($matchRecord);
-
-        // 2. document_lk_links sama sekali tidak disentuh
-        $this->assertSame($initialLinkCount, DocumentLkLink::count());
-
-        // 3. approval_status tetap 'menunggu' (tidak terubah)
-        $this->assertSame('menunggu', $doc->fresh()->approval_status);
-    }
-
-    /**
-     * 6. Match berstatus 'rejected' tidak boleh dibuat ulang maupun ditimpa oleh matching engine.
-     */
-    public function test_matching_engine_never_overwrites_or_recreates_rejected_matches(): void
-    {
-        $lk = $this->createSampleLk();
-        $indicator = $this->createSampleIndicator($lk, [
-            'code' => 'ZI-REJ.'.Str::random(3),
-            'title' => 'Pembentukan Tim Kerja Pembangunan ZI',
-        ]);
-
-        $doc = $this->createSampleDocument([
-            'document_name' => 'Surat Keputusan '.$indicator->code,
-            'approval_status' => 'menunggu',
-        ]);
-
-        // Buat record rejected secara eksplisit
-        $rejectedMatch = DocumentMatch::create([
-            'document_id' => $doc->id,
-            'indicator_id' => $indicator->id,
-            'status' => 'rejected',
-            'match_method' => 'manual',
-            'confidence_score' => 0.0,
-            'match_reasons' => ['Ditolak oleh admin'],
-            'verified_by' => $this->admin->id,
-            'verified_at' => now(),
-        ]);
-
-        // Eksekusi repository saveMatch dengan calon match 100%
-        /** @var MatchingRepository $repo */
-        $repo = app(MatchingRepository::class);
-        $candidate = new MatchCandidate(
-            documentId: $doc->id,
-            indicatorId: $indicator->id,
-            matchedItemId: null,
-            status: 'confirmed',
-            matchMethod: 'exact_code',
-            confidenceScore: 100.0,
-            matchReasons: ['Kode indikator cocok persis']
-        );
-
-        $saved = $repo->saveMatch($candidate);
-
-        // Status harus tetap rejected dan skor tidak tertimpa
-        $this->assertSame('rejected', $saved?->status);
-        $fresh = $rejectedMatch->fresh();
-        $this->assertSame('rejected', $fresh->status);
-        $this->assertEquals(0.0, (float) $fresh->confidence_score);
-
-        // Jalankan pula lewat MatchingEngineService
-        /** @var MatchingEngineService $engine */
-        $engine = app(MatchingEngineService::class);
-        $engineMatches = $engine->matchDocument($doc);
-
-        $this->assertFalse($engineMatches->contains('indicator_id', $indicator->id));
-        $this->assertSame('rejected', $rejectedMatch->fresh()->status);
-    }
-
-    /**
-     * 7. DocumentSimilarityService: SHA-256 identik dengan dokumen aktif mengembalikan data lengkap dokumen lama.
+     * 5. DocumentSimilarityService: SHA-256 identik dengan dokumen aktif mengembalikan data lengkap dokumen lama.
      */
     public function test_similarity_service_identical_sha256_returns_existing_active_document(): void
     {

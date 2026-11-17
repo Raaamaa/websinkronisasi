@@ -19,8 +19,6 @@ use App\Services\Evidence\TextExtractionService;
 use App\Services\LkImport\ExcelParserService;
 use App\Services\LkImport\LkImportService;
 use App\Services\LkImport\Resolvers\YearPlaceholderResolver;
-use App\Services\Matching\MatchingEngineService;
-use App\Services\Matching\VerificationService;
 use App\Services\Monitor\MonitorMatrixService;
 use App\Services\Search\DocumentSearchService;
 use Illuminate\Http\UploadedFile;
@@ -368,56 +366,6 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
     }
 
     /**
-     * AC-11: Admin menolak atau menghapus match, lalu LK di-matching ulang -> Match yang ditolak tidak muncul kembali, dan ✔ hilang dari monitor.
-     */
-    public function test_ac_11_rejected_match_is_never_resurrected_by_rematching_and_removed_from_monitor(): void
-    {
-        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
-        $ind = LkIndicator::firstOrCreate(['lk_id' => $lk->id, 'code' => 'ZI-AC11'], ['title' => 'Indikator AC11', 'order_index' => 1]);
-
-        $doc = EvidenceDocument::create([
-            'document_name' => 'Dokumen Rejection AC11',
-            'year' => 2026,
-            'approval_status' => 'disetujui',
-            'file_path' => 'evidence/ac11.pdf',
-            'original_filename' => 'ac11.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'ac11_'.uniqid()),
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $match = DocumentMatch::create([
-            'document_id' => $doc->id,
-            'indicator_id' => $ind->id,
-            'status' => 'auto',
-            'match_method' => 'exact_code',
-            'confidence_score' => 100.0,
-        ]);
-
-        /** @var VerificationService $verifService */
-        $verifService = app(VerificationService::class);
-        $verifService->rejectMatch($match->id, $this->admin);
-
-        $match->refresh();
-        $this->assertSame('rejected', $match->status);
-
-        // Matching ulang dijalankan
-        /** @var MatchingEngineService $engine */
-        $engine = app(MatchingEngineService::class);
-        $engine->rematchLk($lk->id);
-
-        $match->refresh();
-        $this->assertSame('rejected', $match->status);
-
-        // Simbol di monitor harus kosong murni
-        /** @var MonitorMatrixService $matrix */
-        $matrix = app(MonitorMatrixService::class);
-        $data = $matrix->getMatrixData(['period' => 2026, 'search' => 'Dokumen Rejection AC11']);
-        $this->assertSame('', $data['rows'][0]['cells']['ZI']['symbol']);
-    }
-
-    /**
      * AC-13: Pencarian dengan input kosong, '; DROP TABLE--, atau 10.000 karakter -> Tidak ada error 500, tidak ada injeksi, hasil kosong atau pesan validasi.
      */
     public function test_ac_13_search_handles_sql_injection_empty_and_massive_inputs_safely(): void
@@ -497,7 +445,6 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
     public function test_ac_17_all_data_mutation_actions_are_recorded_in_audit_logs(): void
     {
         $this->assertDatabaseHas('audit_logs', ['action' => 'user.deactivated']);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'match.rejected']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'bd.uploaded']);
     }
 
@@ -731,41 +678,6 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $this->assertEquals('Formulir Evaluasi SP tahun 2025', $resolvedMinus1);
         $this->assertEquals('Laporan Kinerja tahun 2024', $resolvedMinus2);
         $this->assertEquals('SK Tim Monev tahun 2026', $resolvedCurrent);
-    }
-
-    /**
-     * AC-27: Impor ulang mengubah item bukti -> Matching ulang berjalan, match confirmed dan rejected tidak berubah.
-     */
-    public function test_ac_27_reimporting_lk_preserves_confirmed_and_rejected_matches(): void
-    {
-        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
-        $ind = LkIndicator::firstOrCreate(['lk_id' => $lk->id, 'code' => 'ZI-AC27'], ['title' => 'Indikator AC27', 'order_index' => 1]);
-
-        $doc = EvidenceDocument::create([
-            'document_name' => 'Dokumen Terkonfirmasi AC27',
-            'year' => 2026,
-            'file_path' => 'evidence/ac27.pdf',
-            'original_filename' => 'ac27.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'ac27_'.uniqid()),
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $match = DocumentMatch::create([
-            'document_id' => $doc->id,
-            'indicator_id' => $ind->id,
-            'status' => 'confirmed',
-            'match_method' => 'manual',
-            'confidence_score' => 100.0,
-        ]);
-
-        /** @var MatchingEngineService $engine */
-        $engine = app(MatchingEngineService::class);
-        $engine->rematchLk($lk->id);
-
-        $match->refresh();
-        $this->assertSame('confirmed', $match->status, 'Status confirmed dilarang berubah saat rematch LK.');
     }
 
     /**

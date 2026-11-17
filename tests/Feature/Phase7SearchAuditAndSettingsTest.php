@@ -14,7 +14,6 @@ use App\Models\LkImportProfile;
 use App\Models\LkIndicator;
 use App\Models\User;
 use App\Services\Evidence\EvidenceUploadService;
-use App\Services\Matching\MatchingEngineService;
 use App\Services\Monitor\MonitorMatrixService;
 use App\Services\Search\DocumentSearchService;
 use Database\Seeders\BpsAuditLogDemoSeeder;
@@ -718,48 +717,6 @@ class Phase7SearchAuditAndSettingsTest extends TestCase
             $this->assertGreaterThan(0, $officialLinksCount);
         } finally {
             DB::rollBack();
-        }
-    }
-
-    public function test_dynamic_similarity_threshold_setting_affects_matching_engine_immediately(): void
-    {
-        Config::set('evidence.matching_suggest_threshold', 80.0);
-        Config::set('evidence.matching_review_threshold', 70.0);
-
-        $lk = LembarKerja::where('code', 'ZI')->firstOrFail();
-        $indicator = LkIndicator::firstOrCreate(
-            ['lk_id' => $lk->id, 'code' => 'ZI-PHASE7-DYNAMIC'],
-            ['title' => 'Pengujian Pengaturan Dinamis', 'order_index' => 1]
-        );
-        LkEvidenceItem::firstOrCreate(
-            ['indicator_id' => $indicator->id, 'resolved_name' => 'Laporan Evaluasi Kinerja Organisasi BPS'],
-            ['raw_template_name' => 'Laporan Evaluasi Kinerja Organisasi BPS', 'order_index' => 1]
-        );
-
-        $doc = $this->createSampleDocument([
-            'document_name' => 'Evaluasi Kinerja Organisasi Tahunan BPS',
-            'extracted_text' => 'Ringkasan pencapaian kinerja tahun 2026.',
-        ]);
-
-        /** @var MatchingEngineService $engine */
-        $engine = app(MatchingEngineService::class);
-
-        try {
-            $candidates = $engine->matchDocument($doc);
-
-            // Dengan threshold 80.0 / review 70.0, dokumen dengan kemiripan ~59.4% tidak akan lolos
-            $this->assertEmpty($candidates);
-
-            // Turunkan threshold secara dinamis ke 55.0
-            Config::set('evidence.matching_suggest_threshold', 55.0);
-            Config::set('evidence.matching_review_threshold', 50.0);
-
-            $candidatesLowered = $engine->matchDocument($doc);
-            $this->assertNotEmpty($candidatesLowered);
-            $this->assertEquals('auto', $candidatesLowered[0]->status);
-        } finally {
-            Config::set('evidence.matching_suggest_threshold', 75.0);
-            Config::set('evidence.matching_review_threshold', 60.0);
         }
     }
 }

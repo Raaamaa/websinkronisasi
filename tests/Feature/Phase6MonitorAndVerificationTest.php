@@ -11,7 +11,6 @@ use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
 use App\Models\LkIndicator;
 use App\Models\User;
-use App\Services\Matching\VerificationService;
 use App\Services\Monitor\MonitorMatrixService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -253,107 +252,6 @@ class Phase6MonitorAndVerificationTest extends TestCase
 
         $responseSuper = $this->actingAs($this->superAdmin)->get('/admin/verification-queue');
         $responseSuper->assertOk();
-    }
-
-    /**
-     * 7. MATCH-04, AC-10, AC-17: Admin confirms auto match -> status becomes confirmed, audit logged.
-     */
-    public function test_admin_can_confirm_auto_match_updating_status_to_confirmed_and_logging_audit(): void
-    {
-        [$lk, $indicator, $item] = $this->createSampleLkWithIndicator('ZI', 'internal', '4.1');
-
-        $document = EvidenceDocument::create([
-            'id' => (string) Str::uuid(),
-            'document_name' => 'Dokumen Konfirmasi Uji',
-            'year' => 2026,
-            'file_path' => 'evidence/test_verif.pdf',
-            'original_filename' => 'verif.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'hash_verif_'.uniqid()),
-            'processing_status' => 'selesai',
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $match = DocumentMatch::create([
-            'document_id' => $document->id,
-            'indicator_id' => $indicator->id,
-            'matched_item_id' => $item->id,
-            'status' => 'auto',
-            'match_method' => 'title_similarity',
-            'confidence_score' => 88.0,
-            'match_reasons' => ['title_score' => 88.0],
-        ]);
-
-        $verifService = app(VerificationService::class);
-        $updatedMatch = $verifService->confirmMatch($match->id, $this->admin);
-
-        $this->assertSame('confirmed', $updatedMatch->status);
-        $this->assertSame($this->admin->id, $updatedMatch->verified_by);
-        $this->assertNotNull($updatedMatch->verified_at);
-
-        // AC-17: Audit log harus mencatat aksi verifikasi
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $this->admin->id,
-            'action' => 'match.verified',
-            'entity_type' => 'DocumentMatch',
-            'entity_id' => $match->id,
-        ]);
-    }
-
-    /**
-     * 8. MATCH-04, AC-11, AC-17: Admin rejects auto match -> status becomes rejected, checkmark removed.
-     */
-    public function test_admin_can_reject_auto_match_removing_it_from_monitor_and_setting_rejected(): void
-    {
-        [$lk, $indicator, $item] = $this->createSampleLkWithIndicator('ZI', 'internal', '4.2');
-
-        $document = EvidenceDocument::create([
-            'id' => (string) Str::uuid(),
-            'document_name' => 'Dokumen Tolak Uji',
-            'year' => 2026,
-            'approval_status' => 'disetujui',
-            'file_path' => 'evidence/test_rej.pdf',
-            'original_filename' => 'rej.pdf',
-            'mime_type' => 'application/pdf',
-            'file_size_bytes' => 1024,
-            'file_hash' => hash('sha256', 'hash_rej_'.uniqid()),
-            'processing_status' => 'selesai',
-            'uploaded_by' => $this->admin->id,
-        ]);
-
-        $match = DocumentMatch::create([
-            'document_id' => $document->id,
-            'indicator_id' => $indicator->id,
-            'matched_item_id' => $item->id,
-            'status' => 'auto',
-            'match_method' => 'title_similarity',
-            'confidence_score' => 77.0,
-            'match_reasons' => ['title_score' => 77.0],
-        ]);
-
-        $verifService = app(VerificationService::class);
-        $rejectedMatch = $verifService->rejectMatch($match->id, $this->admin);
-
-        // Status berubah jadi rejected
-        $this->assertSame('rejected', $rejectedMatch->status);
-        $this->assertSame($this->admin->id, $rejectedMatch->verified_by);
-
-        // AC-11: Tanda centang seketika hilang dari matriks monitor
-        $monitorService = app(MonitorMatrixService::class);
-        $matrix = $monitorService->getMatrixData(['period' => 2026]);
-        $row = collect($matrix['rows'])->firstWhere('document_id', $document->id);
-
-        $this->assertFalse($row['cells']['ZI']['has_match']);
-        $this->assertSame('', $row['cells']['ZI']['symbol']);
-
-        // AC-17: Audit log mencatat penolakan
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $this->admin->id,
-            'action' => 'match.rejected',
-            'entity_type' => 'DocumentMatch',
-            'entity_id' => $match->id,
-        ]);
     }
 
     /**

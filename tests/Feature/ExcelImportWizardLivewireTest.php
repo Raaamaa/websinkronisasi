@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Filament\Resources\LkImportProfileResource\Pages\ListLkImportProfiles;
-use App\Jobs\RematchActiveDocumentsJob;
 use App\Models\AuditLog;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
@@ -214,9 +213,6 @@ class ExcelImportWizardLivewireTest extends TestCase
                 ->where('action', 'lk.imported')
                 ->exists()
         );
-
-        // Verify rematch queue was dispatched (LK-07)
-        Queue::assertPushed(RematchActiveDocumentsJob::class);
     }
 
     public function test_import_without_file_is_rejected_and_creates_zero_rows(): void

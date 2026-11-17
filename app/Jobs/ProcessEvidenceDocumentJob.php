@@ -7,7 +7,6 @@ namespace App\Jobs;
 use App\Models\AuditLog;
 use App\Models\EvidenceDocument;
 use App\Services\Evidence\TextExtractionService;
-use App\Services\Matching\MatchingEngineService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,7 +24,7 @@ class ProcessEvidenceDocumentJob implements ShouldQueue
         public readonly string $documentId
     ) {}
 
-    public function handle(TextExtractionService $extractor, ?MatchingEngineService $matchingEngine = null): void
+    public function handle(TextExtractionService $extractor): void
     {
         $document = EvidenceDocument::find($this->documentId);
 
@@ -115,24 +114,6 @@ class ProcessEvidenceDocumentJob implements ShouldQueue
             ]);
         } catch (Throwable) {
             // Jangan gagalkan alur jika logging mengalami kendala
-        }
-
-        // Jalankan Matching Pipeline otomatis setelah ekstraksi teks (MATCH-01)
-        try {
-            $engine = $matchingEngine ?? app(MatchingEngineService::class);
-            $engine->matchDocument($document);
-        } catch (Throwable $e) {
-            $document->update([
-                'processing_status' => 'perlu_review_manual',
-                'error_message' => 'Kegagalan matching engine: '.$e->getMessage(),
-            ]);
-
-            Log::error('ProcessEvidenceDocumentJob matching failure: '.$e->getMessage(), [
-                'document_id' => $document->id,
-                'exception' => $e,
-            ]);
-
-            throw $e;
         }
     }
 }

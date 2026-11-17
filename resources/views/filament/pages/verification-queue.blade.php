@@ -84,7 +84,6 @@
                     @php
                         $proposedLks = $doc->lkLinks->where('link_source', 'proposed')->map(fn ($l) => $l->lembarKerja)->filter()->unique('id');
                         $officialLks = $doc->lkLinks->whereIn('link_source', ['admin', 'drive_sync', 'backfill'])->map(fn ($l) => $l->lembarKerja)->filter()->unique('id');
-                        $systemLks = $doc->matches->map(fn ($m) => $m->indicator?->lembarKerja)->filter()->unique('id');
                     @endphp
 
                     <div class="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs space-y-5">
@@ -155,8 +154,8 @@
                             </div>
                         </div>
 
-                        {{-- LK Mapping Badges: Usulan Pegawai vs Saran Sistem --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+                        {{-- LK Mapping Badges: Usulan Pegawai --}}
+                        <div class="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
                             <div>
                                 <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
                                     📌 Usulan Pegawai (Tujuan LK):
@@ -168,21 +167,6 @@
                                         </span>
                                     @empty
                                         <span class="text-xs text-slate-400 italic">Tidak ada usulan LK spesifik</span>
-                                    @endforelse
-                                </div>
-                            </div>
-
-                            <div>
-                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                                    💡 Saran Sistem (Kecocokan Otomatis):
-                                </span>
-                                <div class="flex flex-wrap gap-1.5">
-                                    @forelse ($systemLks as $slk)
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 text-sky-900 dark:bg-sky-950/80 dark:text-sky-200 border border-sky-300 dark:border-sky-700">
-                                            {{ $slk->code }} - {{ $slk->name }}
-                                        </span>
-                                    @empty
-                                        <span class="text-xs text-slate-400 italic">Belum ada indikator cocok otomatis</span>
                                     @endforelse
                                 </div>
                             </div>

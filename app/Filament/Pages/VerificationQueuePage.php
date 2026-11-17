@@ -120,7 +120,6 @@ class VerificationQueuePage extends Page
             ->with([
                 'uploader',
                 'lkLinks.lembarKerja',
-                'matches.indicator.lembarKerja',
             ]);
 
         if ($this->statusFilter !== 'all') {
@@ -319,40 +318,5 @@ class VerificationQueuePage extends Page
             ->body("Pengajuan '{$doc->document_name}' ditolak.")
             ->danger()
             ->send();
-    }
-
-    public function highlightKeywords(string $text, ?array $keywords): string
-    {
-        if (empty($keywords)) {
-            return e($text);
-        }
-
-        $validWords = array_values(array_filter($keywords, fn ($w) => mb_strlen(trim((string) $w)) >= 3));
-        if (empty($validWords)) {
-            return e($text);
-        }
-
-        // Bangun satu ekspresi reguler gabungan dengan batasan kata
-        $escapedPatterns = array_map(fn ($w) => preg_quote(trim((string) $w), '/'), $validWords);
-        $regex = '/(\b(?:'.implode('|', $escapedPatterns).')\b)/iu';
-
-        // Pecah teks berdasarkan keyword; token genap adalah teks biasa, token ganjil adalah keyword
-        $tokens = preg_split($regex, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
-        if ($tokens === false) {
-            return e($text);
-        }
-
-        $output = '';
-        foreach ($tokens as $index => $token) {
-            if ($index % 2 === 1) {
-                // Token keyword yang cocok
-                $output .= '<mark class="bg-amber-200 text-amber-900 px-1 py-0.5 rounded font-semibold">'.e($token).'</mark>';
-            } else {
-                // Teks biasa
-                $output .= e($token);
-            }
-        }
-
-        return $output;
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Filament\Resources\LembarKerjaResource\Pages\ListLembarKerjas;
-use App\Jobs\RematchActiveDocumentsJob;
 use App\Models\AuditLog;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
@@ -161,9 +160,6 @@ class MasterLembarKerjaLivewireTest extends TestCase
             ->first();
         $this->assertNotNull($resolvedItem);
         $this->assertSame('Notula Rapat Pembentukan 2026', $resolvedItem->resolved_name);
-
-        // Verify rematch queue was dispatched (LK-07)
-        Queue::assertPushed(RematchActiveDocumentsJob::class);
 
         // Verify audit log was recorded (AUDIT-02)
         $this->assertTrue(
