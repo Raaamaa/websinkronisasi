@@ -52,7 +52,7 @@ class Phase2RbacAndAuthTest extends TestCase
 
         $response = $this->get('/auth/sso/callback?mock_user=pegawai_sample');
 
-        $response->assertRedirect('/admin');
+        $response->assertRedirect('/admin/cari-dokumen');
 
         $this->assertAuthenticated();
 
@@ -129,7 +129,7 @@ class Phase2RbacAndAuthTest extends TestCase
                 'new_password_confirmation' => $newPassword,
             ]);
 
-            $response->assertRedirect('/admin');
+            $response->assertRedirect('/admin/verification-queue');
 
             $superAdmin->refresh();
             $this->assertFalse($superAdmin->must_change_password);

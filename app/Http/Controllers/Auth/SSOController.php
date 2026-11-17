@@ -169,7 +169,7 @@ class SSOController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->intended('/admin');
+            return redirect()->intended($user->homeUrl());
         } catch (HttpException $e) {
             throw $e;
         } catch (QueryException|\PDOException $e) {

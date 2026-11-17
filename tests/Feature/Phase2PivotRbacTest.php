@@ -92,7 +92,7 @@ class Phase2PivotRbacTest extends TestCase
         $this->actingAs($superAdmin)->get('/admin/verification-queue')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/users')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/audit-logs')->assertOk();
-        $this->actingAs($superAdmin)->get('/admin/evidence-documents')->assertOk();
+        $this->actingAs($superAdmin)->get('/admin/evidence-documents')->assertForbidden();
 
         // Super Admin dilarang unggah & cari dokumen (bukan hanya disembunyikan di UI)
         $this->actingAs($superAdmin);

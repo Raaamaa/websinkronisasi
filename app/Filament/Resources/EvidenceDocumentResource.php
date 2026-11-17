@@ -28,15 +28,26 @@ class EvidenceDocumentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
 
-    protected static ?string $navigationLabel = 'Unggah & Pengajuan Saya';
+    protected static ?string $navigationLabel = 'Unggah Bukti';
 
     protected static ?string $modelLabel = 'Bukti Dukung';
 
-    protected static ?string $pluralModelLabel = 'Pengajuan Bukti Dukung';
+    protected static ?string $pluralModelLabel = 'Unggah Bukti';
 
     protected static ?string $navigationGroup = null;
 
     protected static ?int $navigationSort = 2;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        return $user !== null
+            && $user->is_active
+            && $user->deleted_at === null
+            && $user->hasPermission('evidence.upload');
+    }
 
     public static function canCreate(): bool
     {
@@ -69,6 +80,7 @@ class EvidenceDocumentResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make('Metode Pengajuan Bukti Dukung')
+                    ->description('Berkas lebih dari 20 MB (mis. video): unggah dulu ke Google Drive, lalu kirim tautannya.')
                     ->schema([
                         Forms\Components\Radio::make('source_type')
                             ->label('Pilih Jenis Pengajuan')
@@ -158,6 +170,11 @@ class EvidenceDocumentResource extends Resource
                             ->searchable()
                             ->preload()
                             ->required()
+                            ->minItems(1)
+                            ->validationMessages([
+                                'required' => 'Wajib memilih minimal satu Lembar Kerja (LK).',
+                                'min' => 'Wajib memilih minimal satu Lembar Kerja (LK).',
+                            ])
                             ->helperText('Dokumen akan diajukan ke Lembar Kerja yang dipilih sebagai usulan resmi.')
                             ->columnSpanFull(),
 
@@ -243,7 +260,7 @@ class EvidenceDocumentResource extends Resource
                 Tables\Columns\TextColumn::make('lkLinks.lembarKerja.code')
                     ->label('Usulan LK')
                     ->badge()
-                    ->separator(', ')
+                    ->getStateUsing(fn (EvidenceDocument $record): array => $record->lkLinks->pluck('lembarKerja.code')->filter()->unique()->values()->all())
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('approval_status')
@@ -299,7 +316,16 @@ class EvidenceDocumentResource extends Resource
                     ->label('Revisi')
                     ->icon('heroicon-o-pencil-square')
                     ->color('warning')
-                    ->visible(fn (EvidenceDocument $record): bool => Auth::user()?->can('update', $record) ?? false),
+                    ->visible(function (EvidenceDocument $record): bool {
+                        /** @var User|null $user */
+                        $user = Auth::user();
+
+                        return $user !== null
+                            && $record->approval_status === 'revisi'
+                            && $record->uploaded_by !== null
+                            && (string) $record->uploaded_by === (string) $user->id
+                            && $user->can('update', $record);
+                    }),
 
                 Tables\Actions\Action::make('download')
                     ->label('Unduh')

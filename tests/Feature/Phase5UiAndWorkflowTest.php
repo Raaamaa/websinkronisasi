@@ -544,4 +544,24 @@ class Phase5UiAndWorkflowTest extends TestCase
         // Harus tepat 2 LK resmi yang berbeda (lkX dan lkY)
         $this->assertEquals(2, $targetDoc->official_lks_count);
     }
+
+    public function test_upload_form_displays_google_drive_guidance_over_20mb_and_requires_at_least_one_lk(): void
+    {
+        $this->actingAs($this->pegawaiA);
+
+        $this->get('/admin/evidence-documents/create')
+            ->assertOk()
+            ->assertSee('Berkas lebih dari 20 MB (mis. video): unggah dulu ke Google Drive, lalu kirim tautannya.');
+
+        Livewire::test(CreateEvidenceDocument::class)
+            ->fillForm([
+                'document_name' => 'Dokumen Uji Wajib LK',
+                'year' => 2026,
+                'source_type' => 'link',
+                'external_link' => 'https://drive.google.com/file/d/contoh123/view',
+                'lk_ids' => [],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['lk_ids']);
+    }
 }

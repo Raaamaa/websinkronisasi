@@ -29,7 +29,7 @@ class CreateEvidenceDocument extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'Unggah Dokumen Bukti Dukung';
+        return 'Unggah Bukti';
     }
 
     public function getHeading(): string|Htmlable
@@ -73,7 +73,17 @@ class CreateEvidenceDocument extends CreateRecord
         /** @var User $actor */
         $actor = Auth::user();
         $sourceType = $data['source_type'] ?? 'upload';
-        $lkIds = (array) ($data['lk_ids'] ?? []);
+        $lkIds = array_values(array_unique(array_filter((array) ($data['lk_ids'] ?? []))));
+
+        if (empty($lkIds)) {
+            Notification::make()
+                ->title('Usulan LK Wajib Dipilih')
+                ->body('Wajib memilih minimal satu Lembar Kerja (LK) tujuan.')
+                ->danger()
+                ->send();
+
+            $this->halt();
+        }
 
         $uploadService = app(EvidenceUploadService::class);
 

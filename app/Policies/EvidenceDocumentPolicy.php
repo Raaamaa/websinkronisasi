@@ -16,8 +16,7 @@ class EvidenceDocumentPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->isActiveUser($user)
-            && ($user->hasPermission('evidence.search') || $user->hasPermission('evidence.verify'));
+        return $this->isActiveUser($user) && $user->hasPermission('evidence.upload');
     }
 
     public function view(User $user, EvidenceDocument $evidenceDocument): bool

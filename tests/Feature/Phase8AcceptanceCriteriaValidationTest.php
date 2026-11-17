@@ -504,7 +504,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         );
 
         $response = $this->get('/auth/sso/callback?mock_user=pegawai_sample');
-        $response->assertRedirect('/admin');
+        $response->assertRedirect('/admin/cari-dokumen');
 
         $this->assertAuthenticated();
         $this->assertSame('pegawai', $user->role);

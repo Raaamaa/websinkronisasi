@@ -9,9 +9,16 @@ use App\Http\Controllers\Evidence\EvidenceController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// Halaman Utama: Redirect ke Dashboard jika sudah login, atau tampilkan Login jika tamu
+// Halaman Utama: Redirect ke halaman utama peran jika sudah login, atau tampilkan Login jika tamu
 Route::get('/', function () {
-    return Auth::check() ? redirect('/admin') : view('auth.login');
+    if (Auth::check()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        return redirect($user->homeUrl());
+    }
+
+    return view('auth.login');
 });
 
 // Jalur Login Mandiri Modern ala Web GUCI

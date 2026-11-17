@@ -25,7 +25,7 @@ class ForceChangePasswordController extends Controller
         }
 
         if (! $user->must_change_password) {
-            return redirect('/admin');
+            return redirect($user->homeUrl());
         }
 
         return view('auth.force-change-password', [
@@ -77,6 +77,6 @@ class ForceChangePasswordController extends Controller
             'created_at' => now(),
         ]);
 
-        return redirect('/admin')->with('status', 'Kata sandi berhasil diperbarui.');
+        return redirect($user->homeUrl())->with('status', 'Kata sandi berhasil diperbarui.');
     }
 }

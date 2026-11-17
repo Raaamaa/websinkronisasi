@@ -83,7 +83,7 @@ class GuciStyleLoginTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $response->assertRedirect('/admin');
+        $response->assertRedirect('/admin/cari-dokumen');
         $this->assertTrue(Auth::check());
         $this->assertSame($admin->id, Auth::id());
     }
@@ -279,7 +279,7 @@ class GuciStyleLoginTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $response->assertRedirect('/admin');
+        $response->assertRedirect('/admin/cari-dokumen');
         $this->assertTrue(Auth::check());
         $this->assertSame($admin->id, Auth::id());
     }
@@ -311,7 +311,7 @@ class GuciStyleLoginTest extends TestCase
             'password' => 'adminBaruPass123',
         ]);
 
-        $response->assertRedirect('/admin');
+        $response->assertRedirect('/admin/cari-dokumen');
         $this->assertTrue(Auth::check());
         $this->assertSame($newAdmin->id, Auth::id());
     }
@@ -391,5 +391,47 @@ class GuciStyleLoginTest extends TestCase
     {
         $response = $this->get('/logout');
         $response->assertStatus(405);
+    }
+
+    /**
+     * 18. Pegawai yang mengakses /admin diarahkan ke /admin/cari-dokumen.
+     */
+    public function test_pegawai_visiting_admin_is_redirected_to_cari_dokumen(): void
+    {
+        $pegawai = User::firstOrCreate(
+            ['email' => 'pegawai.redirect@bps.go.id'],
+            [
+                'name' => 'Pegawai Redirect',
+                'role' => 'pegawai',
+                'auth_provider' => 'sso',
+                'is_active' => true,
+                'must_change_password' => false,
+            ]
+        );
+        $pegawai->update(['role' => 'pegawai', 'is_active' => true, 'must_change_password' => false]);
+
+        $this->actingAs($pegawai)->get('/admin')->assertRedirect('/admin/cari-dokumen');
+    }
+
+    /**
+     * 19. Admin yang mengakses /admin diarahkan ke /admin/cari-dokumen.
+     */
+    public function test_admin_visiting_admin_is_redirected_to_cari_dokumen(): void
+    {
+        $admin = User::where('email', 'admin.test@bps.go.id')->firstOrFail();
+        $admin->update(['is_active' => true, 'must_change_password' => false]);
+
+        $this->actingAs($admin)->get('/admin')->assertRedirect('/admin/cari-dokumen');
+    }
+
+    /**
+     * 20. Super Admin yang mengakses /admin diarahkan ke /admin/verification-queue.
+     */
+    public function test_super_admin_visiting_admin_is_redirected_to_verification_queue(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->where('is_active', true)->firstOrFail();
+        $superAdmin->update(['must_change_password' => false]);
+
+        $this->actingAs($superAdmin)->get('/admin')->assertRedirect('/admin/verification-queue');
     }
 }

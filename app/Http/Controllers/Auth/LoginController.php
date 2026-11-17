@@ -23,7 +23,10 @@ class LoginController extends Controller
     public function showLoginForm(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect('/admin');
+            /** @var User $user */
+            $user = Auth::user();
+
+            return redirect($user->homeUrl());
         }
 
         return view('auth.login');
@@ -165,7 +168,7 @@ class LoginController extends Controller
             return redirect()->route('auth.password.change');
         }
 
-        return redirect('/admin');
+        return redirect()->intended($user->homeUrl());
     }
 
     /**
