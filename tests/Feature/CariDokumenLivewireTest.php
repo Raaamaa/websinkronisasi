@@ -620,4 +620,45 @@ class CariDokumenLivewireTest extends TestCase
             ->assertDontSee('Dokumen Bukti Dukung Resmi')
             ->assertDontSee($doc->document_name);
     }
+
+    public function test_cari_dokumen_renders_query_loading_indicator_and_preserves_matrix_hint_and_empty_messages(): void
+    {
+        $lk = LembarKerja::firstOrCreate(
+            ['code' => 'ZI', 'period' => 2026],
+            ['name' => 'ZI', 'category' => 'internal', 'evaluation_interval' => '12 Bulan', 'is_active' => true]
+        );
+
+        $doc = EvidenceDocument::create([
+            'document_name' => 'SK Uji Indikator Loading '.Str::random(6),
+            'year' => 2026,
+            'document_type' => 'SK',
+            'source_type' => 'upload',
+            'approval_status' => 'disetujui',
+            'uploaded_by' => $this->pegawai->id,
+            'file_hash' => hash('sha256', Str::random(16)),
+            'file_path' => 'evidence/loading_test.pdf',
+            'original_filename' => 'loading_test.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'processing_status' => 'selesai',
+        ]);
+
+        DocumentLkLink::create([
+            'document_id' => $doc->id,
+            'lk_id' => $lk->id,
+            'link_source' => 'admin',
+        ]);
+
+        Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->assertSeeHtml('wire:loading')
+            ->assertSeeHtml('wire:target="query"')
+            ->assertSeeHtml('Mencari...')
+            ->assertSee('Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.')
+            ->set('query', $doc->document_name)
+            ->assertSee('Dokumen Bukti Dukung Resmi')
+            ->assertSee($doc->document_name)
+            ->set('query', 'TidakAdaDokumenApapunZZZ98765')
+            ->assertSee('Dokumen belum ada di perpustakaan. Silakan unggah lewat menu Unggah Bukti.');
+    }
 }

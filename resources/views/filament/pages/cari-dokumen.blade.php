@@ -7,7 +7,7 @@
         @endphp
 
         {{-- Judul Halaman & Pilihan Kategori LK --}}
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4" style="border-bottom: 1px solid var(--border-warm);">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 studio-header-band">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold vintage-serif-heading">
                     Cari Dokumen Bukti Dukung
@@ -21,21 +21,21 @@
                 <button
                     type="button"
                     wire:click="setCategory(null)"
-                    class="px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === null ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
+                    class="studio-tab px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === null ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
                     style="min-height: 44px !important;">
                     Semua LK
                 </button>
                 <button
                     type="button"
                     wire:click="setCategory('internal')"
-                    class="px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === 'internal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
+                    class="studio-tab px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === 'internal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
                     style="min-height: 44px !important;">
                     Internal
                 </button>
                 <button
                     type="button"
                     wire:click="setCategory('eksternal')"
-                    class="px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === 'eksternal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
+                    class="studio-tab px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === 'eksternal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
                     style="min-height: 44px !important;">
                     Eksternal
                 </button>
@@ -44,12 +44,21 @@
 
         {{-- Kotak Pencarian & Filter --}}
         <form wire:submit.prevent="search" class="vintage-card p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
-            <div class="md:col-span-6">
+            <div class="md:col-span-6 studio-search-wrap">
                 <input
                     type="text"
                     wire:model.live.debounce.300ms="query"
                     placeholder="Ketikkan nama dokumen, nomor SK, atau kata kunci..."
-                    class="w-full min-h-[56px] px-4 py-3 vintage-input" />
+                    class="w-full min-h-[56px] px-4 py-3 vintage-input studio-search-input" />
+                <div
+                    wire:loading.flex
+                    wire:target="query"
+                    role="status"
+                    aria-live="polite"
+                    class="studio-search-loading">
+                    <span class="studio-spinner" aria-hidden="true"></span>
+                    <span>Mencari...</span>
+                </div>
             </div>
 
             <div class="md:col-span-2">
@@ -119,7 +128,7 @@
             @enderror
 
             @if ($checkStatus === 'identical' && $checkIdentical)
-                <div class="p-4 rounded-xl text-sm space-y-1.5" style="background-color: var(--status-rejected-bg); border: 1px solid var(--status-rejected-border); color: var(--status-rejected-text);">
+                <div class="p-4 rounded-xl text-sm space-y-1.5 studio-status-box studio-fade-in" style="background-color: var(--status-rejected-bg); border: 1px solid var(--status-rejected-border); color: var(--status-rejected-text);">
                     <div class="font-bold text-base">Ditolak — Dokumen Sudah Ada</div>
                     <div><strong>Judul:</strong> {{ $checkIdentical['judul'] }}</div>
                     <div><strong>Pengunggah:</strong> {{ $checkIdentical['uploader_name'] }}</div>
@@ -130,7 +139,7 @@
                     </div>
                 </div>
             @elseif ($checkStatus === 'similar')
-                <div class="p-4 rounded-xl text-sm space-y-2" style="background-color: var(--status-pending-bg); border: 1px solid var(--status-pending-border); color: var(--status-pending-text);">
+                <div class="p-4 rounded-xl text-sm space-y-2 studio-status-box studio-fade-in" style="background-color: var(--status-pending-bg); border: 1px solid var(--status-pending-border); color: var(--status-pending-text);">
                     <div class="font-bold text-base">Peringatan: Ditemukan Dokumen Mirip (Boleh Tetap Unggah)</div>
                     <p>{{ $checkMessage }}</p>
                     <ul class="space-y-1.5 list-disc pl-5">
@@ -152,7 +161,7 @@
                     </div>
                 </div>
             @elseif ($checkStatus === 'clear')
-                <div class="p-4 rounded-xl text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3" style="background-color: var(--status-approved-bg); border: 1px solid var(--status-approved-border); color: var(--status-approved-text);">
+                <div class="p-4 rounded-xl text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 studio-status-box studio-fade-in" style="background-color: var(--status-approved-bg); border: 1px solid var(--status-approved-border); color: var(--status-approved-text);">
                     <div class="font-bold text-base">
                         {{ $checkMessage }}
                     </div>
@@ -180,7 +189,7 @@
 
         {{-- Tabel Matriks 6 Lembar Kerja (Hanya tampil bila kata kunci pencarian terisi) --}}
         @if (! $hasQuery)
-            <div class="vintage-hint-card">
+            <div class="vintage-hint-card studio-fade-in">
                 Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.
             </div>
         @else
@@ -188,7 +197,7 @@
                 $matrixData = $this->getMatrixData();
                 $allLks = $matrixData['columns']['internal']->merge($matrixData['columns']['eksternal']);
             @endphp
-            <div class="vintage-card overflow-hidden">
+            <div class="vintage-card overflow-hidden studio-fade-in">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -230,7 +239,7 @@
                                         {{ $row['year'] }}
                                     </td>
                                     <td class="p-4 text-center">
-                                        <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold vintage-section">
+                                        <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold vintage-section studio-badge-type">
                                             {{ $row['document_type'] }}
                                         </span>
                                     </td>
@@ -271,7 +280,7 @@
                                     @endphp
                                     <tr style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-warm-strong);">
                                         <td colspan="{{ count($allLks) + ($canManageMarkup ? 4 : 3) }}" class="p-5">
-                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div class="studio-panel-fade flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                 <div>
                                                     <div class="font-bold text-base" style="color: var(--text-main);">
                                                         Unduh / Akses Dokumen: {{ $row['document_name'] }}
