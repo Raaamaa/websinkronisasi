@@ -43,6 +43,36 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
         $this->assertGreaterThanOrEqual(4.5, $contrastActive, 'Teks tab aktif harus memiliki kontras >= 4.5:1');
     }
 
+    public function test_brand_logo_and_login_do_not_use_temporary_hamburger_svg_and_use_studio_preset(): void
+    {
+        $brandLogo = (string) file_get_contents(resource_path('views/filament/components/brand-logo.blade.php'));
+        $loginView = (string) file_get_contents(resource_path('views/auth/login.blade.php'));
+        $forceChangeView = (string) file_get_contents(resource_path('views/auth/force-change-password.blade.php'));
+
+        $this->assertStringContainsString('logo-bps-tegal.png', $brandLogo);
+        $this->assertStringContainsString('logo.png', $brandLogo);
+        $this->assertStringNotContainsString('M10 11h16M10 18h12M10 25h16', $brandLogo);
+        $this->assertStringNotContainsString('M13 15h22M13 24h16M13 33h22', $loginView);
+        $this->assertStringNotContainsString('class="features-list"', $loginView);
+        $this->assertStringContainsString('oklch(97.2% 0.006 215)', $loginView);
+        $this->assertStringContainsString('oklch(97.2% 0.006 215)', $forceChangeView);
+    }
+
+    public function test_filament_custom_css_covers_dark_mode_surfaces_and_missing_utility_classes(): void
+    {
+        $customCss = (string) file_get_contents(public_path('css/filament-custom.css'));
+        $tailwindCss = (string) file_get_contents(public_path('css/tailwind-compiled.css'));
+        $verificationView = (string) file_get_contents(resource_path('views/filament/pages/verification-queue.blade.php'));
+
+        $this->assertStringContainsString('html.dark .fi-ta-ctn', $customCss);
+        $this->assertStringContainsString('html.dark .fi-modal-window', $customCss);
+        $this->assertStringContainsString('html.dark .fi-input-wrp', $customCss);
+        $this->assertStringNotContainsString('border: 2px', $verificationView);
+        $this->assertTrue(
+            str_contains($customCss, '.p-12') || str_contains($tailwindCss, '.p-12') || ! str_contains($verificationView, 'p-12')
+        );
+    }
+
     private function calculateContrastRatio(string $hex1, string $hex2): float
     {
         $l1 = $this->relativeLuminance($hex1);

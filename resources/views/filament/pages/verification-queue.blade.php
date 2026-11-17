@@ -10,8 +10,8 @@
 
         {{-- BANNER STORAGE WARNING KHUSUS SUPER ADMIN --}}
         @if ($isSuperAdmin && $storage['is_warning'])
-            <div class="p-5 rounded-2xl flex items-start gap-4" style="background-color: var(--status-rejected-bg); border: 2px solid var(--status-rejected-border); color: var(--status-rejected-text);">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0" style="background-color: #991B1B; color: #FFFFFF;">
+            <div class="p-5 studio-status-box flex items-start gap-4" style="background-color: var(--status-rejected-bg); border: var(--rule-hair) solid var(--status-rejected-border); color: var(--status-rejected-text);">
+                <div class="studio-icon-badge text-lg" style="background-color: #991B1B; color: #FFFFFF;">
                     !
                 </div>
                 <div class="flex-1 min-w-0">
@@ -25,7 +25,7 @@
             </div>
         @endif
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4" style="border-bottom: 1px solid var(--border-warm);">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 studio-header-band">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold vintage-serif-heading">
                     Antrean Verifikasi Bukti Dukung
@@ -39,8 +39,7 @@
                 <button
                     type="button"
                     wire:click="setFilter('menunggu')"
-                    class="px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'menunggu' ? 'vintage-btn-warning' : 'vintage-btn-secondary' }}"
-                    style="min-height: 44px !important;">
+                    class="studio-tab px-4 py-2.5 text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'menunggu' ? 'vintage-btn-warning' : 'vintage-btn-secondary' }}">
                     <span>Menunggu</span>
                     <span>({{ $stats['menunggu'] }})</span>
                 </button>
@@ -48,8 +47,7 @@
                 <button
                     type="button"
                     wire:click="setFilter('revisi')"
-                    class="px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'revisi' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
-                    style="min-height: 44px !important;">
+                    class="studio-tab px-4 py-2.5 text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'revisi' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}">
                     <span>Perlu Revisi</span>
                     <span>({{ $stats['revisi'] }})</span>
                 </button>
@@ -57,8 +55,7 @@
                 <button
                     type="button"
                     wire:click="setFilter('ditolak')"
-                    class="px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'ditolak' ? 'vintage-btn-danger' : 'vintage-btn-secondary' }}"
-                    style="min-height: 44px !important;">
+                    class="studio-tab px-4 py-2.5 text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'ditolak' ? 'vintage-btn-danger' : 'vintage-btn-secondary' }}">
                     <span>Ditolak</span>
                     <span>({{ $stats['ditolak'] }})</span>
                 </button>
@@ -66,8 +63,7 @@
                 <button
                     type="button"
                     wire:click="setFilter('all')"
-                    class="px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'all' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
-                    style="min-height: 44px !important;">
+                    class="studio-tab px-4 py-2.5 text-sm font-bold flex items-center gap-2 cursor-pointer {{ $statusFilter === 'all' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}">
                     <span>Semua</span>
                 </button>
             </div>
@@ -84,7 +80,7 @@
 
         {{-- Daftar Kartu Dokumen --}}
         @if ($documents->isEmpty())
-            <div class="p-12 text-center vintage-card">
+            <div class="p-12 studio-empty-state vintage-card studio-fade-in">
                 <h3 class="text-lg font-bold vintage-serif-heading">
                     Tidak ada dokumen dalam antrean
                 </h3>
@@ -111,7 +107,7 @@
                         };
                     @endphp
 
-                    <div class="p-6 vintage-card space-y-5">
+                    <div class="p-6 vintage-card space-y-5 studio-fade-in">
                         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4" style="border-bottom: 1px solid var(--border-warm);">
                             <div>
                                 <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
@@ -181,7 +177,7 @@
                         </div>
 
                         @if ($doc->approval_notes)
-                            <div class="p-3.5 rounded-xl text-sm" style="background-color: var(--status-rejected-bg); border: 1px solid var(--status-rejected-border); color: var(--status-rejected-text);">
+                            <div class="p-3.5 studio-status-box text-sm" style="background-color: var(--status-rejected-bg); border: var(--rule-hair) solid var(--status-rejected-border); color: var(--status-rejected-text);">
                                 <strong>Catatan Verifikasi Terakhir:</strong> {{ $doc->approval_notes }}
                             </div>
                         @endif
@@ -193,7 +189,7 @@
                                 </label>
                                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
                                     @foreach ($availableLks as $alk)
-                                        <label class="flex items-center gap-2.5 p-3 rounded-xl vintage-section cursor-pointer text-sm">
+                                        <label class="flex items-center gap-2.5 p-3 vintage-section cursor-pointer text-sm">
                                             <input
                                                 type="checkbox"
                                                 wire:model="selectedLks.{{ $doc->id }}"

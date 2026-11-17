@@ -21,22 +21,19 @@
                 <button
                     type="button"
                     wire:click="setCategory(null)"
-                    class="studio-tab px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === null ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
-                    style="min-height: 44px !important;">
+                    class="studio-tab px-4 py-2.5 text-sm font-bold cursor-pointer {{ $category === null ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}">
                     Semua LK
                 </button>
                 <button
                     type="button"
                     wire:click="setCategory('internal')"
-                    class="studio-tab px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === 'internal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
-                    style="min-height: 44px !important;">
+                    class="studio-tab px-4 py-2.5 text-sm font-bold cursor-pointer {{ $category === 'internal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}">
                     Internal
                 </button>
                 <button
                     type="button"
                     wire:click="setCategory('eksternal')"
-                    class="studio-tab px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer {{ $category === 'eksternal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}"
-                    style="min-height: 44px !important;">
+                    class="studio-tab px-4 py-2.5 text-sm font-bold cursor-pointer {{ $category === 'eksternal' ? 'vintage-btn-primary' : 'vintage-btn-secondary' }}">
                     Eksternal
                 </button>
             </div>
@@ -341,8 +338,8 @@
 
         {{-- Modal Ubah Pemetaan LK oleh Admin --}}
         @if ($editingDocId)
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
-                <div class="w-full max-w-lg vintage-card p-6 space-y-4">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 studio-modal-backdrop">
+                <div class="w-full max-w-lg vintage-card p-6 space-y-4 studio-fade-in">
                     <div class="flex items-start justify-between gap-3 pb-3" style="border-bottom: 1px solid var(--border-warm);">
                         <div>
                             <h3 class="text-lg font-bold vintage-serif-heading">

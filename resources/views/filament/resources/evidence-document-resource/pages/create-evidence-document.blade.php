@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div class="space-y-6">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4" style="border-bottom: 1px solid var(--border-warm);">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 studio-header-band">
             <div>
                 <nav class="flex items-center gap-2 text-sm vintage-muted mb-2">
                     <a href="/admin/cari-dokumen" class="vintage-link">Beranda</a>
@@ -114,7 +114,7 @@
                     </div>
                 </div>
 
-                <div class="p-4 rounded-xl text-sm space-y-2" style="background-color: var(--status-pending-bg); border: 1px solid var(--status-pending-border); color: var(--status-pending-text);">
+                <div class="p-4 studio-status-box text-sm space-y-2" style="background-color: var(--status-pending-bg); border: var(--rule-hair) solid var(--status-pending-border); color: var(--status-pending-text);">
                     <h4 class="font-bold text-base">
                         Cegah Dokumen Ganda
                     </h4>

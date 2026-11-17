@@ -14,8 +14,10 @@
              class="w-9 h-9 object-contain flex-shrink-0">
     @else
         <svg class="w-9 h-9 flex-shrink-0" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-            <rect width="36" height="36" rx="10" fill="#B5532F"/>
-            <path d="M10 11h16M10 18h12M10 25h16" stroke="#FAF9F5" stroke-width="2.5" stroke-linecap="round"/>
+            <rect x="1.5" y="1.5" width="33" height="33" rx="3" fill="var(--color-paper-hi, #FAFCFC)" stroke="var(--color-ink, #141926)" stroke-width="1.5"/>
+            <path d="M11 8.5h9.5L25 13v14.5H11V8.5z" stroke="var(--color-ink, #141926)" stroke-width="1.75" stroke-linejoin="round"/>
+            <path d="M20.5 8.5V13H25" stroke="var(--color-ink, #141926)" stroke-width="1.75" stroke-linejoin="round"/>
+            <rect x="14" y="17.5" width="8" height="3" rx="1" fill="var(--color-accent, #E07A2F)"/>
         </svg>
     @endif
 
