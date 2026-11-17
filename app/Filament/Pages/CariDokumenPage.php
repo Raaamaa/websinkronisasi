@@ -167,6 +167,11 @@ class CariDokumenPage extends Page
         $this->expandedDocId = $this->expandedDocId === $docId ? null : $docId;
     }
 
+    public function hasSearchQuery(): bool
+    {
+        return trim($this->query) !== '';
+    }
+
     /**
      * @return array{
      *     columns: array{internal: Collection<int, LembarKerja>, eksternal: Collection<int, LembarKerja>},

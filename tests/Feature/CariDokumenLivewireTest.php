@@ -494,4 +494,130 @@ class CariDokumenLivewireTest extends TestCase
             ->call('reviseMarkup', $doc->id, [$lkX->id])
             ->assertForbidden();
     }
+
+    public function test_cari_dokumen_hides_matrix_and_shows_hint_card_when_keyword_is_empty(): void
+    {
+        $lk = LembarKerja::firstOrCreate(
+            ['code' => 'ZI', 'period' => 2026],
+            ['name' => 'ZI', 'category' => 'internal', 'evaluation_interval' => '12 Bulan', 'is_active' => true]
+        );
+
+        $doc = EvidenceDocument::create([
+            'document_name' => 'Dokumen Tersembunyi Saat Kosong '.Str::random(6),
+            'year' => 2026,
+            'document_type' => 'SK',
+            'source_type' => 'upload',
+            'approval_status' => 'disetujui',
+            'uploaded_by' => $this->pegawai->id,
+            'file_hash' => hash('sha256', Str::random(16)),
+            'file_path' => 'evidence/kosong_tersembunyi.pdf',
+            'original_filename' => 'kosong_tersembunyi.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'processing_status' => 'selesai',
+        ]);
+
+        DocumentLkLink::create([
+            'document_id' => $doc->id,
+            'lk_id' => $lk->id,
+            'link_source' => 'admin',
+        ]);
+
+        Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->assertSee('Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.')
+            ->assertSee('Cek Berkas Sebelum Unggah')
+            ->assertDontSee('Dokumen Bukti Dukung Resmi')
+            ->assertDontSee($doc->document_name)
+            ->set('query', '   ')
+            ->assertSee('Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.')
+            ->assertDontSee('Dokumen Bukti Dukung Resmi');
+    }
+
+    public function test_cari_dokumen_shows_matrix_and_checkmark_when_keyword_matches(): void
+    {
+        $lk = LembarKerja::firstOrCreate(
+            ['code' => 'ZI', 'period' => 2026],
+            ['name' => 'ZI', 'category' => 'internal', 'evaluation_interval' => '12 Bulan', 'is_active' => true]
+        );
+
+        $doc = EvidenceDocument::create([
+            'document_name' => 'SK Pencarian Cocok Matriks '.Str::random(6),
+            'year' => 2026,
+            'document_type' => 'SK',
+            'source_type' => 'upload',
+            'approval_status' => 'disetujui',
+            'uploaded_by' => $this->pegawai->id,
+            'file_hash' => hash('sha256', Str::random(16)),
+            'file_path' => 'evidence/cocok_matriks.pdf',
+            'original_filename' => 'cocok_matriks.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'processing_status' => 'selesai',
+        ]);
+
+        DocumentLkLink::create([
+            'document_id' => $doc->id,
+            'lk_id' => $lk->id,
+            'link_source' => 'admin',
+        ]);
+
+        Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->set('query', $doc->document_name)
+            ->set('category', 'internal')
+            ->set('document_type', 'SK')
+            ->set('year', 2026)
+            ->assertSee('Dokumen Bukti Dukung Resmi')
+            ->assertSee($doc->document_name)
+            ->assertSee('✔')
+            ->assertDontSee('Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.');
+    }
+
+    public function test_cari_dokumen_shows_not_found_upload_prompt_when_keyword_has_no_matches(): void
+    {
+        Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->set('query', 'KataKunciTidakPernahAdaXYZ99999')
+            ->assertSee('Dokumen Bukti Dukung Resmi')
+            ->assertSee('Dokumen belum ada di perpustakaan. Silakan unggah lewat menu Unggah Bukti.');
+    }
+
+    public function test_cari_dokumen_filters_without_keyword_do_not_show_matrix(): void
+    {
+        $lk = LembarKerja::firstOrCreate(
+            ['code' => 'ZI', 'period' => 2026],
+            ['name' => 'ZI', 'category' => 'internal', 'evaluation_interval' => '12 Bulan', 'is_active' => true]
+        );
+
+        $doc = EvidenceDocument::create([
+            'document_name' => 'SK Filter Tanpa Keyword '.Str::random(6),
+            'year' => 2026,
+            'document_type' => 'SK',
+            'source_type' => 'upload',
+            'approval_status' => 'disetujui',
+            'uploaded_by' => $this->pegawai->id,
+            'file_hash' => hash('sha256', Str::random(16)),
+            'file_path' => 'evidence/filter_no_kw.pdf',
+            'original_filename' => 'filter_no_kw.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'processing_status' => 'selesai',
+        ]);
+
+        DocumentLkLink::create([
+            'document_id' => $doc->id,
+            'lk_id' => $lk->id,
+            'link_source' => 'admin',
+        ]);
+
+        Livewire::actingAs($this->pegawai)
+            ->test(CariDokumenPage::class)
+            ->call('setCategory', 'internal')
+            ->set('document_type', 'SK')
+            ->set('year', 2026)
+            ->assertSee('Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.')
+            ->assertDontSee('Dokumen Bukti Dukung Resmi')
+            ->assertDontSee($doc->document_name);
+    }
 }

@@ -1,8 +1,7 @@
 <x-filament-panels::page>
     <div class="space-y-6">
         @php
-            $matrixData = $this->getMatrixData();
-            $allLks = $matrixData['columns']['internal']->merge($matrixData['columns']['eksternal']);
+            $hasQuery = $this->hasSearchQuery();
             $canManageMarkup = auth()->user()?->hasPermission('evidence.manage_markup');
             $ownSummary = $this->getOwnSubmissionSummary();
         @endphp
@@ -179,147 +178,157 @@
             </div>
         @endif
 
-        {{-- Tabel Matriks 6 Lembar Kerja --}}
-        <div class="vintage-card overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr style="background-color: var(--matrix-header-bg); border-bottom: 1px solid var(--border-warm-strong); color: var(--text-main);" class="text-sm font-bold">
-                            <th class="p-4 sticky left-0 z-10 min-w-[260px]" style="background-color: var(--matrix-header-bg);">
-                                Dokumen Bukti Dukung Resmi
-                            </th>
-                            <th class="p-4 text-center min-w-[85px]">Tahun</th>
-                            <th class="p-4 text-center min-w-[100px]">Jenis</th>
-                            @foreach ($allLks as $lk)
-                                <th class="p-4 text-center min-w-[110px]" style="border-left: 1px solid var(--border-warm);" title="{{ $lk->name }}">
-                                    <div>{{ $lk->code }}</div>
-                                    <div class="text-xs font-normal vintage-muted truncate max-w-[100px]">
-                                        {{ ucfirst($lk->category) }}
-                                    </div>
+        {{-- Tabel Matriks 6 Lembar Kerja (Hanya tampil bila kata kunci pencarian terisi) --}}
+        @if (! $hasQuery)
+            <div class="vintage-hint-card">
+                Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.
+            </div>
+        @else
+            @php
+                $matrixData = $this->getMatrixData();
+                $allLks = $matrixData['columns']['internal']->merge($matrixData['columns']['eksternal']);
+            @endphp
+            <div class="vintage-card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr style="background-color: var(--matrix-header-bg); border-bottom: 1px solid var(--border-warm-strong); color: var(--text-main);" class="text-sm font-bold">
+                                <th class="p-4 sticky left-0 z-10 min-w-[260px]" style="background-color: var(--matrix-header-bg);">
+                                    Dokumen Bukti Dukung Resmi
                                 </th>
-                            @endforeach
-                            @if ($canManageMarkup)
-                                <th class="p-4 text-center min-w-[110px]" style="border-left: 1px solid var(--border-warm);">
-                                    Aksi
-                                </th>
-                            @endif
-                        </tr>
-                    </thead>
-                    <tbody class="text-base">
-                        @forelse ($matrixData['rows'] as $row)
-                            <tr style="border-bottom: 1px solid var(--border-warm);">
-                                <td class="p-4 sticky left-0 z-10" style="background-color: var(--matrix-sticky-bg);">
-                                    <div class="font-bold" style="color: var(--text-main);">
-                                        {{ $row['document_name'] }}
-                                    </div>
-                                    @if ($row['document_number'])
-                                        <div class="text-sm vintage-muted mt-0.5">
-                                            Nomor: {{ $row['document_number'] }}
-                                        </div>
-                                    @endif
-                                </td>
-                                <td class="p-4 text-center font-semibold">
-                                    {{ $row['year'] }}
-                                </td>
-                                <td class="p-4 text-center">
-                                    <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold vintage-section">
-                                        {{ $row['document_type'] }}
-                                    </span>
-                                </td>
+                                <th class="p-4 text-center min-w-[85px]">Tahun</th>
+                                <th class="p-4 text-center min-w-[100px]">Jenis</th>
                                 @foreach ($allLks as $lk)
-                                    @php
-                                        $cell = $row['cells'][$lk->code] ?? ['has_match' => false, 'symbol' => ''];
-                                    @endphp
-                                    <td class="p-3 text-center" style="border-left: 1px solid var(--border-warm);">
-                                        @if ($cell['has_match'])
-                                            <button
-                                                type="button"
-                                                wire:click="toggleDownloadSection('{{ $row['document_id'] }}')"
-                                                class="vintage-check-btn"
-                                                title="Klik untuk mengunduh atau membuka tautan dokumen">
-                                                {{ $cell['symbol'] }}
-                                            </button>
-                                        @endif
-                                    </td>
+                                    <th class="p-4 text-center min-w-[110px]" style="border-left: 1px solid var(--border-warm);" title="{{ $lk->name }}">
+                                        <div>{{ $lk->code }}</div>
+                                        <div class="text-xs font-normal vintage-muted truncate max-w-[100px]">
+                                            {{ ucfirst($lk->category) }}
+                                        </div>
+                                    </th>
                                 @endforeach
                                 @if ($canManageMarkup)
-                                    <td class="p-3 text-center" style="border-left: 1px solid var(--border-warm);">
-                                        <button
-                                            type="button"
-                                            wire:click="openEditMarkup('{{ $row['document_id'] }}', {{ json_encode($row['selected_lk_ids'] ?? []) }})"
-                                            class="vintage-btn-secondary"
-                                            style="min-height: 44px !important; padding: 0.5rem 0.875rem; font-size: 0.875rem;">
-                                            Ubah LK
-                                        </button>
-                                    </td>
+                                    <th class="p-4 text-center min-w-[110px]" style="border-left: 1px solid var(--border-warm);">
+                                        Aksi
+                                    </th>
                                 @endif
                             </tr>
-
-                            @if ($expandedDocId === $row['document_id'])
-                                @php
-                                    $safeExternalLink = (! empty($row['external_link']) && preg_match('/^https?:\/\//i', (string) $row['external_link']))
-                                        ? (string) $row['external_link']
-                                        : null;
-                                @endphp
-                                <tr style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-warm-strong);">
-                                    <td colspan="{{ count($allLks) + ($canManageMarkup ? 4 : 3) }}" class="p-5">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                            <div>
-                                                <div class="font-bold text-base" style="color: var(--text-main);">
-                                                    Unduh / Akses Dokumen: {{ $row['document_name'] }}
-                                                </div>
-                                                @if ($row['document_number'])
-                                                    <div class="text-sm vintage-muted">
-                                                        Nomor: {{ $row['document_number'] }}
-                                                    </div>
-                                                @endif
+                        </thead>
+                        <tbody class="text-base">
+                            @forelse ($matrixData['rows'] as $row)
+                                <tr style="border-bottom: 1px solid var(--border-warm);">
+                                    <td class="p-4 sticky left-0 z-10" style="background-color: var(--matrix-sticky-bg);">
+                                        <div class="font-bold" style="color: var(--text-main);">
+                                            {{ $row['document_name'] }}
+                                        </div>
+                                        @if ($row['document_number'])
+                                            <div class="text-sm vintage-muted mt-0.5">
+                                                Nomor: {{ $row['document_number'] }}
                                             </div>
-                                            <div class="flex flex-wrap items-center gap-3">
-                                                @if (! empty($row['has_file']))
-                                                    <a
-                                                        href="{{ route('evidence.download', $row['document_id']) }}"
-                                                        target="_blank"
-                                                        class="vintage-btn-primary">
-                                                        <span>Unduh Dokumen</span>
-                                                    </a>
-                                                @endif
-
-                                                @if ($safeExternalLink !== null)
-                                                    <a
-                                                        href="{{ $safeExternalLink }}"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        class="vintage-btn-secondary">
-                                                        <span>Buka Tautan</span>
-                                                    </a>
-                                                @endif
-
+                                        @endif
+                                    </td>
+                                    <td class="p-4 text-center font-semibold">
+                                        {{ $row['year'] }}
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold vintage-section">
+                                            {{ $row['document_type'] }}
+                                        </span>
+                                    </td>
+                                    @foreach ($allLks as $lk)
+                                        @php
+                                            $cell = $row['cells'][$lk->code] ?? ['has_match' => false, 'symbol' => ''];
+                                        @endphp
+                                        <td class="p-3 text-center" style="border-left: 1px solid var(--border-warm);">
+                                            @if ($cell['has_match'])
                                                 <button
                                                     type="button"
                                                     wire:click="toggleDownloadSection('{{ $row['document_id'] }}')"
-                                                    class="vintage-btn-secondary">
-                                                    Tutup
+                                                    class="vintage-check-btn"
+                                                    title="Klik untuk mengunduh atau membuka tautan dokumen">
+                                                    {{ $cell['symbol'] }}
                                                 </button>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                    @if ($canManageMarkup)
+                                        <td class="p-3 text-center" style="border-left: 1px solid var(--border-warm);">
+                                            <button
+                                                type="button"
+                                                wire:click="openEditMarkup('{{ $row['document_id'] }}', {{ json_encode($row['selected_lk_ids'] ?? []) }})"
+                                                class="vintage-btn-secondary"
+                                                style="min-height: 44px !important; padding: 0.5rem 0.875rem; font-size: 0.875rem;">
+                                                Ubah LK
+                                            </button>
+                                        </td>
+                                    @endif
+                                </tr>
+
+                                @if ($expandedDocId === $row['document_id'])
+                                    @php
+                                        $safeExternalLink = (! empty($row['external_link']) && preg_match('/^https?:\/\//i', (string) $row['external_link']))
+                                            ? (string) $row['external_link']
+                                            : null;
+                                    @endphp
+                                    <tr style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-warm-strong);">
+                                        <td colspan="{{ count($allLks) + ($canManageMarkup ? 4 : 3) }}" class="p-5">
+                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div>
+                                                    <div class="font-bold text-base" style="color: var(--text-main);">
+                                                        Unduh / Akses Dokumen: {{ $row['document_name'] }}
+                                                    </div>
+                                                    @if ($row['document_number'])
+                                                        <div class="text-sm vintage-muted">
+                                                            Nomor: {{ $row['document_number'] }}
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-3">
+                                                    @if (! empty($row['has_file']))
+                                                        <a
+                                                            href="{{ route('evidence.download', $row['document_id']) }}"
+                                                            target="_blank"
+                                                            class="vintage-btn-primary">
+                                                            <span>Unduh Dokumen</span>
+                                                        </a>
+                                                    @endif
+
+                                                    @if ($safeExternalLink !== null)
+                                                        <a
+                                                            href="{{ $safeExternalLink }}"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            class="vintage-btn-secondary">
+                                                            <span>Buka Tautan</span>
+                                                        </a>
+                                                    @endif
+
+                                                    <button
+                                                        type="button"
+                                                        wire:click="toggleDownloadSection('{{ $row['document_id'] }}')"
+                                                        class="vintage-btn-secondary">
+                                                        Tutup
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </td>
+                                    </tr>
+                                @endif
+                            @empty
+                                <tr>
+                                    <td colspan="{{ count($allLks) + ($canManageMarkup ? 4 : 3) }}" class="p-10 text-center vintage-muted">
+                                        Dokumen belum ada di perpustakaan. Silakan unggah lewat menu Unggah Bukti.
                                     </td>
                                 </tr>
-                            @endif
-                        @empty
-                            <tr>
-                                <td colspan="{{ count($allLks) + ($canManageMarkup ? 4 : 3) }}" class="p-10 text-center vintage-muted">
-                                    Tidak ditemukan dokumen resmi yang cocok.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
 
-            <div class="p-4" style="border-top: 1px solid var(--border-warm);">
-                {{ $matrixData['paginator']->links() }}
+                <div class="p-4" style="border-top: 1px solid var(--border-warm);">
+                    {{ $matrixData['paginator']->links() }}
+                </div>
             </div>
-        </div>
+        @endif
 
         {{-- Modal Ubah Pemetaan LK oleh Admin --}}
         @if ($editingDocId)

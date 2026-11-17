@@ -296,6 +296,18 @@ header.fi-topbar .fi-btn {
     color: var(--text-main);
 }
 
+.vintage-hint-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-warm);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-soft);
+    color: var(--text-secondary);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
 .vintage-muted {
     color: var(--text-secondary) !important;
 }
