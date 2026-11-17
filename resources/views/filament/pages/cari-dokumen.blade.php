@@ -40,8 +40,8 @@
         </div>
 
         {{-- Kotak Pencarian & Filter --}}
-        <form wire:submit.prevent="search" class="vintage-card studio-glass-search studio-fade-in p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
-            <div class="md:col-span-6 studio-search-wrap">
+        <form wire:submit.prevent="search" class="vintage-card studio-glass-search studio-fade-in studio-search-card">
+            <div class="studio-search-wrap">
                 <svg class="studio-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -61,10 +61,10 @@
                 </div>
             </div>
 
-            <div class="md:col-span-2">
+            <div>
                 <select
                     wire:model.live="document_type"
-                    class="w-full h-full min-h-[56px] px-3 py-2.5 vintage-input studio-filter-pill font-semibold">
+                    class="w-full min-h-[56px] px-3 py-2.5 vintage-input studio-filter-pill font-semibold">
                     <option value="">Semua Jenis</option>
                     <option value="SK">Surat Keputusan (SK)</option>
                     <option value="SOP">SOP</option>
@@ -75,10 +75,10 @@
                 </select>
             </div>
 
-            <div class="md:col-span-2">
+            <div>
                 <select
                     wire:model.live="year"
-                    class="w-full h-full min-h-[56px] px-3 py-2.5 vintage-input studio-filter-pill font-semibold">
+                    class="w-full min-h-[56px] px-3 py-2.5 vintage-input studio-filter-pill font-semibold">
                     <option value="">Semua Tahun</option>
                     @for ($y = (int) date('Y'); $y >= 2020; $y--)
                         <option value="{{ $y }}">{{ $y }}</option>
@@ -86,7 +86,7 @@
                 </select>
             </div>
 
-            <div class="md:col-span-2">
+            <div>
                 <button
                     type="submit"
                     class="w-full min-h-[56px] vintage-btn-primary">
@@ -97,17 +97,22 @@
         </form>
 
         {{-- Cek Berkas Sebelum Unggah --}}
-        <div class="vintage-card studio-glass-check studio-fade-in studio-stagger-1 p-5 space-y-4">
-            <div>
-                <h2 class="text-lg font-bold vintage-serif-heading">
-                    Cek Berkas Sebelum Unggah
-                </h2>
-                <p class="text-sm vintage-muted">
-                    Pilih berkas dari komputer untuk mengecek apakah dokumen sudah ada di perpustakaan (tidak disimpan ke server).
-                </p>
+        <div class="vintage-card studio-glass-check studio-fade-in studio-stagger-1 studio-check-card">
+            <div class="studio-check-head">
+                <span class="studio-icon-tile studio-icon-tile-blue" aria-hidden="true">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+                <div>
+                    <h2 class="studio-card-title">
+                        Cek Berkas Sebelum Unggah
+                    </h2>
+                    <p class="studio-card-note">
+                        Pilih berkas untuk mengecek apakah sudah ada di perpustakaan. Berkas tidak disimpan.
+                    </p>
+                </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div class="studio-check-row">
                 <input
                     type="file"
                     wire:model="checkFile"
@@ -207,21 +212,18 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr style="background-color: var(--matrix-header-bg); border-bottom: 1px solid var(--border-warm-strong); color: var(--text-main);" class="text-sm font-bold">
-                                <th class="p-4 sticky left-0 z-10 min-w-[260px]" style="background-color: var(--matrix-header-bg);">
+                                <th class="p-3.5 sticky left-0 z-10 studio-doc-name-cell" style="background-color: var(--matrix-header-bg);">
                                     Dokumen Bukti Dukung Resmi
                                 </th>
-                                <th class="p-4 text-center min-w-[85px]">Tahun</th>
-                                <th class="p-4 text-center min-w-[100px]">Jenis</th>
+                                <th class="p-3 text-center studio-col-year">Tahun</th>
+                                <th class="p-3 text-center studio-col-type">Jenis</th>
                                 @foreach ($allLks as $lk)
-                                    <th class="p-4 text-center min-w-[110px]" style="border-left: 1px solid var(--border-warm);" title="{{ $lk->name }}">
-                                        <div class="inline-flex px-2.5 py-0.5 text-xs font-bold" data-lk="{{ $lk->code }}">{{ $lk->code }}</div>
-                                        <div class="text-xs font-normal vintage-muted truncate max-w-[100px] mt-0.5">
-                                            {{ ucfirst($lk->category) }}
-                                        </div>
+                                    <th class="studio-lk-col" title="{{ $lk->name }} ({{ ucfirst($lk->category) }})">
+                                        <div class="inline-flex text-xs font-bold" data-lk="{{ $lk->code }}">{{ $lk->code }}</div>
                                     </th>
                                 @endforeach
                                 @if ($canManageMarkup)
-                                    <th class="p-4 text-center min-w-[110px]" style="border-left: 1px solid var(--border-warm);">
+                                    <th class="p-3 text-center studio-col-action" style="border-left: 1px solid var(--border-warm);">
                                         Aksi
                                     </th>
                                 @endif
@@ -230,8 +232,8 @@
                         <tbody class="text-base">
                             @forelse ($matrixData['rows'] as $row)
                                 <tr class="studio-table-row" style="border-bottom: 1px solid var(--border-warm);">
-                                    <td class="p-4 sticky left-0 z-10" style="background-color: var(--matrix-sticky-bg);">
-                                        <div class="font-bold" style="color: var(--text-main);">
+                                    <td class="p-3.5 sticky left-0 z-10 studio-doc-name-cell" style="background-color: var(--matrix-sticky-bg);">
+                                        <div class="font-bold leading-snug" style="color: var(--text-main);">
                                             {{ $row['document_name'] }}
                                         </div>
                                         @if ($row['document_number'])
@@ -244,9 +246,13 @@
                                         {{ $row['year'] }}
                                     </td>
                                     <td class="p-4 text-center">
-                                        <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold vintage-section studio-badge-type">
-                                            {{ $row['document_type'] }}
-                                        </span>
+                                        @if (filled($row['document_type']))
+                                            <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold vintage-section studio-badge-type">
+                                                {{ $row['document_type'] }}
+                                            </span>
+                                        @else
+                                            <span class="vintage-muted">-</span>
+                                        @endif
                                     </td>
                                     @foreach ($allLks as $lk)
                                         @php
@@ -338,9 +344,11 @@
                     </table>
                 </div>
 
-                <div class="p-4" style="border-top: 1px solid var(--border-warm);">
-                    {{ $matrixData['paginator']->links() }}
-                </div>
+                @if ($matrixData['paginator']->hasPages())
+                    <div class="p-4" style="border-top: 1px solid var(--border-warm);">
+                        {{ $matrixData['paginator']->links() }}
+                    </div>
+                @endif
             </div>
         @endif
 

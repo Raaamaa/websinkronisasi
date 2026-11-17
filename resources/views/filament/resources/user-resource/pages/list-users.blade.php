@@ -50,8 +50,7 @@
                         <span class="text-3xl font-bold num" style="color: var(--text-main);">{{ $stats['total'] }}</span>
                         <span class="text-sm font-semibold vintage-muted">Pegawai</span>
                     </div>
-                    <div class="flex items-center gap-1.5 text-sm vintage-muted mt-1">
-                        <span class="studio-dot" style="background-color: var(--status-approved-text);"></span>
+                    <div class="text-sm vintage-muted mt-1">
                         <span>{{ $stats['sso_count'] }} login via SSO Keycloak</span>
                     </div>
                 </div>
@@ -81,8 +80,7 @@
                         <span class="text-3xl font-bold num" style="color: var(--text-main);">{{ $stats['inactive_count'] }}</span>
                         <span class="text-sm font-semibold vintage-muted">Akun</span>
                     </div>
-                    <div class="flex items-center gap-1.5 text-sm vintage-muted mt-1">
-                        <span class="studio-dot" style="background-color: var(--status-rejected-text);"></span>
+                    <div class="text-sm vintage-muted mt-1">
                         <span>Akses dinonaktifkan</span>
                     </div>
                 </div>

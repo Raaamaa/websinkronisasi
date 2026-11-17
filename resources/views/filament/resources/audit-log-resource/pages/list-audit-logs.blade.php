@@ -6,28 +6,6 @@
     @endphp
 
     <div class="space-y-6">
-        {{-- Top Metadata & System Integrity Bar --}}
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-1">
-            <div class="flex flex-wrap items-center gap-3">
-                <div class="flex items-center gap-2 text-sm vintage-muted font-semibold">
-                    <span class="font-bold" style="color: var(--text-main);">BPS RI</span>
-                    <span>&bull;</span>
-                    <span>Sistem Tata Kelola Metadata</span>
-                </div>
-
-                <div class="vintage-badge-disetujui gap-2">
-                    <span class="studio-dot" style="background-color: var(--status-approved-text);"></span>
-                    <span>Status Log: Kekal &amp; Terenkripsi (Append-Only WORM Verified &bull; 0 Terhapus)</span>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <div class="vintage-section px-3 py-1.5 text-sm font-bold" style="color: var(--text-main);">
-                    <span>Tahun {{ $selectedYear }}</span>
-                </div>
-            </div>
-        </div>
-
         {{-- Page Title & Export Action --}}
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 studio-header-band">
             <div>
@@ -36,7 +14,7 @@
                         Jejak Audit & Riwayat Aktivitas
                     </h1>
                     <span class="vintage-badge-disetujui">
-                        &bull; Append-Only WORM Aktif
+                        Append-Only WORM Aktif
                     </span>
                 </div>
                 <p class="text-base vintage-muted mt-1">

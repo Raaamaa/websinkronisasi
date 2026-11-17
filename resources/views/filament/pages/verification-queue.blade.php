@@ -245,9 +245,11 @@
                     </div>
                 @endforeach
 
-                <div class="pt-4">
-                    {{ $documents->links() }}
-                </div>
+                @if ($documents->hasPages())
+                    <div class="pt-4">
+                        {{ $documents->links() }}
+                    </div>
+                @endif
             </div>
         @endif
     </div>

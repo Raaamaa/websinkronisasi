@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\AvatarProviders\InitialsAvatarProvider;
 use App\Filament\Pages\Dashboard;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsurePasswordChanged;
@@ -32,6 +33,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('images/logo-bps-tegal.png'))
+            ->defaultAvatarProvider(InitialsAvatarProvider::class)
+            ->sidebarWidth('16rem')
             ->homeUrl(fn (): string => auth()->user()?->homeUrl() ?? '/login')
             ->darkMode(true)
             ->font('system-ui', provider: LocalFontProvider::class)
@@ -44,7 +47,6 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
-            ->renderHook('panels::sidebar.footer', fn () => view('filament.components.sidebar-footer'))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

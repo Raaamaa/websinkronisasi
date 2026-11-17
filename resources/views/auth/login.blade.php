@@ -168,7 +168,6 @@
         }
 
         .brand-main-block,
-        .brand-footer,
         .login-doc-visual {
             display: none;
         }
@@ -226,9 +225,11 @@
             }
 
             .panel-brand {
-                padding: 28px 44px;
+                padding: 36px 48px;
                 border-bottom: none;
                 border-right: var(--rule-hair) solid var(--border-soft);
+                justify-content: flex-start;
+                gap: 44px;
             }
 
             .brand-logo-img {
@@ -239,14 +240,10 @@
             .brand-main-block {
                 display: flex;
                 flex-direction: column;
-                gap: 14px;
+                gap: 16px;
                 max-width: 48ch;
-            }
-
-            .brand-footer {
-                display: block;
-                font-size: 0.9375rem;
-                color: var(--color-muted);
+                margin-top: auto;
+                margin-bottom: auto;
             }
 
             .login-doc-visual {
@@ -340,7 +337,24 @@
             background-color: var(--color-paper-hi);
             border: var(--rule-hair) solid var(--border-soft);
             box-shadow: var(--shadow-soft);
-            will-change: transform;
+            will-change: transform, translate;
+            translate: 0 0;
+            transition: translate 320ms var(--ease-out), box-shadow 260ms var(--ease-out);
+        }
+
+        .login-doc-visual:hover .login-doc-sheet-1 {
+            translate: -18px 4px;
+            box-shadow: var(--shadow-card-hover);
+        }
+
+        .login-doc-visual:hover .login-doc-sheet-2 {
+            translate: 18px 4px;
+            box-shadow: var(--shadow-card-hover);
+        }
+
+        .login-doc-visual:hover .login-doc-sheet-3 {
+            translate: 0 -8px;
+            box-shadow: var(--shadow-card-hover);
         }
 
         .login-doc-sheet::before {
@@ -702,10 +716,6 @@
                     </div>
                 </div>
             </div>
-
-            <footer class="brand-footer">
-                Jaringan Internal BPS Kabupaten Tegal
-            </footer>
         </section>
 
         <section class="panel-auth" aria-label="Autentikasi Pengguna ELKA">
