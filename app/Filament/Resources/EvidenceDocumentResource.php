@@ -73,8 +73,8 @@ class EvidenceDocumentResource extends Resource
                         Forms\Components\Radio::make('source_type')
                             ->label('Pilih Jenis Pengajuan')
                             ->options([
-                                'upload' => 'Unggah Berkas (maks 50 MB)',
-                                'link' => 'Tempel Tautan (untuk berkas >50 MB / video)',
+                                'upload' => 'Unggah Berkas (maks 20 MB)',
+                                'link' => 'Tempel Tautan (untuk berkas >20 MB / video)',
                             ])
                             ->default('upload')
                             ->inline()
@@ -86,7 +86,7 @@ class EvidenceDocumentResource extends Resource
                             ->disk('private')
                             ->directory('evidence_temp')
                             ->preserveFilenames()
-                            ->maxSize(51200)
+                            ->maxSize(20480)
                             ->acceptedFileTypes([
                                 'application/pdf',
                                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -96,7 +96,7 @@ class EvidenceDocumentResource extends Resource
                             ])
                             ->visible(fn (Forms\Get $get): bool => $get('source_type') !== 'link')
                             ->required(fn (Forms\Get $get): bool => $get('source_type') !== 'link')
-                            ->helperText('Format: PDF, DOCX, XLSX, JPG, PNG. Maksimal 50 MB per berkas.')
+                            ->helperText('Format: PDF, DOCX, XLSX, JPG, PNG. Maksimal 20 MB per berkas.')
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('external_link')

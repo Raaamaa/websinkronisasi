@@ -157,7 +157,6 @@ class User extends Authenticatable implements FilamentUser, HasName
             'evidence.verify',
             'evidence.manage_markup',
             'lk.manage_drive_links',
-            'drive.sync',
         ];
 
         $pegawaiPermissions = [

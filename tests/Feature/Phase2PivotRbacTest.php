@@ -54,11 +54,11 @@ class Phase2PivotRbacTest extends TestCase
         $this->assertFalse($superAdmin->hasPermission('drive.sync'));
         $this->assertFalse($superAdmin->hasPermission('match'.'.verify'));
 
-        // Admin: operational permissions + drive.sync + evidence.manage_markup + lk.manage_drive_links
+        // Admin: operational permissions + evidence.manage_markup + lk.manage_drive_links (drive.sync dihapus)
         $this->assertTrue($admin->hasPermission('evidence.verify'));
         $this->assertTrue($admin->hasPermission('evidence.manage_markup'));
         $this->assertTrue($admin->hasPermission('lk.manage_drive_links'));
-        $this->assertTrue($admin->hasPermission('drive.sync'));
+        $this->assertFalse($admin->hasPermission('drive.sync'));
         $this->assertTrue($admin->hasPermission('evidence.upload'));
         $this->assertTrue($admin->hasPermission('evidence.search'));
         $this->assertTrue($admin->hasPermission('monitor.view'));

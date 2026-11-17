@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Jobs\SyncGoogleDriveJob;
 use App\Models\AuditLog;
 use App\Models\DocumentLkLink;
-use App\Models\DriveSyncFolder;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\User;
-use App\Services\Drive\GoogleDriveSyncService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -60,14 +57,6 @@ class VerificationQueuePage extends Page
     public int $perPage = 10;
 
     public int $page = 1;
-
-    public bool $showDriveFoldersPanel = false;
-
-    public ?string $newDriveFolderInput = null;
-
-    public ?string $newDriveFolderLabel = null;
-
-    public ?string $newDriveFolderLkId = null;
 
     /** @var array<string, list<string>> */
     public array $selectedLks = [];
@@ -365,107 +354,5 @@ class VerificationQueuePage extends Page
         }
 
         return $output;
-    }
-
-    public function toggleDriveFoldersPanel(): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-        if ($user === null || ! $user->hasPermission('drive.sync')) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        $this->showDriveFoldersPanel = ! $this->showDriveFoldersPanel;
-    }
-
-    public function syncGoogleDrive(): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-        if ($user === null || ! $user->hasPermission('drive.sync')) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        // Jalankan via queue job agar tidak timeout
-        SyncGoogleDriveJob::dispatch($user->id);
-
-        Notification::make()
-            ->title('Sinkronisasi Google Drive Berjalan')
-            ->body('Proses sinkronisasi telah masuk antrean.')
-            ->success()
-            ->send();
-    }
-
-    public function addDriveFolder(): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-        if ($user === null || ! $user->hasPermission('drive.sync')) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        $extracted = GoogleDriveSyncService::extractFolderId($this->newDriveFolderInput) ?? trim((string) $this->newDriveFolderInput);
-
-        if ($extracted === '') {
-            $this->addError('newDriveFolderInput', 'Tautan atau ID folder Google Drive tidak valid.');
-
-            return;
-        }
-
-        DriveSyncFolder::create([
-            'folder_id' => $extracted,
-            'label' => $this->newDriveFolderLabel ? trim($this->newDriveFolderLabel) : null,
-            'lk_id' => $this->newDriveFolderLkId ?: null,
-            'is_active' => true,
-        ]);
-
-        $this->reset(['newDriveFolderInput', 'newDriveFolderLabel', 'newDriveFolderLkId']);
-
-        Notification::make()
-            ->title('Folder Google Drive Berhasil Ditambahkan')
-            ->success()
-            ->send();
-    }
-
-    public function toggleDriveFolderActive(string $folderId): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-        if ($user === null || ! $user->hasPermission('drive.sync')) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        $folder = DriveSyncFolder::findOrFail($folderId);
-        $folder->update(['is_active' => ! $folder->is_active]);
-
-        Notification::make()
-            ->title($folder->is_active ? 'Folder Diaktifkan' : 'Folder Dinonaktifkan')
-            ->success()
-            ->send();
-    }
-
-    public function deleteDriveFolder(string $folderId): void
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-        if ($user === null || ! $user->hasPermission('drive.sync')) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        $folder = DriveSyncFolder::findOrFail($folderId);
-        $folder->delete();
-
-        Notification::make()
-            ->title('Folder Google Drive Dihapus')
-            ->success()
-            ->send();
-    }
-
-    /**
-     * @return Collection<int, DriveSyncFolder>
-     */
-    public function getDriveSyncFolders(): Collection
-    {
-        return DriveSyncFolder::with('lembarKerja')->orderBy('created_at', 'desc')->get();
     }
 }

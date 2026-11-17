@@ -57,7 +57,7 @@ class EvidenceUploadService
         $fileSize = $file->getSize();
 
         // 1. Validasi Batas Ukuran Berkas dari konfigurasi dinamis (BD-02)
-        $maxSizeMb = (int) config('evidence.max_file_size_mb', 50);
+        $maxSizeMb = (int) config('evidence.max_file_size_mb', 20);
         $maxSizeBytes = $maxSizeMb * 1024 * 1024;
 
         if ($fileSize <= 0 || $fileSize > $maxSizeBytes) {

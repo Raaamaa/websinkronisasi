@@ -483,4 +483,59 @@ class Phase4EvidenceUploadServiceTest extends TestCase
             EvidenceDocument::flushEventListeners();
         }
     }
+
+    /**
+     * 14. Batas tepat 20 MB (20971520 byte) diterima oleh inspectAndValidate dengan batas default.
+     */
+    public function test_exact_20mb_file_is_accepted_by_upload_service(): void
+    {
+        $tmpPath = tempnam(sys_get_temp_dir(), 'exact_20mb_');
+        $this->assertNotFalse($tmpPath);
+
+        try {
+            $fp = fopen($tmpPath, 'wb');
+            $this->assertNotFalse($fp);
+            fwrite($fp, "%PDF-1.4\n%%EOF\n");
+            ftruncate($fp, 20971520);
+            fclose($fp);
+
+            $uploaded = new UploadedFile($tmpPath, 'exact_20mb.pdf', 'application/pdf', null, true);
+
+            /** @var EvidenceUploadService $service */
+            $service = app(EvidenceUploadService::class);
+            $meta = $service->inspectAndValidate($uploaded);
+
+            $this->assertSame('application/pdf', $meta['mime']);
+            $this->assertSame(20971520, $meta['size']);
+        } finally {
+            @unlink($tmpPath);
+        }
+    }
+
+    /**
+     * 15. Berkas 20 MB + 1 byte (20971521 byte) ditolak oleh inspectAndValidate dengan batas default.
+     */
+    public function test_20mb_plus_one_byte_file_is_rejected_by_upload_service(): void
+    {
+        $tmpPath = tempnam(sys_get_temp_dir(), 'over_20mb_');
+        $this->assertNotFalse($tmpPath);
+
+        try {
+            $fp = fopen($tmpPath, 'wb');
+            $this->assertNotFalse($fp);
+            fwrite($fp, "%PDF-1.4\n%%EOF\n");
+            ftruncate($fp, 20971521);
+            fclose($fp);
+
+            $uploaded = new UploadedFile($tmpPath, 'over_20mb.pdf', 'application/pdf', null, true);
+
+            /** @var EvidenceUploadService $service */
+            $service = app(EvidenceUploadService::class);
+
+            $this->expectException(ValidationException::class);
+            $service->inspectAndValidate($uploaded);
+        } finally {
+            @unlink($tmpPath);
+        }
+    }
 }
