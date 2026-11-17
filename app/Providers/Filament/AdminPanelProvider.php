@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Dashboard;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsurePasswordChanged;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -27,15 +28,15 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('ELKA - BPS RI')
+            ->brandName('ELKA - BPS Kabupaten Tegal')
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
             ->homeUrl(fn (): string => auth()->user()?->homeUrl() ?? '/login')
             ->darkMode(true)
-            ->font('Plus Jakarta Sans')
+            ->font('system-ui', provider: LocalFontProvider::class)
             ->login()
             ->colors([
-                'primary' => Color::Sky,
+                'primary' => Color::hex('#B5532F'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

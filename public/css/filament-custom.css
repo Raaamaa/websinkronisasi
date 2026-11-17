@@ -1,56 +1,100 @@
-/* ==========================================================================
-   WEBSINKRONISASI BPS RI - MULTI-THEME FORMAL GOVERNMENT STYLESHEET
-   Supports 3 Modes: Light Mode, Dark Mode, and Windows OS System Default
-   Harmonized with BPS Brand Identity (Sky Blue #0284c7, Emerald #059669, Amber #f59e0b)
-   Strictly Zero Contrast Collisions (Zero Dark-on-Dark & Zero Light-on-Light)
-   ========================================================================== */
+/* Hallmark · shape: app screen · genre: editorial-warm · theme: Vintage Hangat (custom) */
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: terracotta contrast on cream, verified 4.96:1 */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap');
-
-/* --- 1. CSS VARIABLES FOR 3 MODES --- */
 :root {
-    --bps-blue: #0284c7;
-    --bps-blue-hover: #0369a1;
-    --bps-green: #059669;
-    --bps-orange: #f59e0b;
-    --matrix-sticky-bg: #ffffff;
-    --matrix-header-bg: #f1f5f9;
+    --bg-page: #FAF9F5;
+    --bg-secondary: #F0EEE6;
+    --bg-surface: #FFFFFF;
+    --bg-surface-warm: #FDFCF8;
+    --border-warm: #E8E6DC;
+    --border-warm-strong: #D6D3C6;
+    --text-main: #141413;
+    --text-secondary: #5E5D59;
+    --accent-terracotta: #B5532F;
+    --accent-terracotta-hover: #9C4426;
+    --accent-terracotta-ink: #FFFFFF;
+    --bps-blue: #0B5FA5;
+    --bps-blue-hover: #084B85;
+    --status-approved-bg: #ECFDF5;
+    --status-approved-text: #166534;
+    --status-approved-border: #86EFAC;
+    --status-pending-bg: #FEF9C3;
+    --status-pending-text: #854D0E;
+    --status-pending-border: #FDE047;
+    --status-revision-bg: #FFEDD5;
+    --status-revision-text: #9A3412;
+    --status-revision-border: #FDBA74;
+    --status-rejected-bg: #FEE2E2;
+    --status-rejected-text: #991B1B;
+    --status-rejected-border: #FCA5A5;
+    --font-serif: Georgia, 'Times New Roman', serif;
+    --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --shadow-soft: 0 1px 3px rgba(20, 20, 19, 0.06), 0 1px 2px rgba(20, 20, 19, 0.04);
+    --radius-card: 14px;
+    --radius-control: 12px;
+    --matrix-sticky-bg: #FFFFFF;
+    --matrix-header-bg: #F0EEE6;
 }
 
 html.dark {
-    --bps-blue: #0284c7;
-    --bps-blue-hover: #0369a1;
-    --bps-green: #10b981;
-    --bps-orange: #fbbf24;
-    --matrix-sticky-bg: #1e293b;
-    --matrix-header-bg: #0f172a;
+    --bg-page: #1C1B18;
+    --bg-secondary: #262420;
+    --bg-surface: #23211D;
+    --bg-surface-warm: #2A2722;
+    --border-warm: #3B3830;
+    --border-warm-strong: #4E4A40;
+    --text-main: #F4F1EA;
+    --text-secondary: #C2BEB2;
+    --accent-terracotta: #B5532F;
+    --accent-terracotta-hover: #9C4426;
+    --accent-terracotta-ink: #FFFFFF;
+    --bps-blue: #60A5FA;
+    --bps-blue-hover: #93C5FD;
+    --status-approved-bg: rgba(22, 101, 52, 0.25);
+    --status-approved-text: #86EFAC;
+    --status-approved-border: #166534;
+    --status-pending-bg: rgba(133, 77, 14, 0.28);
+    --status-pending-text: #FDE047;
+    --status-pending-border: #854D0E;
+    --status-revision-bg: rgba(154, 52, 18, 0.28);
+    --status-revision-text: #FDBA74;
+    --status-revision-border: #9A3412;
+    --status-rejected-bg: rgba(153, 27, 27, 0.28);
+    --status-rejected-text: #FCA5A5;
+    --status-rejected-border: #991B1B;
+    --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.28);
+    --matrix-sticky-bg: #23211D;
+    --matrix-header-bg: #262420;
 }
 
-/* --- 2. BASE TYPOGRAPHY & LAYOUT --- */
+html,
+body {
+    overflow-x: clip;
+}
+
 body,
 .fi-layout,
 .fi-main-ctn,
 body.fi-body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
-    background-color: #f8fafc !important; /* Neutral Slate-50 */
-    color: #0f172a !important; /* Slate-900 */
-    letter-spacing: -0.011em !important;
-    font-size: 0.875rem !important; /* 14px formal senior-friendly base */
-    line-height: 1.5 !important;
+    font-family: var(--font-sans) !important;
+    background-color: var(--bg-page) !important;
+    color: var(--text-main) !important;
+    font-size: 17px !important;
+    line-height: 1.6 !important;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-html.dark body,
-html.dark .fi-layout,
-html.dark .fi-main-ctn,
-html.dark body.fi-body {
-    background-color: #090e1a !important; /* Deep Slate-950 */
-    color: #f8fafc !important;
+h1,
+h2,
+h3,
+.vintage-serif-heading {
+    font-family: var(--font-serif) !important;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
 }
 
-/* Hide redundant default Filament page header to eliminate layout stacking */
+/* Hide redundant default Filament page header */
 .fi-header,
 header.fi-header,
 .fi-page > section > header.fi-header,
@@ -59,14 +103,13 @@ header.fi-header,
 }
 
 .fi-page > section {
-    padding-top: 0.5rem !important;
-    row-gap: 1.25rem !important;
+    padding-top: 0.75rem !important;
+    row-gap: 1.5rem !important;
 }
 
-/* Main container geometry */
 .fi-main-ctn {
-    padding-top: 1.25rem !important;
-    padding-bottom: 2.5rem !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 3rem !important;
     max-width: 100% !important;
 }
 
@@ -78,515 +121,428 @@ header.fi-header,
     padding-right: 1.5rem !important;
 }
 
-/* --- 3. SIDEBAR NAVIGATION - ZERO CONTRAST FAILURE --- */
-/* Light Mode: Crisp White with Slate-800 text (7.2:1 contrast ratio) */
-html:not(.dark) aside.fi-sidebar,
-html:not(.dark) .fi-main-sidebar,
-html:not(.dark) aside.fi-sidebar .fi-sidebar-header,
-html:not(.dark) aside.fi-sidebar .fi-sidebar-nav {
-    background-color: #ffffff !important;
+/* Accessible instant focus ring */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--bps-blue) !important;
+    outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* --- SIDEBAR & TOPBAR (VINTAGE HANGAT) --- */
+aside.fi-sidebar,
+.fi-main-sidebar,
+aside.fi-sidebar .fi-sidebar-header,
+aside.fi-sidebar .fi-sidebar-nav {
+    background-color: var(--bg-surface-warm) !important;
     transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-html:not(.dark) aside.fi-sidebar {
-    border-right: 1px solid #e2e8f0 !important;
+aside.fi-sidebar {
+    border-right: 1px solid var(--border-warm) !important;
 }
 
-html:not(.dark) aside.fi-sidebar .fi-sidebar-header {
-    border-bottom: 1px solid #e2e8f0 !important;
-    height: 4.25rem !important;
+aside.fi-sidebar .fi-sidebar-header {
+    border-bottom: 1px solid var(--border-warm) !important;
+    height: 4.5rem !important;
     padding-left: 1.25rem !important;
     padding-right: 1.25rem !important;
 }
 
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item {
-    margin-bottom: 0.25rem !important;
+aside.fi-sidebar .fi-sidebar-item {
+    margin-bottom: 0.375rem !important;
 }
 
-/* Inactive Nav Items in Light Mode - High Contrast Slate-800 */
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button,
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button .fi-sidebar-item-label,
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button span,
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-label {
-    border-radius: 0.5rem !important;
+aside.fi-sidebar .fi-sidebar-item-button {
+    min-height: 48px !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: var(--radius-control) !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button,
+aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button .fi-sidebar-item-label,
+aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button span,
+aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-label {
     font-weight: 600 !important;
-    font-size: 0.875rem !important;
-    color: #1e293b !important; /* High contrast Slate-800 - NO faint gray! */
-    transition: all 0.12s ease !important;
+    font-size: 1rem !important;
+    color: var(--text-main) !important;
 }
 
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item-button {
-    padding: 0.625rem 0.875rem !important;
+aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button .fi-sidebar-item-icon,
+aside.fi-sidebar .fi-sidebar-item:not(.fi-active) svg {
+    color: var(--text-secondary) !important;
 }
 
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button .fi-sidebar-item-icon,
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item:not(.fi-active) svg {
-    color: #475569 !important; /* Slate-600 */
+aside.fi-sidebar .fi-sidebar-item-button:hover {
+    background-color: var(--bg-secondary) !important;
 }
 
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item-button:hover {
-    background-color: #f1f5f9 !important; /* Slate-100 */
-    color: #0f172a !important; /* Slate-900 */
+aside.fi-sidebar .fi-sidebar-item-button:hover .fi-sidebar-item-icon {
+    color: var(--accent-terracotta) !important;
 }
 
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item-button:hover .fi-sidebar-item-label,
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item-button:hover span {
-    color: #0f172a !important;
-}
-
-html:not(.dark) aside.fi-sidebar .fi-sidebar-item-button:hover .fi-sidebar-item-icon {
-    color: #0284c7 !important;
-}
-
-/* Active Nav Item - Solid BPS Blue */
 aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button,
-aside.fi-sidebar .fi-sidebar-item.fi-sidebar-item-active .fi-sidebar-item-button,
-html.dark aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button,
-html.dark aside.fi-sidebar .fi-sidebar-item.fi-sidebar-item-active .fi-sidebar-item-button {
-    background-color: #0284c7 !important; /* BPS Blue */
-    color: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25) !important;
+aside.fi-sidebar .fi-sidebar-item.fi-sidebar-item-active .fi-sidebar-item-button {
+    background-color: var(--accent-terracotta) !important;
+    color: var(--accent-terracotta-ink) !important;
+    box-shadow: var(--shadow-soft) !important;
 }
 
 aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button .fi-sidebar-item-icon,
 aside.fi-sidebar .fi-sidebar-item.fi-sidebar-item-active .fi-sidebar-item-button .fi-sidebar-item-icon,
 aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button .fi-sidebar-item-label,
 aside.fi-sidebar .fi-sidebar-item.fi-sidebar-item-active .fi-sidebar-item-button .fi-sidebar-item-label,
-aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button span,
-html.dark aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button .fi-sidebar-item-icon,
-html.dark aside.fi-sidebar .fi-sidebar-item.fi-sidebar-item-active .fi-sidebar-item-button .fi-sidebar-item-icon,
-html.dark aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button .fi-sidebar-item-label,
-html.dark aside.fi-sidebar .fi-sidebar-item.fi-sidebar-item-active .fi-sidebar-item-button .fi-sidebar-item-label,
-html.dark aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button span {
-    color: #ffffff !important;
+aside.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button span {
+    color: var(--accent-terracotta-ink) !important;
     font-weight: 700 !important;
 }
 
-/* --- DARK MODE SIDEBAR --- */
-html.dark aside.fi-sidebar,
-html.dark .fi-main-sidebar,
-html.dark aside.fi-sidebar .fi-sidebar-header,
-html.dark aside.fi-sidebar .fi-sidebar-nav {
-    background-color: #0f172a !important; /* Deep Slate-900 */
-}
-
-html.dark aside.fi-sidebar {
-    border-right: 1px solid #1e293b !important;
-}
-
-html.dark aside.fi-sidebar .fi-sidebar-header {
-    border-bottom: 1px solid #1e293b !important;
-    height: 4.25rem !important;
-    padding-left: 1.25rem !important;
-    padding-right: 1.25rem !important;
-}
-
-html.dark aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button,
-html.dark aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button .fi-sidebar-item-label,
-html.dark aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button span,
-html.dark aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-label {
-    color: #cbd5e1 !important; /* Slate-300 */
-    font-weight: 600 !important;
-}
-
-html.dark aside.fi-sidebar .fi-sidebar-item:not(.fi-active) .fi-sidebar-item-button .fi-sidebar-item-icon,
-html.dark aside.fi-sidebar .fi-sidebar-item:not(.fi-active) svg {
-    color: #94a3b8 !important; /* Slate-400 */
-}
-
-html.dark aside.fi-sidebar .fi-sidebar-item-button:hover {
-    background-color: #1e293b !important;
-    color: #ffffff !important;
-}
-
-html.dark aside.fi-sidebar .fi-sidebar-item-button:hover .fi-sidebar-item-label,
-html.dark aside.fi-sidebar .fi-sidebar-item-button:hover span {
-    color: #ffffff !important;
-}
-
-html.dark aside.fi-sidebar .fi-sidebar-item-button:hover .fi-sidebar-item-icon {
-    color: #38bdf8 !important;
-}
-
-/* Sidebar notification badge */
 aside.fi-sidebar .fi-badge {
-    background-color: #e11d48 !important; /* Rose-600 */
-    color: #ffffff !important;
+    background-color: var(--accent-terracotta) !important;
+    color: #FFFFFF !important;
     font-weight: 700 !important;
     font-size: 0.75rem !important;
-    border-radius: 0.375rem !important;
-    padding: 0.125rem 0.375rem !important;
+    border-radius: 999px !important;
+    padding: 0.15rem 0.5rem !important;
 }
 
-/* --- 4. TOPBAR STYLING - FULLY SYNCHRONIZED --- */
-html:not(.dark) header.fi-topbar,
-html:not(.dark) .fi-topbar,
-html:not(.dark) .fi-topbar nav {
-    background-color: #ffffff !important;
-    border-bottom: 1px solid #e2e8f0 !important;
+header.fi-topbar,
+.fi-topbar,
+.fi-topbar nav {
+    background-color: var(--bg-surface-warm) !important;
+    border-bottom: 1px solid var(--border-warm) !important;
     box-shadow: none !important;
-    height: 4.25rem !important;
+    height: 4.5rem !important;
     transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-html:not(.dark) header.fi-topbar .fi-topbar-item,
-html:not(.dark) header.fi-topbar .fi-btn {
-    color: #0f172a !important;
+header.fi-topbar .fi-topbar-item,
+header.fi-topbar .fi-btn {
+    color: var(--text-main) !important;
 }
 
-html.dark header.fi-topbar,
-html.dark .fi-topbar,
-html.dark .fi-topbar nav {
-    background-color: #0f172a !important;
-    border-bottom: 1px solid #1e293b !important;
-    box-shadow: none !important;
-    height: 4.25rem !important;
+/* --- VINTAGE SEMANTIC SURFACES, CONTROLS, BADGES --- */
+.vintage-card {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-warm) !important;
+    border-radius: var(--radius-card) !important;
+    box-shadow: var(--shadow-soft) !important;
+    color: var(--text-main);
+}
+
+.vintage-section {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-warm) !important;
+    border-radius: var(--radius-card) !important;
+    color: var(--text-main);
+}
+
+.vintage-muted {
+    color: var(--text-secondary) !important;
+}
+
+.vintage-link {
+    color: var(--bps-blue) !important;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.vintage-link:hover {
+    color: var(--bps-blue-hover) !important;
+}
+
+.min-h-\[56px\],
+.vintage-btn-primary,
+.vintage-btn-secondary,
+.vintage-btn-success,
+.vintage-btn-warning,
+.vintage-btn-danger {
+    min-height: 56px !important;
+}
+
+.vintage-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-control);
+    background-color: var(--accent-terracotta) !important;
+    color: var(--accent-terracotta-ink) !important;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 1px solid var(--accent-terracotta);
+    box-shadow: var(--shadow-soft);
+    cursor: pointer;
+    text-decoration: none;
     transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-html.dark header.fi-topbar .fi-topbar-item,
-html.dark header.fi-topbar .fi-btn {
-    color: #f8fafc !important;
+.vintage-btn-primary:hover {
+    background-color: var(--accent-terracotta-hover) !important;
+    border-color: var(--accent-terracotta-hover);
 }
 
-/* --- 5. EXECUTIVE KPI STAT CARDS (DUAL-THEME) --- */
-.monitor-kpi-grid {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 1rem !important;
+.vintage-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-control);
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 1px solid var(--border-warm-strong) !important;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-@media (max-width: 1024px) {
-    .monitor-kpi-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
+.vintage-btn-secondary:hover {
+    background-color: var(--bg-secondary) !important;
 }
 
-@media (max-width: 640px) {
-    .monitor-kpi-grid {
-        grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-    }
+.vintage-btn-success {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-control);
+    background-color: #166534 !important;
+    color: #FFFFFF !important;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 1px solid #14532D;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
 }
 
-.gov-metric-card {
-    background-color: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 0.75rem !important;
-    padding: 1rem 1.25rem !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    transition: all 0.15s ease !important;
+.vintage-btn-success:hover {
+    background-color: #14532D !important;
 }
 
-.gov-metric-card:hover {
-    border-color: #cbd5e1 !important;
+.vintage-btn-warning {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-control);
+    background-color: #B45309 !important;
+    color: #FFFFFF !important;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 1px solid #92400E;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
 }
 
-html.dark .gov-metric-card {
-    background-color: #1e293b !important;
-    border-color: #334155 !important;
+.vintage-btn-warning:hover {
+    background-color: #92400E !important;
 }
 
-html.dark .gov-metric-card:hover {
-    border-color: #475569 !important;
+.vintage-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-control);
+    background-color: #B91C1C !important;
+    color: #FFFFFF !important;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 1px solid #991B1B;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
 }
 
-/* --- 6. FORMAL MATRIKS MONITOR STICKY TABLE --- */
-.matrix-table {
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
-    width: 100% !important;
-    table-layout: auto !important;
+.vintage-btn-danger:hover {
+    background-color: #991B1B !important;
 }
 
-.matrix-col-code {
-    width: 110px !important;
-    min-width: 110px !important;
-    max-width: 110px !important;
-    position: sticky !important;
-    left: 0 !important;
-    z-index: 10 !important;
-    background-color: var(--matrix-sticky-bg) !important;
-    border-right: 1px solid #e2e8f0 !important;
-    border-bottom: 1px solid #e2e8f0 !important;
+.vintage-input {
+    min-height: 56px;
+    font-size: 1rem;
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-warm-strong) !important;
+    color: var(--text-main) !important;
+    border-radius: var(--radius-control) !important;
 }
 
-html.dark .matrix-col-code {
-    border-right-color: #334155 !important;
-    border-bottom-color: #334155 !important;
+.vintage-input::placeholder {
+    color: var(--text-secondary) !important;
 }
 
-thead .matrix-col-code {
-    background-color: var(--matrix-header-bg) !important;
-    border-bottom: 1px solid #cbd5e1 !important;
-    z-index: 30 !important;
-}
-
-html.dark thead .matrix-col-code {
-    border-bottom-color: #475569 !important;
-}
-
-.matrix-col-desc {
-    min-width: 320px !important;
-    max-width: 440px !important;
-    position: sticky !important;
-    left: 110px !important;
-    z-index: 10 !important;
-    background-color: var(--matrix-sticky-bg) !important;
-    border-right: 1px solid #e2e8f0 !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    box-shadow: 2px 0 4px -1px rgba(15, 23, 42, 0.05) !important;
-}
-
-html.dark .matrix-col-desc {
-    border-right-color: #334155 !important;
-    border-bottom-color: #334155 !important;
-    box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.3) !important;
-}
-
-thead .matrix-col-desc {
-    background-color: var(--matrix-header-bg) !important;
-    border-bottom: 1px solid #cbd5e1 !important;
-    z-index: 30 !important;
-}
-
-html.dark thead .matrix-col-desc {
-    border-bottom-color: #475569 !important;
-}
-
-/* Formal Verification Button (✔) */
-.gov-matrix-check-btn {
+/* Matrix checkmark button: >= 44px touch target, dark green clear checkmark */
+.vintage-check-btn {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 2rem !important;
-    height: 2rem !important;
-    border-radius: 0.375rem !important;
-    background-color: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #047857 !important; /* Emerald-700 */
-    font-size: 0.875rem !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 10px !important;
+    background-color: var(--status-approved-bg) !important;
+    border: 1px solid var(--status-approved-border) !important;
+    color: var(--status-approved-text) !important;
+    font-size: 1.25rem !important;
     font-weight: 800 !important;
-    transition: all 0.12s ease !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, border-color 0.15s ease !important;
 }
 
-.gov-matrix-check-btn:hover {
-    background-color: #f8fafc !important;
-    border-color: #047857 !important;
-    color: #065f46 !important;
-    box-shadow: 0 1px 2px rgba(4, 120, 87, 0.15) !important;
+.vintage-check-btn:hover {
+    background-color: #166534 !important;
+    border-color: #14532D !important;
+    color: #FFFFFF !important;
 }
 
-html.dark .gov-matrix-check-btn {
-    background-color: #1e293b !important;
-    border-color: #334155 !important;
-    color: #10b981 !important;
+/* Status Badges */
+.vintage-badge-disetujui {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    background-color: var(--status-approved-bg);
+    color: var(--status-approved-text);
+    border: 1px solid var(--status-approved-border);
 }
 
-html.dark .gov-matrix-check-btn:hover {
-    background-color: #334155 !important;
-    border-color: #10b981 !important;
-    color: #34d399 !important;
+.vintage-badge-menunggu {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    background-color: var(--status-pending-bg);
+    color: var(--status-pending-text);
+    border: 1px solid var(--status-pending-border);
 }
 
-/* Accessible focus ring */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible {
-    outline: 2px solid #0284c7 !important;
-    outline-offset: 1px !important;
+.vintage-badge-revisi {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    background-color: var(--status-revision-bg);
+    color: var(--status-revision-text);
+    border: 1px solid var(--status-revision-border);
 }
 
-/* --- 7. FILAMENT TABLES & SEARCH INPUTS (ZERO COLLISION) --- */
-/* Light Mode Tables */
-.fi-ta-ctn {
-    background-color: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 0.75rem !important;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+.vintage-badge-ditolak {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    background-color: var(--status-rejected-bg);
+    color: var(--status-rejected-text);
+    border: 1px solid var(--status-rejected-border);
+}
+
+/* --- FILAMENT TABLES, CARDS & FORMS --- */
+.gov-metric-card {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-warm) !important;
+    border-radius: var(--radius-card) !important;
+    padding: 1.125rem 1.375rem !important;
+    box-shadow: var(--shadow-soft) !important;
+    transition: border-color 0.15s ease !important;
+}
+
+.gov-metric-card:hover {
+    border-color: var(--border-warm-strong) !important;
+}
+
+.fi-ta-ctn,
+.fi-section {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-warm) !important;
+    border-radius: var(--radius-card) !important;
+    box-shadow: var(--shadow-soft) !important;
 }
 
 .fi-ta-header,
 .fi-ta-header-toolbar {
-    background-color: #ffffff !important;
+    background-color: var(--bg-surface) !important;
 }
 
 .fi-ta-search-field input,
 .fi-ta-search-input input,
 .fi-input-wrp input {
-    background-color: #f8fafc !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #0f172a !important;
-    border-radius: 0.5rem !important;
+    background-color: var(--bg-surface-warm) !important;
+    border: 1px solid var(--border-warm-strong) !important;
+    color: var(--text-main) !important;
+    border-radius: var(--radius-control) !important;
+    font-size: 1rem !important;
 }
 
 .fi-ta-search-field input::placeholder,
 .fi-ta-search-input input::placeholder,
 .fi-input-wrp input::placeholder {
-    color: #64748b !important;
+    color: var(--text-secondary) !important;
+}
+
+.fi-btn {
+    min-height: 44px;
+    border-radius: var(--radius-control) !important;
+}
+
+.fi-btn-color-primary {
+    background-color: var(--accent-terracotta) !important;
+    color: #FFFFFF !important;
+}
+
+.fi-btn-color-primary:hover {
+    background-color: var(--accent-terracotta-hover) !important;
 }
 
 .fi-ta-empty-state-heading {
-    color: #334155 !important;
+    color: var(--text-main) !important;
     font-weight: 700 !important;
 }
 
 .fi-ta-empty-state-description {
-    color: #64748b !important;
+    color: var(--text-secondary) !important;
 }
 
-/* Dark Mode Tables */
-html.dark .fi-ta-ctn {
-    background-color: #1e293b !important; /* Slate-800 */
-    border: 1px solid #334155 !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
-}
-
-html.dark .fi-ta-header,
-html.dark .fi-ta-header-toolbar {
-    background-color: #1e293b !important;
-}
-
-html.dark .fi-ta-search-field input,
-html.dark .fi-ta-search-input input,
-html.dark .fi-input-wrp input {
-    background-color: #0f172a !important; /* Deep Slate-900 */
-    border: 1px solid #475569 !important;
-    color: #f8fafc !important; /* Crisp white */
-}
-
-html.dark .fi-ta-search-field input::placeholder,
-html.dark .fi-ta-search-input input::placeholder,
-html.dark .fi-input-wrp input::placeholder {
-    color: #94a3b8 !important; /* Slate-400 */
-}
-
-html.dark .fi-ta-empty-state-heading {
-    color: #f8fafc !important;
-}
-
-html.dark .fi-ta-empty-state-description {
-    color: #94a3b8 !important;
-}
-
-html.dark .fi-ta-empty-state-icon {
-    color: #64748b !important;
-}
-
-/* --- 8. SENIOR UX ENHANCEMENTS FOR TESTING & MONITORING --- */
-.gov-metric-card {
-    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease !important;
-}
-
-.gov-metric-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06) !important;
-}
-
-.gov-metric-card.is-active {
-    border-color: #0284c7 !important;
-    box-shadow: 0 0 0 1.5px #0284c7 !important;
-}
-
-html.dark .gov-metric-card.is-active {
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 0 1.5px #38bdf8 !important;
-}
-
-.gov-metric-card.is-active-emerald {
-    border-color: #059669 !important;
-    box-shadow: 0 0 0 1.5px #059669 !important;
-}
-
-html.dark .gov-metric-card.is-active-emerald {
-    border-color: #34d399 !important;
-    box-shadow: 0 0 0 1.5px #34d399 !important;
-}
-
-.gov-metric-card.is-active-amber {
-    border-color: #d97706 !important;
-    box-shadow: 0 0 0 1.5px #d97706 !important;
-}
-
-html.dark .gov-metric-card.is-active-amber {
-    border-color: #fbbf24 !important;
-    box-shadow: 0 0 0 1.5px #fbbf24 !important;
-}
-
-.gov-matrix-check-btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.25rem !important;
-    padding: 0.25rem 0.625rem !important;
-    width: auto !important;
-    min-width: 2.25rem !important;
-    height: 2rem !important;
-    border-radius: 0.5rem !important;
-    background-color: #ecfdf5 !important;
-    border: 1px solid #a7f3d0 !important;
-    color: #047857 !important;
-    font-size: 0.8125rem !important;
-    font-weight: 800 !important;
-    text-decoration: none !important;
-    box-shadow: 0 1px 2px rgba(4, 120, 87, 0.08) !important;
-    transition: all 0.12s ease !important;
-}
-
-.gov-matrix-check-btn:hover {
-    background-color: #059669 !important;
-    border-color: #047857 !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 4px rgba(4, 120, 87, 0.25) !important;
-    transform: translateY(-1px);
-}
-
-.gov-matrix-check-btn:hover svg {
-    color: #ffffff !important;
-}
-
-html.dark .gov-matrix-check-btn {
-    background-color: rgba(16, 185, 129, 0.15) !important;
-    border-color: rgba(16, 185, 129, 0.4) !important;
-    color: #34d399 !important;
-}
-
-html.dark .gov-matrix-check-btn:hover {
-    background-color: #10b981 !important;
-    border-color: #059669 !important;
-    color: #ffffff !important;
-}
-
-.cell-unfulfilled-interactive {
-    transition: background-color 0.12s ease !important;
-    cursor: pointer !important;
-}
-
-.cell-unfulfilled-interactive:hover {
-    background-color: #f1f5f9 !important;
-}
-
-html.dark .cell-unfulfilled-interactive:hover {
-    background-color: #334155 !important;
-}
-
-/* --- 14. VERIFICATION QUEUE STATUS TABS (WCAG AA >= 4.5:1 CONTRAST) --- */
+/* Verification Queue & Contrast Guards */
 button[wire\:click^="setTab"].bg-sky-600 {
-    background-color: #0369a1 !important; /* Sky-700: 5.93:1 contrast against white text */
-    color: #ffffff !important;
+    background-color: var(--bps-blue) !important;
+    color: #FFFFFF !important;
 }
 
-/* Guard against legacy or uncompiled indigo classes */
 .bg-indigo-600 {
-    background-color: #3730a3 !important; /* Indigo-800: 8.9:1 contrast against white text */
-    color: #ffffff !important;
+    background-color: #3730A3 !important;
+    color: #FFFFFF !important;
 }
 
 .bg-indigo-800 {
-    background-color: #1e1b4b !important; /* Indigo-950: 16.5:1 contrast against white text */
-    color: #ffffff !important;
+    background-color: #1E1B4B !important;
+    color: #FFFFFF !important;
 }
-
-

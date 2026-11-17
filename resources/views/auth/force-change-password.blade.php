@@ -6,171 +6,183 @@
     <meta name="description" content="Pembaruan kata sandi wajib awal akun ELKA BPS Kabupaten Tegal.">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Wajib Ganti Kata Sandi: ELKA</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="{{ asset('css/tokens.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/base.css') }}">
+    <title>Wajib Ganti Kata Sandi: ELKA - BPS Kabupaten Tegal</title>
 
     <style>
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (by request)
- * nav: edge-aligned brand mast · signature: quarantine security keycap · states: 8 control states
- * axes: light/grotesk-sans/cool · posture: restrained · contrast: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: form containment, resolved via paper surface */
+        /* Hallmark · shape: centered form screen · genre: editorial-warm · theme: Vintage Hangat (custom) */
+        /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: form spacing, resolved via warm card */
+        :root {
+            --bg-page: #FAF9F5;
+            --bg-secondary: #F0EEE6;
+            --bg-surface: #FFFFFF;
+            --border-warm: #E8E6DC;
+            --border-warm-strong: #D6D3C6;
+            --text-main: #141413;
+            --text-secondary: #5E5D59;
+            --accent-terracotta: #B5532F;
+            --accent-terracotta-hover: #9C4426;
+            --bps-blue: #0B5FA5;
+            --font-serif: Georgia, 'Times New Roman', serif;
+            --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --shadow-soft: 0 2px 8px rgba(20, 20, 19, 0.06);
+        }
+
+        html,
         body {
+            margin: 0;
+            padding: 0;
             min-height: 100vh;
+            font-family: var(--font-sans);
+            font-size: 17px;
+            line-height: 1.6;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            overflow-x: clip;
+        }
+
+        body {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: var(--space-lg);
-            background-color: var(--color-paper-2);
+            padding: 24px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        :focus-visible {
+            outline: 3px solid var(--bps-blue);
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
         }
 
         .quarantine-panel {
             width: 100%;
-            max-width: 440px;
-            background-color: var(--color-paper);
-            border: var(--rule-hair) solid var(--color-rule-2);
-            border-radius: var(--radius-card);
-            box-shadow: var(--shadow-card);
-            padding: var(--space-xl);
+            max-width: 480px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            padding: 32px;
             display: flex;
             flex-direction: column;
-            gap: var(--space-lg);
+            gap: 20px;
         }
 
-        .quarantine-header {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-xs);
+        .quarantine-brand {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: var(--text-secondary);
         }
 
         .quarantine-title {
-            font-family: var(--font-display);
-            font-size: var(--text-display-s);
-            font-weight: var(--display-weight);
-            color: var(--color-ink);
-            line-height: 1.2;
-            letter-spacing: var(--tracking-display);
+            font-family: var(--font-serif);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 6px 0;
+            line-height: 1.25;
         }
 
         .quarantine-desc {
-            font-family: var(--font-body);
-            font-size: var(--text-sm);
-            color: var(--color-muted);
-            line-height: 1.5;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin: 0;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: var(--space-2xs);
-            margin-bottom: var(--space-md);
+            gap: 6px;
+            margin-bottom: 16px;
         }
 
         .form-label {
-            font-family: var(--font-body);
-            font-size: var(--text-xs);
-            font-weight: 600;
-            color: var(--color-ink-2);
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: var(--text-main);
         }
 
         .form-input {
             width: 100%;
-            min-height: 44px;
-            padding: var(--space-xs) var(--space-sm);
-            background-color: var(--color-paper-2);
-            border: var(--rule-hair) solid var(--color-rule-2);
-            border-radius: var(--radius-input);
-            color: var(--color-ink);
-            font-family: var(--font-body);
-            font-size: var(--text-sm);
-            box-sizing: border-box;
+            min-height: 56px;
+            padding: 12px 16px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm-strong);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 1rem;
         }
 
-        .form-input:focus-visible {
-            outline: 2px solid var(--color-focus);
-            outline-offset: 1px;
-            background-color: var(--color-paper);
-        }
-
-        .keycap {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-sm);
+        .btn-primary {
             width: 100%;
-            min-height: 48px;
-            padding: var(--space-sm) var(--space-lg);
-            font-family: var(--font-display);
-            font-size: var(--text-sm);
-            font-weight: 600;
-            letter-spacing: var(--tracking-display);
-            text-decoration: none;
+            min-height: 56px;
+            padding: 14px 20px;
+            background-color: var(--accent-terracotta);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font-sans);
+            font-size: 1.0625rem;
+            font-weight: 700;
             cursor: pointer;
-            border-radius: var(--radius-input);
-            box-sizing: border-box;
-            transition: transform var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+            transition: background-color 0.15s ease;
         }
 
-        .keycap:focus-visible {
-            outline: 2px solid var(--color-focus);
-            outline-offset: 2px;
+        .btn-primary:hover {
+            background-color: var(--accent-terracotta-hover);
         }
 
-        .keycap--primary {
-            background-color: var(--color-accent);
-            color: var(--color-accent-ink);
-            border: var(--rule-hair) solid var(--color-accent-edge);
-            box-shadow: var(--shadow-key-accent);
+        .btn-secondary {
+            width: 100%;
+            min-height: 56px;
+            padding: 14px 20px;
+            background-color: var(--bg-secondary);
+            color: var(--text-main);
+            border: 1px solid var(--border-warm-strong);
+            border-radius: 12px;
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
         }
 
-        .keycap--primary:hover {
-            transform: translateY(-1px);
-        }
-
-        .keycap--primary:active {
-            transform: translateY(3px);
-            box-shadow: var(--shadow-key-press);
-        }
-
-        .keycap--secondary {
-            background-color: var(--color-paper-2);
-            color: var(--color-muted);
-            border: var(--rule-hair) solid var(--color-rule-2);
-            box-shadow: var(--shadow-key);
-        }
-
-        .keycap--secondary:hover {
-            color: var(--color-ink);
-            transform: translateY(-1px);
-        }
-
-        .keycap--secondary:active {
-            transform: translateY(3px);
-            box-shadow: var(--shadow-key-press);
+        .btn-secondary:hover {
+            background-color: var(--border-warm);
         }
 
         .alert-error {
-            background-color: color-mix(in oklab, var(--color-error) 12%, var(--color-paper));
-            border: var(--rule-hair) solid var(--color-error);
-            color: var(--color-error);
-            padding: var(--space-sm) var(--space-md);
-            border-radius: var(--radius-input);
-            font-size: var(--text-xs);
-            margin-bottom: var(--space-md);
+            background-color: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.9375rem;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <main class="quarantine-panel">
-        <header class="quarantine-header">
-            <h1 class="quarantine-title">Perbarui Kata Sandi Akun</h1>
+        <div class="quarantine-brand">ELKA &bull; BPS Kabupaten Tegal</div>
+
+        <header>
+            <h1 class="quarantine-title">Ganti Kata Sandi Akun</h1>
             <p class="quarantine-desc">
-                Demi keamanan sistem, Anda diwajibkan mengganti kata sandi bawaan sebelum dapat mengakses dasbor ELKA.
+                Demi keamanan, buat kata sandi baru sebelum memakai sistem ELKA BPS Kabupaten Tegal.
             </p>
         </header>
 
@@ -188,25 +200,23 @@
             @csrf
 
             <div class="form-group">
-                <label for="new_password" class="form-label">Kata Sandi Baru (Min. 8 karakter)</label>
+                <label for="new_password" class="form-label">Kata Sandi Baru (minimal 8 huruf/angka)</label>
                 <input type="password" id="new_password" name="new_password" required autofocus class="form-input">
             </div>
 
             <div class="form-group">
-                <label for="new_password_confirmation" class="form-label">Konfirmasi Kata Sandi Baru</label>
+                <label for="new_password_confirmation" class="form-label">Ulangi Kata Sandi Baru</label>
                 <input type="password" id="new_password_confirmation" name="new_password_confirmation" required class="form-input">
             </div>
 
-            <div style="margin-top: var(--space-md); display: flex; flex-direction: column; gap: var(--space-xs);">
-                <button type="submit" class="keycap keycap--primary">
-                    Simpan dan Lanjutkan
-                </button>
-            </div>
+            <button type="submit" class="btn-primary">
+                Simpan Kata Sandi dan Masuk
+            </button>
         </form>
 
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="keycap keycap--secondary">
+            <button type="submit" class="btn-secondary">
                 Batal dan Keluar
             </button>
         </form>
