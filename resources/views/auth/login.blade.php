@@ -17,7 +17,7 @@
     <title>ELKA - BPS Kabupaten Tegal</title>
 
     <style>
-        /* Hallmark · shape: centered auth + depth stack · genre: editorial · theme: Studio (by request) · soft glass + depth */
+        /* Hallmark · shape: two-column auth + depth stack · genre: editorial · theme: Studio (by request) · soft glass + depth */
         /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: muted terracotta on glass, verified 5.85:1+ */
         :root {
             color-scheme: light;
@@ -27,10 +27,14 @@
             --color-paper-hi: oklch(99% 0.004 215);
             --color-ink: oklch(16% 0.032 250);
             --color-ink-2: oklch(34% 0.022 245);
-            --color-muted: oklch(49% 0.018 240);
+            --color-muted: oklch(44% 0.018 240);
             --color-focus: oklch(52% 0.15 48);
+            --color-sage: #2E6F65;
+            --color-sage-soft: rgba(46, 111, 101, 0.14);
+            --color-cobalt: #1D5A96;
+            --color-cobalt-soft: rgba(29, 90, 150, 0.14);
             --font-display: "Hedvig Letters Serif", ui-serif, Georgia, serif;
-            --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+            --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --radius-card: 20px;
             --radius-control: 14px;
             --radius-pill: 999px;
@@ -48,7 +52,7 @@
             --shadow-soft: 0 2px 6px rgba(18, 24, 38, 0.04), 0 12px 28px -12px rgba(18, 24, 38, 0.10);
             --shadow-card-hover: 0 4px 10px rgba(18, 24, 38, 0.06), 0 18px 36px -14px rgba(18, 24, 38, 0.15);
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-            --bps-blue: oklch(42% 0.14 248);
+            --bps-blue: var(--color-cobalt);
         }
 
         html.dark {
@@ -59,8 +63,12 @@
             --color-paper-hi: oklch(19% 0.012 215);
             --color-ink: oklch(94% 0.010 250);
             --color-ink-2: oklch(82% 0.014 245);
-            --color-muted: oklch(70% 0.014 240);
+            --color-muted: oklch(72% 0.014 240);
             --color-focus: oklch(74% 0.14 48);
+            --color-sage: #6EC4B4;
+            --color-sage-soft: rgba(110, 196, 180, 0.16);
+            --color-cobalt: #7CB4EB;
+            --color-cobalt-soft: rgba(124, 180, 235, 0.16);
             --border-soft: rgba(255, 255, 255, 0.12);
             --border-input: rgba(255, 255, 255, 0.22);
             --glass-bg: rgba(24, 29, 40, 0.76);
@@ -70,7 +78,7 @@
             --btn-primary-hover-to: #984323;
             --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.25), 0 14px 32px -14px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.05);
             --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.34), 0 20px 40px -14px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            --bps-blue: oklch(74% 0.12 248);
+            --bps-blue: var(--color-cobalt);
         }
 
         *,
@@ -87,7 +95,7 @@
         body {
             margin: 0;
             padding: 0;
-            min-height: 100%;
+            min-height: 100dvh;
             font-family: var(--font-body);
             font-size: 17px;
             line-height: 1.5;
@@ -105,16 +113,16 @@
             pointer-events: none;
             z-index: -1;
             background-image:
-                radial-gradient(46rem 34rem at 12% 10%, rgba(180, 92, 54, 0.085), transparent 70%),
-                radial-gradient(40rem 32rem at 86% 18%, rgba(214, 198, 172, 0.22), transparent 70%),
-                radial-gradient(44rem 34rem at 76% 86%, rgba(110, 152, 196, 0.11), transparent 70%);
+                radial-gradient(48rem 36rem at 10% 8%, rgba(214, 134, 96, 0.38), transparent 68%),
+                radial-gradient(44rem 34rem at 88% 16%, rgba(235, 212, 174, 0.48), transparent 68%),
+                radial-gradient(48rem 36rem at 74% 88%, rgba(146, 190, 224, 0.38), transparent 68%);
         }
 
         html.dark body::before {
             background-image:
-                radial-gradient(44rem 32rem at 12% 10%, rgba(164, 74, 40, 0.07), transparent 72%),
-                radial-gradient(38rem 30rem at 86% 18%, rgba(155, 140, 118, 0.05), transparent 72%),
-                radial-gradient(42rem 32rem at 76% 86%, rgba(78, 118, 162, 0.07), transparent 72%);
+                radial-gradient(46rem 34rem at 10% 8%, rgba(164, 74, 40, 0.14), transparent 72%),
+                radial-gradient(40rem 32rem at 88% 16%, rgba(170, 148, 114, 0.10), transparent 72%),
+                radial-gradient(46rem 34rem at 74% 88%, rgba(82, 132, 178, 0.14), transparent 72%);
         }
 
         :focus-visible {
@@ -128,50 +136,189 @@
         }
 
         .login-split-root {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 48px;
-            padding: 20px 16px;
+            min-height: 100dvh;
+            display: grid;
+            grid-template-columns: 1fr;
         }
 
-        .auth-stage-inner {
-            width: 100%;
-            max-width: 440px;
+        .panel-brand {
+            padding: 16px 20px;
+            border-bottom: var(--rule-hair) solid var(--border-soft);
+            background: linear-gradient(155deg, rgba(244, 232, 216, 0.72), rgba(232, 240, 246, 0.65));
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            justify-content: space-between;
+            gap: 14px;
         }
 
+        html.dark .panel-brand {
+            background: linear-gradient(155deg, rgba(32, 28, 30, 0.75), rgba(22, 28, 38, 0.75));
+        }
+
+        .brand-main-block,
+        .brand-footer,
         .login-doc-visual {
             display: none;
         }
 
-        @media (min-width: 900px) {
-            .login-doc-visual {
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .brand-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-agency-top {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--color-ink);
+            line-height: 1.2;
+        }
+
+        .brand-agency-sub {
+            font-size: 0.9375rem;
+            color: var(--color-ink-2);
+            line-height: 1.3;
+        }
+
+        .panel-auth {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 16px;
+        }
+
+        .auth-stage-inner {
+            width: 100%;
+            max-width: 430px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        @media (min-width: 1024px) {
+            .login-split-root {
+                grid-template-columns: 1.05fr 0.95fr;
+            }
+
+            .panel-brand {
+                padding: 28px 44px;
+                border-bottom: none;
+                border-right: var(--rule-hair) solid var(--border-soft);
+            }
+
+            .brand-main-block {
                 display: flex;
                 flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                width: 240px;
-                flex-shrink: 0;
+                gap: 14px;
+                max-width: 48ch;
             }
+
+            .brand-footer {
+                display: block;
+                font-size: 0.9375rem;
+                color: var(--color-muted);
+            }
+
+            .login-doc-visual {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 4px 0;
+            }
+
+            .panel-auth {
+                padding: 20px 36px;
+            }
+        }
+
+        .brand-system-name {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 4vw + 1rem, 4rem);
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            line-height: 1.05;
+            margin: 0;
+            color: var(--color-ink);
+        }
+
+        .brand-description {
+            font-size: 1.0625rem;
+            color: var(--color-ink-2);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .brand-points {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .brand-point {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--color-ink);
+        }
+
+        .brand-point-tile {
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .brand-point-tile-warm {
+            background-color: rgba(164, 74, 40, 0.14);
+            color: var(--btn-primary-from);
+        }
+
+        .brand-point-tile-sage {
+            background-color: var(--color-sage-soft);
+            color: var(--color-sage);
+        }
+
+        .brand-point-tile-blue {
+            background-color: var(--color-cobalt-soft);
+            color: var(--color-cobalt);
         }
 
         .login-doc-stack {
             position: relative;
-            width: 200px;
-            height: 168px;
-            perspective: 680px;
+            width: 240px;
+            height: 158px;
+            perspective: 720px;
         }
 
         .login-doc-sheet {
             position: absolute;
             left: 50%;
             top: 50%;
-            width: 118px;
-            height: 142px;
+            width: 122px;
+            height: 138px;
             border-radius: 16px;
             background-color: var(--color-paper-hi);
             border: var(--rule-hair) solid var(--border-soft);
@@ -202,14 +349,14 @@
         }
 
         .login-doc-sheet-1 {
-            transform: translate(-72%, -48%) rotateX(14deg) rotateY(-14deg) rotateZ(-9deg);
-            opacity: 0.72;
+            transform: translate(-84%, -48%) rotateX(14deg) rotateY(-14deg) rotateZ(-9deg);
+            opacity: 0.78;
             animation: loginFloat1 7s ease-in-out infinite;
         }
 
         .login-doc-sheet-2 {
-            transform: translate(-28%, -46%) rotateX(12deg) rotateY(12deg) rotateZ(8deg);
-            opacity: 0.85;
+            transform: translate(-18%, -46%) rotateX(12deg) rotateY(12deg) rotateZ(8deg);
+            opacity: 0.88;
             animation: loginFloat2 7.5s ease-in-out infinite;
         }
 
@@ -224,19 +371,19 @@
 
         @keyframes loginFloat1 {
             0%, 100% {
-                transform: translate(-72%, -48%) rotateX(14deg) rotateY(-14deg) rotateZ(-9deg);
+                transform: translate(-84%, -48%) rotateX(14deg) rotateY(-14deg) rotateZ(-9deg);
             }
             50% {
-                transform: translate(-72%, -55%) rotateX(16deg) rotateY(-12deg) rotateZ(-7deg);
+                transform: translate(-84%, -54%) rotateX(16deg) rotateY(-12deg) rotateZ(-7deg);
             }
         }
 
         @keyframes loginFloat2 {
             0%, 100% {
-                transform: translate(-28%, -46%) rotateX(12deg) rotateY(12deg) rotateZ(8deg);
+                transform: translate(-18%, -46%) rotateX(12deg) rotateY(12deg) rotateZ(8deg);
             }
             50% {
-                transform: translate(-28%, -53%) rotateX(14deg) rotateY(10deg) rotateZ(6deg);
+                transform: translate(-18%, -52%) rotateX(14deg) rotateY(10deg) rotateZ(6deg);
             }
         }
 
@@ -245,50 +392,15 @@
                 transform: translate(-50%, -52%) rotateX(10deg) rotateY(-4deg);
             }
             50% {
-                transform: translate(-50%, -60%) rotateX(8deg) rotateY(-2deg);
+                transform: translate(-50%, -59%) rotateX(8deg) rotateY(-2deg);
             }
         }
 
-        .brand-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding-bottom: 10px;
-            border-bottom: var(--rule-hair) solid var(--border-soft);
-        }
-
-        .brand-logo-img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            flex-shrink: 0;
-        }
-
-        .brand-meta {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .brand-agency-top {
-            font-family: var(--font-display);
-            font-size: 1.375rem;
-            font-weight: 400;
-            letter-spacing: -0.022em;
-            color: var(--color-ink);
-            line-height: 1.1;
-        }
-
-        .brand-agency-sub {
-            font-size: 0.875rem;
-            color: var(--color-ink-2);
-            line-height: 1.3;
-        }
-
         .auth-title {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 400;
-            letter-spacing: -0.022em;
+            font-family: var(--font-body);
+            font-size: clamp(1.5rem, 1.5vw + 1rem, 1.875rem);
+            font-weight: 700;
+            letter-spacing: -0.025em;
             margin: 0 0 2px 0;
             color: var(--color-ink);
             line-height: 1.15;
@@ -305,11 +417,11 @@
             backdrop-filter: blur(10px) saturate(140%);
             border: var(--rule-hair) solid var(--glass-border);
             border-radius: var(--radius-card);
-            padding: 20px;
+            padding: 18px 20px;
             box-shadow: var(--shadow-soft);
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
         }
 
@@ -325,7 +437,7 @@
         }
 
         .auth-alert-box {
-            padding: 10px 12px;
+            padding: 9px 12px;
             border-radius: var(--radius-control);
             font-size: 0.9375rem;
             font-weight: 600;
@@ -379,23 +491,23 @@
             background-color: var(--glass-subtle-bg);
             border: var(--rule-hair) solid var(--border-soft);
             border-radius: var(--radius-control);
-            padding: 10px 12px;
-            font-size: 0.875rem;
+            padding: 8px 12px;
+            font-size: 0.9375rem;
             color: var(--color-ink-2);
         }
 
         .notice-vpn-text {
             margin: 0;
-            line-height: 1.45;
+            line-height: 1.4;
         }
 
         .mock-sso-link {
             text-align: center;
-            font-size: 0.875rem;
-            color: var(--bps-blue);
-            font-weight: 600;
+            font-size: 0.8125rem;
+            color: var(--color-muted);
+            font-weight: 500;
             text-decoration: underline;
-            text-underline-offset: 3px;
+            text-underline-offset: 2px;
         }
 
         .auth-divider {
@@ -418,7 +530,7 @@
         .auth-form-local {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 9px;
         }
 
         .form-label {
@@ -426,7 +538,7 @@
             font-size: 0.9375rem;
             font-weight: 600;
             color: var(--color-ink);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .input-wrapper {
@@ -436,7 +548,7 @@
         .form-input-modern {
             width: 100%;
             min-height: 56px;
-            padding: 12px 48px 12px 14px;
+            padding: 10px 48px 10px 14px;
             border: var(--rule-hair) solid var(--border-input);
             border-radius: var(--radius-control);
             background-color: var(--color-paper-hi);
@@ -509,7 +621,7 @@
 
         .field-error {
             display: block;
-            margin-top: 4px;
+            margin-top: 3px;
             font-size: 0.875rem;
             font-weight: 600;
             color: #991B1B;
@@ -517,7 +629,7 @@
 
         .auth-helpdesk {
             text-align: center;
-            font-size: 0.875rem;
+            font-size: 0.9375rem;
             color: var(--color-ink-2);
         }
 
@@ -529,9 +641,9 @@
         .auth-footer-clean {
             display: flex;
             justify-content: space-between;
-            font-size: 0.8125rem;
+            font-size: 0.875rem;
             color: var(--color-muted);
-            padding-top: 8px;
+            padding-top: 6px;
             border-top: var(--rule-hair) solid var(--border-soft);
         }
 
@@ -548,15 +660,7 @@
 
 <body>
     <main class="login-split-root">
-        <aside class="login-doc-visual" aria-hidden="true">
-            <div class="login-doc-stack">
-                <span class="login-doc-sheet login-doc-sheet-1"></span>
-                <span class="login-doc-sheet login-doc-sheet-2"></span>
-                <span class="login-doc-sheet login-doc-sheet-3"></span>
-            </div>
-        </aside>
-
-        <section class="auth-stage-inner" aria-label="Autentikasi Pengguna ELKA">
+        <section class="panel-brand" aria-label="Informasi Sistem ELKA">
             <header class="brand-header">
                 @if ($logoPath)
                     <img src="{{ $logoPath }}" alt="Logo BPS Kabupaten Tegal" class="brand-logo-img">
@@ -569,115 +673,153 @@
                     </svg>
                 @endif
                 <div class="brand-meta">
-                    <span class="brand-agency-top">ELKA</span>
-                    <span class="brand-agency-sub">BPS Kabupaten Tegal &bull; Perpustakaan Bukti Dukung</span>
+                    <span class="brand-agency-top">BPS Kabupaten Tegal</span>
+                    <span class="brand-agency-sub">Perpustakaan Bukti Dukung Kantor</span>
                 </div>
             </header>
 
-            <div>
-                <h1 class="auth-title">Masuk ke ELKA</h1>
-                <p class="auth-subtitle">Silakan masuk memakai akun pegawai BPS atau akun pengelola.</p>
-            </div>
+            <div class="brand-main-block">
+                <h1 class="brand-system-name">ELKA</h1>
+                <p class="brand-description">
+                    Tempat menyimpan, mencari, dan memeriksa dokumen bukti dukung untuk enam Lembar Kerja BPS Kabupaten Tegal.
+                </p>
 
-            <div class="auth-card">
-                @if (session('error'))
-                    <div class="auth-alert-box auth-alert-error" role="alert">
-                        <span>{{ session('error') }}</span>
+                <ul class="brand-points">
+                    <li class="brand-point">
+                        <span class="brand-point-tile brand-point-tile-warm" aria-hidden="true">1</span>
+                        <span>Cari Cepat</span>
+                    </li>
+                    <li class="brand-point">
+                        <span class="brand-point-tile brand-point-tile-sage" aria-hidden="true">2</span>
+                        <span>Cegah Berkas Ganda</span>
+                    </li>
+                    <li class="brand-point">
+                        <span class="brand-point-tile brand-point-tile-blue" aria-hidden="true">3</span>
+                        <span>Terhubung ke Enam LK</span>
+                    </li>
+                </ul>
+
+                <div class="login-doc-visual" aria-hidden="true">
+                    <div class="login-doc-stack">
+                        <span class="login-doc-sheet login-doc-sheet-1"></span>
+                        <span class="login-doc-sheet login-doc-sheet-2"></span>
+                        <span class="login-doc-sheet login-doc-sheet-3"></span>
                     </div>
-                @endif
-
-                @if (session('success'))
-                    <div class="auth-alert-box auth-alert-success" role="alert">
-                        <span>{{ session('success') }}</span>
-                    </div>
-                @endif
-
-                <a href="{{ route('auth.sso.login') }}" class="btn-sso" id="btn-login-sso">
-                    <span>Login SSO BPS &rarr;</span>
-                </a>
-
-                <div class="notice-vpn-card">
-                    <p class="notice-vpn-text">
-                        Bila membuka dari luar kantor, nyalakan <strong>VPN FortiClient</strong> terlebih dahulu sebelum klik Login SSO BPS.
-                    </p>
                 </div>
-
-                <a href="{{ route('auth.sso.mock_login') }}" class="mock-sso-link">
-                    Mode Simulasi SSO (Uji Coba Mandiri)
-                </a>
-
-                <div class="auth-divider">
-                    <span>atau masuk dengan akun pengelola</span>
-                </div>
-
-                <form method="POST" action="{{ route('login', [], false) }}" class="auth-form-local">
-                    @csrf
-
-                    <div>
-                        <label for="email" class="form-label">Email atau NIP Pengelola</label>
-                        <input
-                            id="email"
-                            type="text"
-                            name="email"
-                            value="{{ old('email') }}"
-                            required
-                            autofocus
-                            class="form-input-modern"
-                            placeholder="nama@bps.go.id atau 19850101...">
-                        @error('email')
-                            <span class="field-error">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="password" class="form-label">Kata Sandi</label>
-                        <div class="input-wrapper">
-                            <input
-                                id="password"
-                                type="password"
-                                name="password"
-                                required
-                                autocomplete="current-password"
-                                class="form-input-modern"
-                                placeholder="Masukkan kata sandi">
-                            <button
-                                type="button"
-                                id="togglePassword"
-                                aria-label="Tampilkan kata sandi"
-                                class="input-trailing-btn">
-                                <svg id="eyeShow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <svg id="eyeHide" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true" style="display: none;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.584 10.587A2 2 0 0013.413 13.4M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.79 9.79 0 01-4.132 5.411M6.228 6.232A9.785 9.785 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 005.147-1.462" />
-                                </svg>
-                            </button>
-                        </div>
-                        @error('password')
-                            <span class="field-error">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="form-check-row">
-                        <input type="checkbox" name="remember" id="remember" class="form-checkbox">
-                        <label for="remember">Ingat saya di peramban ini</label>
-                    </div>
-
-                    <button type="submit" class="btn-submit-local" id="btn-login-local">
-                        Masuk sebagai Pengelola
-                    </button>
-                </form>
             </div>
 
-            <div class="auth-helpdesk">
-                Butuh bantuan akun? <a href="mailto:bps3328@bps.go.id">Hubungi Pengelola BPS Kabupaten Tegal</a>
-            </div>
-
-            <footer class="auth-footer-clean">
-                <span>&copy; {{ date('Y') }} BPS Kabupaten Tegal</span>
-                <span>ELKA</span>
+            <footer class="brand-footer">
+                Jaringan Internal BPS Kabupaten Tegal
             </footer>
+        </section>
+
+        <section class="panel-auth" aria-label="Autentikasi Pengguna ELKA">
+            <div class="auth-stage-inner">
+                <div>
+                    <h2 class="auth-title">Masuk ke ELKA</h2>
+                    <p class="auth-subtitle">Silakan masuk memakai akun pegawai BPS atau akun pengelola.</p>
+                </div>
+
+                <div class="auth-card">
+                    @if (session('error'))
+                        <div class="auth-alert-box auth-alert-error" role="alert">
+                            <span>{{ session('error') }}</span>
+                        </div>
+                    @endif
+
+                    @if (session('success'))
+                        <div class="auth-alert-box auth-alert-success" role="alert">
+                            <span>{{ session('success') }}</span>
+                        </div>
+                    @endif
+
+                    <a href="{{ route('auth.sso.login') }}" class="btn-sso" id="btn-login-sso">
+                        <span>Login SSO BPS &rarr;</span>
+                    </a>
+
+                    <div class="notice-vpn-card">
+                        <p class="notice-vpn-text">
+                            Bila membuka dari luar kantor, nyalakan <strong>VPN FortiClient</strong> terlebih dahulu sebelum klik Login SSO BPS.
+                        </p>
+                    </div>
+
+                    <a href="{{ route('auth.sso.mock_login') }}" class="mock-sso-link">
+                        Mode Simulasi SSO (Uji Coba Mandiri)
+                    </a>
+
+                    <div class="auth-divider">
+                        <span>atau masuk dengan akun pengelola</span>
+                    </div>
+
+                    <form method="POST" action="{{ route('login', [], false) }}" class="auth-form-local">
+                        @csrf
+
+                        <div>
+                            <label for="email" class="form-label">Email atau NIP Pengelola</label>
+                            <input
+                                id="email"
+                                type="text"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                autofocus
+                                class="form-input-modern"
+                                placeholder="nama@bps.go.id atau 19850101...">
+                            @error('email')
+                                <span class="field-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="password" class="form-label">Kata Sandi</label>
+                            <div class="input-wrapper">
+                                <input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    required
+                                    autocomplete="current-password"
+                                    class="form-input-modern"
+                                    placeholder="Masukkan kata sandi">
+                                <button
+                                    type="button"
+                                    id="togglePassword"
+                                    aria-label="Tampilkan kata sandi"
+                                    class="input-trailing-btn">
+                                    <svg id="eyeShow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <svg id="eyeHide" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true" style="display: none;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.584 10.587A2 2 0 0013.413 13.4M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.79 9.79 0 01-4.132 5.411M6.228 6.232A9.785 9.785 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 005.147-1.462" />
+                                    </svg>
+                                </button>
+                            </div>
+                            @error('password')
+                                <span class="field-error">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="form-check-row">
+                            <input type="checkbox" name="remember" id="remember" class="form-checkbox">
+                            <label for="remember">Ingat saya di peramban ini</label>
+                        </div>
+
+                        <button type="submit" class="btn-submit-local" id="btn-login-local">
+                            Masuk sebagai Pengelola
+                        </button>
+                    </form>
+                </div>
+
+                <div class="auth-helpdesk">
+                    Butuh bantuan akun? <a href="mailto:bps3328@bps.go.id">Hubungi Pengelola BPS Kabupaten Tegal</a>
+                </div>
+
+                <footer class="auth-footer-clean">
+                    <span>&copy; {{ date('Y') }} BPS Kabupaten Tegal</span>
+                    <span>ELKA</span>
+                </footer>
+            </div>
         </section>
     </main>
 

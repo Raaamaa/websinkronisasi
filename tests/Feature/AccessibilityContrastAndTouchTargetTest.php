@@ -94,11 +94,35 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
             + preg_match_all('/^\s*backdrop-filter:\s*blur\(/m', $loginView);
         $this->assertSame(5, $backdropCount);
 
-        // Login stays light (not tied to prefers-color-scheme) and includes decorative 3D stack at >=900px
+        // Login stays light (not tied to prefers-color-scheme) and includes decorative 3D stack at >=1024px
         $this->assertStringNotContainsString('prefers-color-scheme: dark', $loginView);
         $this->assertStringNotContainsString('prefers-color-scheme: dark', $forceChangeView);
         $this->assertStringContainsString('aria-hidden="true"', $loginView);
-        $this->assertStringContainsString('min-width: 900px', $loginView);
+        $this->assertStringContainsString('min-width: 1024px', $loginView);
+        $this->assertStringContainsString('Cari Cepat', $loginView);
+        $this->assertStringContainsString('Cegah Berkas Ganda', $loginView);
+        $this->assertStringContainsString('Terhubung ke Enam LK', $loginView);
+        $this->assertStringContainsString('clamp(2.5rem, 4vw + 1rem, 4rem)', $loginView);
+    }
+
+    public function test_dropdown_stacking_fix_six_lk_tokens_and_modern_typography_are_present(): void
+    {
+        $customCss = (string) file_get_contents(public_path('css/filament-custom.css'));
+
+        // (A) Topbar glass moved to ::before pseudo-element so dropdown is not trapped
+        $this->assertStringContainsString('.fi-topbar::before', $customCss);
+        $this->assertStringContainsString('.fi-dropdown-panel', $customCss);
+        $this->assertStringContainsString('.fi-user-menu button', $customCss);
+
+        // (B) Secondary & 6 LK pastel tokens + no border-left on active sidebar
+        $this->assertStringContainsString('--color-sage', $customCss);
+        $this->assertStringContainsString('--lk-kip-bg', $customCss);
+        $this->assertStringContainsString('[data-lk="KIP"]', $customCss);
+        $this->assertStringContainsString('[data-lk="DATA_SEKUNDER"]', $customCss);
+        $this->assertStringNotContainsString('border-left: 3px solid', $customCss);
+
+        // (D) Fluid sans typography scale
+        $this->assertStringContainsString('clamp(1.75rem, 2.2vw + 1rem, 2.5rem)', $customCss);
     }
 
     private function calculateContrastRatio(string $hex1, string $hex2): float

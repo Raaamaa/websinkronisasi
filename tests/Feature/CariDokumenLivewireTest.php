@@ -261,6 +261,12 @@ class CariDokumenLivewireTest extends TestCase
             ->assertSee('SAKIP')
             ->assertSee('DATA_SEKTORAL')
             ->assertSee('DATA_SEKUNDER')
+            ->assertSeeHtml('data-lk="KIP"')
+            ->assertSeeHtml('data-lk="PEKPPP"')
+            ->assertSeeHtml('data-lk="ZI"')
+            ->assertSeeHtml('data-lk="SAKIP"')
+            ->assertSeeHtml('data-lk="DATA_SEKTORAL"')
+            ->assertSeeHtml('data-lk="DATA_SEKUNDER"')
             ->assertSee($docTitle)
             ->assertSee('✔');
     }

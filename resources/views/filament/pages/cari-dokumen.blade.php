@@ -211,8 +211,8 @@
                                 <th class="p-4 text-center min-w-[100px]">Jenis</th>
                                 @foreach ($allLks as $lk)
                                     <th class="p-4 text-center min-w-[110px]" style="border-left: 1px solid var(--border-warm);" title="{{ $lk->name }}">
-                                        <div>{{ $lk->code }}</div>
-                                        <div class="text-xs font-normal vintage-muted truncate max-w-[100px]">
+                                        <div class="inline-flex px-2.5 py-0.5 text-xs font-bold" data-lk="{{ $lk->code }}">{{ $lk->code }}</div>
+                                        <div class="text-xs font-normal vintage-muted truncate max-w-[100px] mt-0.5">
                                             {{ ucfirst($lk->category) }}
                                         </div>
                                     </th>
@@ -237,7 +237,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="p-4 text-center font-semibold">
+                                    <td class="p-4 text-center font-semibold num">
                                         {{ $row['year'] }}
                                     </td>
                                     <td class="p-4 text-center">
@@ -369,7 +369,7 @@
                         </label>
                         <div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
                             @foreach ($this->getAllActiveLks() as $alk)
-                                <label class="flex items-center gap-2.5 p-3 rounded-xl vintage-section cursor-pointer text-sm">
+                                <label class="flex items-center gap-2.5 p-3 vintage-section cursor-pointer text-sm" data-lk="{{ $alk->code }}">
                                     <input
                                         type="checkbox"
                                         wire:model="editingLkIds"

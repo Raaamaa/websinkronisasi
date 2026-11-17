@@ -167,7 +167,7 @@
                             </span>
                             <div class="flex flex-wrap gap-2">
                                 @forelse ($proposedLks as $plk)
-                                    <span class="vintage-badge-menunggu">
+                                    <span class="vintage-badge-menunggu" data-lk="{{ $plk->code }}">
                                         {{ $plk->code }} - {{ $plk->name }}
                                     </span>
                                 @empty
@@ -189,7 +189,7 @@
                                 </label>
                                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
                                     @foreach ($availableLks as $alk)
-                                        <label class="flex items-center gap-2.5 p-3 vintage-section cursor-pointer text-sm">
+                                        <label class="flex items-center gap-2.5 p-3 vintage-section cursor-pointer text-sm" data-lk="{{ $alk->code }}">
                                             <input
                                                 type="checkbox"
                                                 wire:model="selectedLks.{{ $doc->id }}"

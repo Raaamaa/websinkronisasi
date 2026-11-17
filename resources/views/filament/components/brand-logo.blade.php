@@ -22,7 +22,7 @@
     @endif
 
     <div class="flex flex-col text-left">
-        <span class="text-lg font-bold leading-tight vintage-serif-heading" style="color: var(--text-main);">
+        <span class="text-lg font-bold leading-tight studio-wordmark" style="color: var(--text-main);">
             ELKA
         </span>
         <span class="text-xs font-semibold leading-tight" style="color: var(--text-secondary);">
