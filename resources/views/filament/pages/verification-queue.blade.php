@@ -35,7 +35,7 @@
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="studio-segmented">
                 <button
                     type="button"
                     wire:click="setFilter('menunggu')"

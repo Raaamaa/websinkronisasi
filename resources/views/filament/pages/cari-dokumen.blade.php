@@ -17,7 +17,7 @@
                 </p>
             </div>
 
-            <div class="inline-flex flex-wrap gap-2 p-1.5 vintage-section">
+            <div class="studio-segmented">
                 <button
                     type="button"
                     wire:click="setCategory(null)"
@@ -40,7 +40,7 @@
         </div>
 
         {{-- Kotak Pencarian & Filter --}}
-        <form wire:submit.prevent="search" class="vintage-card p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
+        <form wire:submit.prevent="search" class="vintage-card studio-glass-search studio-fade-in p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
             <div class="md:col-span-6 studio-search-wrap">
                 <input
                     type="text"
@@ -94,7 +94,7 @@
         </form>
 
         {{-- Cek Berkas Sebelum Unggah --}}
-        <div class="vintage-card p-5 space-y-4">
+        <div class="vintage-card studio-glass-check studio-fade-in studio-stagger-1 p-5 space-y-4">
             <div>
                 <h2 class="text-lg font-bold vintage-serif-heading">
                     Cek Berkas Sebelum Unggah
@@ -186,7 +186,12 @@
 
         {{-- Tabel Matriks 6 Lembar Kerja (Hanya tampil bila kata kunci pencarian terisi) --}}
         @if (! $hasQuery)
-            <div class="vintage-hint-card studio-fade-in">
+            <div class="vintage-hint-card studio-fade-in studio-stagger-2">
+                <div class="studio-doc-stack" aria-hidden="true">
+                    <span class="studio-doc-sheet studio-doc-sheet-1"></span>
+                    <span class="studio-doc-sheet studio-doc-sheet-2"></span>
+                    <span class="studio-doc-sheet studio-doc-sheet-3"></span>
+                </div>
                 Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.
             </div>
         @else
@@ -194,7 +199,7 @@
                 $matrixData = $this->getMatrixData();
                 $allLks = $matrixData['columns']['internal']->merge($matrixData['columns']['eksternal']);
             @endphp
-            <div class="vintage-card overflow-hidden studio-fade-in">
+            <div class="vintage-card overflow-hidden studio-fade-in studio-stagger-2">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>

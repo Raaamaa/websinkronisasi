@@ -73,6 +73,34 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
         );
     }
 
+    public function test_soft_glass_depth_and_login_light_discipline_are_enforced(): void
+    {
+        $customCss = (string) file_get_contents(public_path('css/filament-custom.css'));
+        $loginView = (string) file_get_contents(resource_path('views/auth/login.blade.php'));
+        $forceChangeView = (string) file_get_contents(resource_path('views/auth/force-change-password.blade.php'));
+
+        // Soft glass + depth tokens & rules
+        $this->assertStringContainsString('--radius-card: 20px;', $customCss);
+        $this->assertStringContainsString('--radius-control: 14px;', $customCss);
+        $this->assertStringContainsString('--radius-pill: 999px;', $customCss);
+        $this->assertStringContainsString('@supports not (backdrop-filter: blur(1px))', $customCss);
+        $this->assertStringContainsString('::file-selector-button', $customCss);
+        $this->assertStringContainsString('radial-gradient', $customCss);
+        $this->assertDoesNotMatchRegularExpression('/(?<![a-z-])filter:\s*blur/i', $customCss);
+        $this->assertStringNotContainsString('transition: all', $customCss);
+
+        // Max 5 glass surfaces across CSS + login (excluding @supports condition)
+        $backdropCount = preg_match_all('/^\s*backdrop-filter:\s*blur\(/m', $customCss)
+            + preg_match_all('/^\s*backdrop-filter:\s*blur\(/m', $loginView);
+        $this->assertSame(5, $backdropCount);
+
+        // Login stays light (not tied to prefers-color-scheme) and includes decorative 3D stack at >=900px
+        $this->assertStringNotContainsString('prefers-color-scheme: dark', $loginView);
+        $this->assertStringNotContainsString('prefers-color-scheme: dark', $forceChangeView);
+        $this->assertStringContainsString('aria-hidden="true"', $loginView);
+        $this->assertStringContainsString('min-width: 900px', $loginView);
+    }
+
     private function calculateContrastRatio(string $hex1, string $hex2): float
     {
         $l1 = $this->relativeLuminance($hex1);

@@ -654,6 +654,8 @@ class CariDokumenLivewireTest extends TestCase
             ->assertSeeHtml('wire:loading')
             ->assertSeeHtml('wire:target="query"')
             ->assertSeeHtml('Mencari...')
+            ->assertSeeHtml('aria-hidden="true"')
+            ->assertSeeHtml('studio-doc-stack')
             ->assertSee('Ketik nama dokumen di kotak pencarian untuk melihat dokumen itu ada di Lembar Kerja mana saja.')
             ->set('query', $doc->document_name)
             ->assertSee('Dokumen Bukti Dukung Resmi')
