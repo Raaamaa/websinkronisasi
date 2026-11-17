@@ -94,12 +94,57 @@ h3,
     letter-spacing: -0.01em;
 }
 
-/* Hide redundant default Filament page header */
-.fi-header,
-header.fi-header,
-.fi-page > section > header.fi-header,
-.fi-page-header {
+/* Keep header actions visible (e.g. Unggah Bukti on /admin/evidence-documents); hide only redundant title/breadcrumbs */
+.fi-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+}
+
+.fi-header > div:first-child:has(.fi-header-heading),
+.fi-header .fi-breadcrumbs,
+.fi-header-heading,
+.fi-header-subheading {
     display: none !important;
+}
+
+.fi-header > div:last-child,
+.fi-header .fi-ac {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    margin-left: auto !important;
+}
+
+.fi-header .fi-ac .fi-btn,
+.fi-ta-empty-state .fi-ta-actions .fi-btn {
+    min-height: 56px !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: var(--radius-control) !important;
+    background-color: var(--accent-terracotta) !important;
+    color: #FFFFFF !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    border: 1px solid var(--accent-terracotta) !important;
+    box-shadow: var(--shadow-soft) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.fi-header .fi-ac .fi-btn:hover,
+.fi-ta-empty-state .fi-ta-actions .fi-btn:hover {
+    background-color: var(--accent-terracotta-hover) !important;
+    border-color: var(--accent-terracotta-hover) !important;
+}
+
+.fi-header .fi-ac .fi-btn .fi-btn-label,
+.fi-header .fi-ac .fi-btn .fi-btn-icon,
+.fi-ta-empty-state .fi-ta-actions .fi-btn .fi-btn-label,
+.fi-ta-empty-state .fi-ta-actions .fi-btn .fi-btn-icon {
+    color: #FFFFFF !important;
 }
 
 .fi-page > section {
