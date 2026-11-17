@@ -1,70 +1,64 @@
 # Rencana Kerja & Rincian Tugas (TASKS.md)
-## Sistem Matching Bukti Dukung ke Lembar Kerja (LK)
+## Perpustakaan Bukti Dukung BPS Kabupaten Tegal (ELKA)
 
 | Atribut | Nilai |
 |---|---|
-| Versi Dokumen | 2.0 |
-| Tanggal | 16 November 2026 |
-| Basis PRD | `PRD.md` Versi 2.0 |
+| Versi Dokumen | 3.0 |
+| Tanggal | 17 November 2026 |
+| Basis PRD | `PRD.md` Versi 3.0 |
 | Dokumen Teknis | `DATABASE.md`, `RBAC.md`, `MATCHING_ALGORITHM.md`, `ARCHITECTURE.md`, `AGENTS.md` |
 | Pendekatan Eksekusi | *Phase-based, Test-Driven Development (TDD), Verification Gates* |
 
 ---
 
-## 1. Ikhtisar Tahapan Implementasi & Pivot Arsitektur (8 Fase)
+## 1. Ikhtisar Tahapan Implementasi & Penyederhanaan (Fase 1 s.d. Fase 15)
 
-Proyek dieksekusi secara bertahap dengan pendekatan TDD (*Red-Green-Refactor*) dan gerbang verifikasi ketat di setiap fase:
+Proyek dibangun dan disederhanakan secara bertahap dengan pendekatan TDD (*Red-Green-Refactor*) serta gerbang verifikasi ketat di setiap fase:
 
 ```mermaid
 graph TD
-    P0[Fase 0 & 1: Config 50MB, Skema Pivot & Backfill] --> P2[Fase 2: RBAC & EvidenceDocumentPolicy]
-    P2 --> P3[Fase 3: Search Approved, Saran Matching & Similarity]
-    P3 --> P4[Fase 4: Upload 50MB, Mode Link, Proposed LK & Revisi]
-    P4 --> P5[Fase 5: UI Sederhana: Pengajuan, Antrean, Matriks Dokumen x LK, Cari Dokumen]
-    P5 --> P6[Fase 6: Sinkronisasi Google Drive Baca-Saja & OCR Selektif]
-    P6 --> P7[Fase 7: Unduhan Aman Kode LK Resmi & Pembersihan Kode Usang]
-    P7 --> P8[Fase 8: Sinkronisasi Dokumentasi & Panduan Pengguna]
+    P1[Fase 1–8: Fondasi Pivot, RBAC SSO, Pencarian, Unggah, Antrean & Unduhan Aman] --> P9[Fase 9: Batas Unggah 20 MB & Hapus Sinkronisasi Drive]
+    P9 --> P10[Fase 10: Hapus Mesin Pencocokan Indikator]
+    P10 --> P11[Fase 11: Hapus UI Master LK/Indikator/Impor & Seeder 6 LK]
+    P11 --> P12[Fase 12: Halaman Cari Gabungan + Matriks 6 LK + Cek Berkas + Banner Antrean]
+    P12 --> P13[Fase 13: Halaman Unggah Bukti, RBAC & Redirect Peran]
+    P13 --> P14[Fase 14: Tema UI Vintage Hangat BPS Kabupaten Tegal]
+    P14 --> P15[Fase 15: Sinkronisasi 11 Berkas Dokumentasi Aktif]
 ```
 
 ---
 
-## 2. Rincian Tugas per Fase
+## 2. Ringkasan Tugas per Fase
 
-### Fase 1 (termasuk Pra-Fase 0): Konfigurasi `config/evidence.php`, Skema Pivot, & Backfill
-* **Konfigurasi Terpusat:** Pembuatan `config/evidence.php` dan publikasi `config/livewire.php` untuk batas unggah **50 MB** (`max:51200`), ambang saran matching (`75.0` / `60.0`), batas peringatan disk (`80%`), dan parameter Google Drive (`DRIVE_API_KEY`).
-* **Skema Database (`2026_11_11_000001`):** Penambahan kolom `approval_status`, `approval_notes`, `approved_by`, `approved_at`, `source_type`, dan `drive_*` pada `evidence_documents`; pembuatan tabel `document_lk_links` (`proposed`, `admin`, `drive_sync`, `backfill`) dan `drive_sync_folders`.
-* **Migrasi Backfill (`2026_11_11_000002`):** Dokumen lama diset `approval_status = 'disetujui'` dan relasi `document_matches` (`auto`/`confirmed`) di-backfill secara idempoten ke `document_lk_links` (`link_source = 'backfill'`).
+### Fase 1–8 (Fondasi & Baseline Sistem)
+* **Skema & Seed:** Penyiapan tabel `users`, `lembar_kerja`, `evidence_documents`, `document_lk_links`, dan `audit_logs` (*append-only* dengan trigger `prevent_audit_logs_mutation`), migrasi pivot & backfill `2026_11_11_000001`–`000002`, serta `SuperAdminSeeder`.
+* **Autentikasi & RBAC:** Abstraksi SSO Keycloak BPS (`SSOProviderInterface`), karantina password awal (`EnsurePasswordChanged`), pencabutan sesi seketika (`EnsureAccountIsActive`), serta kebijakan `EvidenceDocumentPolicy` dan `UserPolicy`.
+* **Pencarian, Ekstraksi, & Unduhan:** `DocumentSearchService` (FTS + `ILIKE` + `pg_trgm`), `DocumentSimilarityService`, `TextExtractionService` (PDF/DOCX/Tesseract OCR `ind`), `EvidenceUploadService`, serta `EvidenceController::download` berawalan kode LK resmi (`admin`, `drive_sync`, `backfill`; atau `DRAFT`).
 
-### Fase 2: Autentikasi SSO BPS, Seeder Super Admin, & Penyelarasan RBAC
-* **Matriks `User::hasPermission`:** Penyelarasan izin untuk `super_admin`, `admin`, dan `pegawai` (Pegawai memiliki `evidence.upload`, `evidence.search`, `evidence.revise_own`, `evidence.view_link`, `monitor.view`; Admin memiliki `evidence.verify` dan `drive.sync`; Super Admin mengelola master LK, pengguna, audit, hapus dokumen, dan ikut memverifikasi antrean tanpa mengunggah/mencari/sinkron Drive).
-* **Policy Dokumen (`EvidenceDocumentPolicy`):** Pembatasan `view` (dokumen `disetujui`, pemilik pengajuan sendiri, atau Admin/Super Admin) dan `update` (revisi hanya oleh pengunggah asli saat status `revisi`).
+### Fase 9: Batas Unggah 20 MB Seragam & Hapus Sinkronisasi Google Drive
+* Menyeragamkan batas ukuran unggah menjadi **20 MB (`20.971.520` byte)** di `config/evidence.php`, `EvidenceUploadService`, `config/livewire.php`, `EvidenceDocumentResource`, `docker/app/uploads.ini` (`25M`/`30M`), `deploy/nginx/websinkronisasi.conf`, dan `.env.example`.
+* Menghapus integrasi API Google Drive dan OCR Drive dari server; mempertahankan `DocumentLkLink::OFFICIAL_SOURCES` dan kolom historis pasif di database.
 
-### Fase 3: Pencarian Dokumen Disetujui, Saran Pencocokan, & Kemiripan Dokumen
-* **Filter Persetujuan pada Pencarian (`DocumentSearchService`):** Hanya mengembalikan dokumen aktif berstatus `approval_status = 'disetujui'` dengan eager loading `lembarKerja` resmi (`DISTINCT` tanpa duplikasi LK).
-* **Saran Pencocokan (`MatchingEngineService`):** Menyimpan kandidat kecocokan di `document_matches` sebagai saran verifikasi (`confirmed`, `auto` $\ge 75$, `perlu_verifikasi` $60\text{–}74$) tanpa menentukan centang matriks.
-* **Kemiripan Dokumen (`DocumentSimilarityService`):** Menyediakan `findIdenticalByHash()` dan `findSimilarCandidates()` (maksimal 5 kandidat serupa).
+### Fase 10: Hapus Mesin Pencocokan Dokumen $\rightarrow$ Indikator
+* Menghapus layanan pencocokan indikator dan job *rematch*, serta membersihkan pemanggilan di `ProcessEvidenceDocumentJob` (kini murni ekstraksi teks lewat `TextExtractionService`) dan `VerificationQueuePage`.
+* Mempertahankan penuh `DocumentSimilarityService` untuk pengecekan SHA-256 identik dan kandidat dokumen mirip (maks 5).
 
-### Fase 4: Unggah Aman 50 MB, Mode Tautan, Usulan LK (`proposed`), & Revisi
-* **Unggah Berkas (`EvidenceUploadService::upload`):** Validasi ukuran $\le 50\text{ MB}$ dan MIME *magic bytes* sniffing (`finfo` + validasi kontainer DOCX/XLSX), penyimpanan UUID di disk `private`, serta pembungkusan pembuatan `EvidenceDocument` (`menunggu`) + `DocumentLkLink` (`proposed`) + `AuditLog` dalam satu `DB::transaction` dengan pembersihan berkas yatim bila gagal.
-* **Mode Tautan (`createLinkSubmission`):** Pengajuan berkas $> 50\text{ MB}$ atau video cukup menggunakan tautan `http://` atau `https://` (`source_type = 'link'`).
-* **Revisi Aman (`reviseSubmission`):** Hanya pemilik asli saat status `revisi`; menangani `UniqueConstraintViolationException`, menghapus berkas lama hanya setelah transaksi DB *commit*, dan mereset status ke `menunggu`.
+### Fase 11: Hapus UI Master LK / Indikator / Impor Excel & Seeder 6 LK
+* Menghapus resource Filament dan layanan impor Excel untuk Master LK, Profil Impor, dan Indikator LK beserta observer-nya.
+* Menyederhanakan `InitialLkSeeder` agar langsung menyediakan 6 rak LK aktif (`KIP`, `PEKPPP`, `ZI`, `SAKIP`, `DATA_SEKTORAL`, `DATA_SEKUNDER`) dengan `default_profile_id = null`.
 
-### Fase 5: Antarmuka Sederhana (Pengajuan, Antrean Verifikasi, Matriks Dokumen x LK, Cari Dokumen)
-* **Unggah & Pengajuan Saya (`EvidenceDocumentResource`):** Pilihan radio Unggah Berkas vs Tempel Tautan, multi-select LK usulan, peringatan maks 5 dokumen mirip, riwayat unggahan terbaru (di-scope ke milik sendiri untuk Pegawai), dan alur revisi.
-* **Antrean Verifikasi (`VerificationQueuePage`):** Kartu pengajuan (`menunggu`, `revisi`, `ditolak`, `semua`), saran indikator dari `document_matches`, pilihan LK resmi, tombol Setujui (`link_source = 'admin'`), Minta Revisi (wajib catatan), dan Tolak (wajib catatan).
-* **Matriks Monitor (`MonitorMatrixPage` & `MonitorMatrixService`):** Matriks **Dokumen (`disetujui`) x Lembar Kerja** dengan tanda centang (**✔**) dari `document_lk_links` resmi, tombol **Unduh CSV**, dan peringatan kapasitas penyimpanan bagi Super Admin.
-* **Cari Dokumen (`CariDokumenPage`):** Pencarian dokumen `disetujui` dengan filter LK & tahun, badge LK resmi, serta tombol Unduh / Buka Tautan.
+### Fase 12: Halaman Cari Gabungan (`CariDokumenPage`), Banner Storage, & Hapus `MonitorMatrixPage`
+* Memindahkan `getStorageUsage(): array` ke `MonitorMatrixService` dan menampilkan banner peringatan kapasitas penyimpanan $\ge 80\%$ **khusus Super Admin** di `VerificationQueuePage`.
+* Menggabungkan matriks 6 LK (`DISTINCT lk_id`), klik centang membuka bagian unduh (`toggleDownloadSection`), fitur **Cek Berkas Sebelum Unggah** (`checkUploadedFile()` dengan pembersihan file sementara di `finally` tanpa baris DB baru), dan aksi **Ubah LK** Admin (`reviseMarkup`) ke `CariDokumenPage`.
+* Mengarahkan `User::homeUrl()`, `AdminPanelProvider::homeUrl()`, dan `Dashboard::mount()` sesuai peran, lalu menghapus `MonitorMatrixPage`, `monitor-matrix.blade.php`, dan ekspor CSV matriks.
 
-### Fase 6: Sinkronisasi Google Drive Baca-Saja & OCR Selektif
-* **Sinkronisasi Baca-Saja (`GoogleDriveSyncService` & `SyncGoogleDriveJob`):** Mengambil metadata berkas dari folder Drive aktif menggunakan `config('evidence.drive_api_key')`. Folder yang terhubung ke LK (`lk_id`) otomatis menyetujui dokumen **baru** (`approval_status = 'disetujui'`, `link_source = 'drive_sync'`) tanpa menghidupkan kembali link LK pada dokumen lama yang telah dihapus admin.
-* **OCR Selektif (`ProcessDriveFileOcrJob`):** Mengunduh sementara berkas PDF/gambar $\le 50\text{ MB}$ yang namanya kurang deskriptif, mengekstrak teks/OCR, menjalankan pencocokan saran, dan membersihkan berkas sementara di blok `finally`.
+### Fase 13: Halaman Unggah Bukti, Navigasi Tepat per Peran, & Redirect Pasca-Login
+* Mengubah `EvidenceDocumentPolicy::viewAny()` menjadi cek izin `evidence.upload` sehingga Super Admin ditolak 403 di `/admin/evidence-documents`.
+* Menyelaraskan `EvidenceDocumentResource` menjadi **Unggah Bukti** (`shouldRegisterNavigation` cek `evidence.upload`), panduan berkas $> 20\text{ MB}$ ke Google Drive, wajib memilih $\ge 1$ LK (`minItems(1)` + validasi server), dan tombol **Revisi** hanya bagi pengunggah asli saat status `'revisi'`.
+* Menyeragamkan redirect di `LoginController`, `SSOController`, `ForceChangePasswordController`, dan `routes/web.php` (`/`) ke `User::homeUrl()`.
 
-### Fase 7: Unduhan Aman Berawalan Kode LK Resmi & Pembersihan Kode Usang
-* **Endpoint Unduhan (`EvidenceController::download` & `buildDownloadFilename`):**
-  * Menegakkan `evidence.view_link` + `EvidenceDocumentPolicy::view` (dokumen *soft-deleted* = 404).
-  * Redirect aman ke `external_link` untuk `source_type` `'drive'`/`'link'` (tolak skema selain `http`/`https` dengan 422).
-  * Stream berkas `upload` dengan nama berawalan kode LK resmi (`admin`/`drive_sync`/`backfill`, `DISTINCT`, urut abjad, maks 4 kode, atau `DRAFT` bila belum resmi), sanitasi karakter ilegal/kontrol, panjang total $\le 150$ karakter dengan ekstensi utuh.
-* **Pembersihan Komponen Warisan:** Penghapusan `DryRunMatchingService`, `ManualMatchService`, `SystemSettingResource` (+Pages/Observer/Policy), `QuickWorkflowWidget`, izin yatim (`settings.manage`, `match.manual_create`, `match.manual_delete`, `match.rematch`), serta pembaruan seeder demo agar menggunakan `approval_status = 'disetujui'` dan `document_lk_links` resmi.
+### Fase 14: Tema UI "Vintage Hangat" & Identitas BPS Kabupaten Tegal
+* Mengganti tema panel, halaman login, halaman ganti password, komponen logo (`logo-bps-tegal.png` / `logo.png` / fallback SVG), dan halaman utama dengan palet krem hangat (`#FAF9F5`, `#F0EEE6`, terakota `#B5532F`, biru BPS `#0B5FA5`), tipografi serif Georgia + sans sistem $\ge 17\text{ px}$, tombol `min-height: 56px`, tanpa font eksternal CDN dan tanpa `transition: all`.
 
-### Fase 8: Sinkronisasi Dokumentasi & Panduan Pengguna
-* Penyelarasan `AGENTS.md`, `Md/AGENTS.md`, `Md/PRD.md`, `Md/RBAC.md`, `Md/DATABASE.md`, `Md/MATCHING_ALGORITHM.md`, `Md/ARCHITECTURE.md`, `Md/TASKS.md`, `README.md`, `carapenggunaan.md`, dan `skenario_testing.md` dengan kondisi aktual kode produksi dan suite pengujian penuh (**305 tes lulus**).
+### Fase 15: Sinkronisasi 11 Berkas Dokumentasi Aktif
+* Memperbarui seluruh 11 berkas dokumentasi aktif (`AGENTS.md`, `Md/AGENTS.md`, `Md/PRD.md`, `Md/RBAC.md`, `Md/DATABASE.md`, `Md/MATCHING_ALGORITHM.md`, `Md/ARCHITECTURE.md`, `Md/TASKS.md`, `README.md`, `carapenggunaan.md`, `skenario_testing.md`) agar selaras 100% dengan implementasi final dan suite pengujian penuh (**211 tes lulus**).

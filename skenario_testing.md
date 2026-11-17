@@ -1,96 +1,88 @@
 # Panduan Skenario Pengujian Manual (Manual Testing Guide)
-## Sistem ELKA (Sinkronisasi Bukti Dukung ke Lembar Kerja)
+## Perpustakaan Bukti Dukung BPS Kabupaten Tegal (ELKA)
 
-Panduan ini ditulis dengan bahasa sehari-hari untuk membantu penguji mencoba seluruh alur kerja utama **ELKA** sesuai 3 peran pengguna (**Pegawai**, **Admin**, dan **Super Admin**).
+Panduan ini membantu penguji mencoba seluruh alur kerja utama **ELKA** sesuai kondisi akhir aplikasi pada 3 peran pengguna (**Pegawai**, **Admin**, dan **Super Admin**).
 
 ---
 
-## 1. Akun Uji Coba yang Tersedia
+## 1. Akun & Alamat Uji Coba
 
 * **URL Login Utama:** `http://localhost:8000/login`
-* **URL Simulasi SSO (Lokal):** `http://localhost:8000/auth/sso/mock-login`
+* **URL Simulasi SSO (khusus `local`/`testing`):** `http://localhost:8000/auth/sso/mock-login`
 
-| Peran | Cara Masuk Saat Uji Coba | Tugas yang Diuji |
-|---|---|---|
-| **Pegawai** | Buka `/auth/sso/mock-login` ➔ Klik **Masuk sebagai Pegawai** | Cari dokumen disetujui, unggah berkas ($\le 50\text{ MB}$) / tempel tautan, revisi pengajuan sendiri, lihat Matriks Monitor & unduh berkas. |
-| **Admin** | Buka `/auth/sso/mock-login` ➔ Klik **Masuk sebagai Admin** (atau form lokal `dimas.pratama@bps.go.id` / `Password123!`) | Verifikasi pengajuan di Antrean Verifikasi (setujui, minta revisi, tolak), kelola & sinkronkan folder Google Drive, kelola tautan Drive indikator. |
-| **Super Admin** | Form lokal di `/login` dengan akun seeder (`admin@kantor.go.id`) | Ganti password pertama kali, kelola Master LK & Impor Excel, kelola pengguna & role, lihat/ekspor Jejak Audit, ikut verifikasi antrean, hapus dokumen. |
+| Peran | Cara Masuk Saat Uji Coba | Redirect Utama | Menu yang Tersedia |
+|---|---|---|---|
+| **Pegawai** | `/auth/sso/mock-login` ➔ **Masuk sebagai Pegawai** | `/admin/cari-dokumen` | **Cari Dokumen**, **Unggah Bukti** |
+| **Admin** | `/auth/sso/mock-login` ➔ **Masuk sebagai Admin** | `/admin/cari-dokumen` | **Cari Dokumen**, **Unggah Bukti**, **Antrean Verifikasi** |
+| **Super Admin** | Form lokal di `/login` (akun seeder / lokal) | `/admin/verification-queue` | **Antrean Verifikasi**, **Manajemen Pengguna**, **Jejak Audit** |
 
 ---
 
-## 2. Skenario 1: Alur Masuk (Login) & Pembatasan Hak Akses 3 Peran
+## 2. Skenario 1: Login, Redirect Peran, & Pembatasan Akses (RBAC)
 
 1. **Ganti Password Pertama Super Admin:**
    * Masuk di `/login` memakai akun awal Super Admin (`must_change_password = true`).
-   * **Hasil:** Sistem langsung mengarahkan ke halaman ganti kata sandi dan menahan akses menu lain sampai kata sandi baru disimpan.
-2. **Blokir Login Lokal untuk Pegawai & Blokir Akun Nonaktif:**
-   * Coba masukkan email Pegawai pada form password lokal di `/login` ➔ **Ditolak** (Pegawai wajib melalui SSO).
-   * Buka `/auth/sso/mock-login` lalu klik **Masuk sebagai Akun Nonaktif** ➔ **Ditolak (HTTP 403)** dan sesi tidak dibuat.
-3. **Pembatasan Menu per Peran:**
-   * **Pegawai:** Bisa membuka *Matriks Monitor*, *Cari Dokumen*, dan *Unggah & Pengajuan Saya*. Jika mencoba membuka `/admin/verification-queue`, `/admin/lembar-kerjas`, `/admin/users`, atau `/admin/audit-logs`, ditolak dengan **403**.
-   * **Admin:** Bisa membuka *Matriks Monitor*, *Cari Dokumen*, *Unggah & Pengajuan Saya*, *Antrean Verifikasi*, dan *Indikator LK*. Jika mencoba membuka `/admin/lembar-kerjas`, `/admin/users`, atau `/admin/audit-logs`, ditolak dengan **403**.
-   * **Super Admin:** Bisa membuka *Matriks Monitor*, *Antrean Verifikasi*, *Master LK*, *Profil Impor*, *Indikator LK*, *Manajemen Pengguna*, dan *Jejak Audit*. Jika mencoba membuka `/admin/cari-dokumen` atau `/admin/evidence-documents/create` (mengunggah bukti), ditolak dengan **403**.
+   * **Hasil:** Diarahkan ke `/auth/password/change` sampai kata sandi baru disimpan, lalu masuk ke `/admin/verification-queue`.
+2. **Blokir Login Lokal Pegawai & Akun Nonaktif:**
+   * Masukkan email Pegawai di form password lokal `/login` ➔ **Ditolak** (wajib SSO).
+   * Buka `/auth/sso/mock-login` ➔ klik **Masuk sebagai Akun Nonaktif** ➔ **Ditolak (HTTP 403)**.
+3. **Pembatasan URL & Menu per Peran:**
+   * **Pegawai:** Mengakses `/admin/cari-dokumen` dan `/admin/evidence-documents` = **200 OK**. Mengakses `/admin/verification-queue`, `/admin/users`, atau `/admin/audit-logs` = **403 Forbidden**.
+   * **Admin:** Mengakses `/admin/cari-dokumen`, `/admin/evidence-documents`, dan `/admin/verification-queue` = **200 OK**. Mengakses `/admin/users` atau `/admin/audit-logs` = **403 Forbidden**.
+   * **Super Admin:** Mengakses `/admin/verification-queue`, `/admin/users`, dan `/admin/audit-logs` = **200 OK**. Mengakses `/admin/cari-dokumen` atau `/admin/evidence-documents` = **403 Forbidden** (menu Unggah Bukti dan Cari Dokumen tidak tampil di sidebar).
+4. **Redirect `/admin`:** Mengakses `GET /admin` oleh Pegawai/Admin mengarah ke `/admin/cari-dokumen`; oleh Super Admin mengarah ke `/admin/verification-queue`.
 
 ---
 
-## 3. Skenario 2: Alur Pegawai — Unggah Bukti Dukung, Mode Tautan, & Revisi
+## 3. Skenario 2: Cari Dokumen, Matriks 6 LK, & Cek Berkas Sebelum Unggah
 
-1. **Unggah Berkas Fisik (Maksimal 50 MB) dengan Usulan LK:**
-   * Masuk sebagai **Pegawai**, buka **Unggah & Pengajuan Saya** ➔ **Unggah Bukti Dukung**.
-   * Pilih **Unggah Berkas (maks 50 MB)**, unggah berkas PDF/DOCX/XLSX/JPG/PNG yang sah, isi Nama Dokumen (misal: `SK Program Kunjungan`), Tahun `2026`, dan pilih usulan LK (misal: `ZI`).
-   * **Hasil:** Pengajuan tersimpan dengan status **Menunggu Verifikasi**. Di Matriks Monitor maupun Cari Dokumen, dokumen ini **belum** muncul sebagai centang resmi karena masih menunggu verifikasi Admin.
-2. **Pengajuan Berkas Besar ($> 50\text{ MB}$) via Mode Tempel Tautan:**
-   * Pilih **Tempel Tautan**, masukkan URL `https://drive.google.com/file/d/contoh123/view`, isi nama dokumen dan pilih LK usulan.
-   * Coba masukkan tautan tidak aman seperti `javascript:alert(1)` ➔ **Ditolak oleh validasi**.
-3. **Tolak File Palsu & File Duplikat:**
-   * Coba unggah file program/script yang diganti namanya menjadi `.pdf` ➔ **Ditolak oleh pemeriksa isi berkas (MIME sniffing)**.
-   * Coba unggah kembali berkas PDF yang persis sama dua kali ➔ **Ditolak sebagai duplikat** dan menampilkan informasi dokumen yang sudah ada.
-4. **Isolasi Daftar Pengajuan & Alur Revisi:**
-   * Pegawai A hanya dapat melihat daftar pengajuan miliknya sendiri di menu **Unggah & Pengajuan Saya** (tidak bisa melihat atau membuka pengajuan Pegawai B yang masih berstatus `menunggu`).
-   * Saat Admin meminta revisi pada dokumen Pegawai A, status berubah menjadi **Perlu Revisi** beserta catatan Admin. Pegawai A mengklik **Revisi**, mengganti berkas/judul, lalu menyimpan ➔ Status kembali menjadi **Menunggu Verifikasi**.
+1. **Matriks 6 LK & Klik Centang Unduhan (`/admin/cari-dokumen`):**
+   * Masuk sebagai **Pegawai** atau **Admin**.
+   * Pastikan tampil tepat **6 kolom LK** (`KIP`, `PEKPPP`, `ZI`, `SAKIP`, `DATA_SEKTORAL`, `DATA_SEKUNDER`).
+   * Hanya dokumen berstatus `'disetujui'` dengan tautan resmi (`admin`/`drive_sync`/`backfill`) yang mendapat centang (**✔**); tautan `'proposed'` tidak memunculkan centang; sel tanpa kecocokan kosong bersih.
+   * Klik simbol **✔** pada salah satu baris ➔ bagian unduhan terbuka menampilkan **Unduh Dokumen** (`/evidence/download/{id}`) dan/atau **Buka Tautan** (`rel="noopener noreferrer"`).
+2. **Cek Berkas Sebelum Unggah (`checkUploadedFile`):**
+   * **Berkas Identik:** Pilih berkas PDF yang isinya persis sama (SHA-256 identik) dengan dokumen terdaftar ➔ klik **Periksa Berkas** ➔ muncul kotak merah **Ditolak — Dokumen Sudah Ada** beserta **Judul**, **Pengunggah**, **Status**, dan **Lembar Kerja**; tidak ada baris baru di `evidence_documents`.
+   * **Berkas Mirip:** Pilih berkas baru yang judul atau isinya mirip dengan dokumen di perpustakaan ➔ muncul peringatan kuning non-blocking (maksimal 5 kandidat + skor `%`) beserta tombol **Tetap Lanjutkan ke Halaman Unggah**.
+   * **Berkas Baru:** Pilih berkas unik yang belum ada ➔ muncul kotak hijau *"Dokumen belum ada di perpustakaan. Silakan unggah."* beserta tombol ke `/admin/evidence-documents/create`. Berkas sementara langsung dihapus dari disk.
+3. **Ubah LK dari Hasil Cari (Khusus Admin):**
+   * Sebagai **Admin**, klik **Ubah LK** pada satu baris dokumen disetujui. Coba simpan tanpa memilih LK ➔ **Gagal** (wajib $\ge 1$ LK). Pilih LK baru lalu simpan ➔ centang matriks berpindah seketika dan tercatat di `audit_logs` (`bd.markup_revised`).
 
 ---
 
-## 4. Skenario 3: Alur Admin — Antrean Verifikasi & Sinkronisasi Google Drive
+## 4. Skenario 3: Unggah Bukti (Maks 20 MB), Tautan Google Drive, & Revisi
 
-1. **Verifikasi Pengajuan (Setujui, Minta Revisi, Tolak):**
-   * Masuk sebagai **Admin**, buka **Antrean Verifikasi** (`/admin/verification-queue`).
-   * Pada kartu pengajuan Pegawai (yang mengusulkan LK X), Admin memilih LK Y lalu menekan **Setujui**.
-   * **Hasil:** Status dokumen berubah menjadi **Disetujui**, dan hanya LK Y yang tercatat sebagai tautan LK resmi (`link_source = 'admin'`).
-   * Coba klik **Minta Revisi** atau **Tolak** tanpa mengisi catatan ➔ **Ditolak** (catatan wajib diisi).
-2. **Sinkronisasi Google Drive Baca-Saja & OCR Selektif:**
-   * Pada **Antrean Verifikasi**, klik **Kelola Folder Drive**, tambahkan ID/tautan folder Google Drive dan hubungkan ke LK `ZI`.
-   * Klik **Sinkronkan Google Drive** (pastikan `queue-worker` berjalan).
-   * **Hasil:** Berkas baru dari folder tersebut terdaftar otomatis dengan `source_type = 'drive'`, berstatus **Disetujui**, dan langsung terhubung resmi ke LK `ZI` (`link_source = 'drive_sync'`).
-
----
-
-## 5. Skenario 4: Cari Dokumen, Matriks Monitor, & Unduhan Aman
-
-1. **Cari Dokumen Resmi:**
-   * Masuk sebagai **Pegawai** atau **Admin**, buka **Cari Dokumen** (`/admin/cari-dokumen`).
-   * Ketik kata kunci nama, nomor, atau isi dokumen (termasuk uji salah ketik ringan/typo).
-   * **Hasil:** Hanya dokumen berstatus **Disetujui** yang tampil beserta badge LK resminya.
-2. **Matriks Monitor Dokumen x LK & Unduh CSV:**
-   * Buka **Matriks Monitor** (`/admin/monitor-matrix`).
-   * **Hasil:** Baris menampilkan dokumen yang telah **Disetujui**, kolom menampilkan LK (Internal & Eksternal). Kolom LK resmi menampilkan tanda centang (**✔**), sedangkan kolom tanpa kecocokan resmi kosong bersih.
-   * Klik **Unduh CSV** ➔ Berkas CSV terunduh rapi dan aman dibuka di Excel.
-3. **Aturan Otorisasi & Format Nama Berkas Unduhan (`/evidence/download/{id}`):**
-   * Unduh berkas unggahan (`source_type = 'upload'`) yang belum memiliki LK resmi (oleh pemiliknya saat status masih `menunggu`) ➔ Berkas terunduh dengan awalan **`DRAFT_`** (contoh: `DRAFT_SK_Program_Kunjungan.pdf`).
-   * Pegawai lain mencoba mengunduh dokumen yang belum disetujui tersebut ➔ **Ditolak (HTTP 403)**.
-   * Setelah dokumen disetujui untuk LK `ZI` dan `KIP`, semua pegawai aktif dapat mengunduhnya ➔ Nama berkas otomatis diawali kode LK resmi urut abjad (maksimal 4 kode, panjang total $\le 150$ karakter dengan ekstensi utuh), contoh: **`KIP_ZI_SK_Program_Kunjungan.pdf`**.
-   * Untuk dokumen bertipe `drive` atau `link`, membuka tautan unduhan akan mengalihkan (*redirect*) secara aman ke `external_link` (`http`/`https`).
+1. **Panduan > 20 MB & Wajib $\ge 1$ Usul LK:**
+   * Buka `/admin/evidence-documents/create` ➔ pastikan tampak panduan *"Berkas lebih dari 20 MB (mis. video): unggah dulu ke Google Drive, lalu kirim tautannya."*
+   * Coba kirim tanpa memilih LK ➔ **Ditolak validasi** (wajib $\ge 1$ LK).
+2. **Unggah Berkas Fisik ($\le 20\text{ MB}$):**
+   * Unggah PDF/DOCX/XLSX/JPG/PNG $\le 20\text{ MB}$ + pilih minimal 1 LK ➔ status awal **Menunggu Verifikasi** (`proposed`).
+   * Berkas $> 20\text{ MB}$ atau file `.exe` yang diganti nama menjadi `.pdf` ➔ **Ditolak**.
+3. **Mode Tempel Tautan (Untuk Berkas $> 20\text{ MB}$):**
+   * Pilih **Tempel Tautan**, masukkan URL Google Drive `https://...`. Tautan berbahaya seperti `javascript:alert(1)` ➔ **Ditolak**.
+4. **Revisi Khusus Pengunggah Asli:**
+   * Di tabel **Unggah Bukti**, tombol **Revisi** hanya tampil pada baris milik pengunggah asli yang berstatus **Perlu Revisi**. Setelah diperbarui dan disimpan, status kembali menjadi **Menunggu Verifikasi**.
 
 ---
 
-## 6. Skenario 5: Alur Super Admin — Master LK, Pengguna, & Jejak Audit
+## 5. Skenario 4: Antrean Verifikasi & Banner Storage Super Admin
 
-1. **Master LK & Impor Excel Idempoten:**
-   * Masuk sebagai **Super Admin**, buka **Lembar Kerja** (`/admin/lembar-kerjas`) dan **Profil Impor LK** (`/admin/lk-import-profiles`).
-   * Jalankan pratinjau dan simpan impor file `.xlsx` LKE dua kali berturut-turut ➔ Data indikator dan item bukti tidak berlipat ganda (idempoten). File `.xlsm` (bermakro) ditolak.
-2. **Manajemen Pengguna & Proteksi Super Admin Terakhir:**
-   * Buka **Manajemen Pengguna** (`/admin/users`), ubah role Pegawai menjadi Admin atau nonaktifkan akun Pegawai ➔ Berhasil dan sesi Pegawai yang dinonaktifkan langsung terputus.
-   * Coba nonaktifkan atau turunkan role satu-satunya Super Admin aktif yang tersisa ➔ **Ditolak** oleh sistem.
-3. **Jejak Audit Kekal (*Append-Only*):**
-   * Buka **Jejak Audit** (`/admin/audit-logs`), periksa rekaman aktivitas (`bd.uploaded`, `bd.approved`, `bd.revised`, `user.role_changed`, dll.) dan klik **Ekspor CSV**.
-   * Tidak ada tombol ubah atau hapus pada Jejak Audit, dan database menolak perintah `UPDATE`/`DELETE` pada tabel `audit_logs`.
+1. **Banner Storage $\ge 80\%$:**
+   * Saat pemakaian disk $\ge$ `STORAGE_WARNING_THRESHOLD_PERCENT`, buka `/admin/verification-queue`:
+     * **Super Admin:** melihat banner merah **Peringatan Kapasitas Penyimpanan Disk Server**.
+     * **Admin:** tidak melihat banner tersebut.
+2. **Keputusan Verifikator:**
+   * **Setujui Dokumen** tanpa mencentang LK ➔ **Ditolak** (wajib $\ge 1$ LK). Centang minimal 1 LK lalu **Setujui Dokumen** ➔ status menjadi **Disetujui** dan centang muncul di matriks **Cari Dokumen**.
+   * **Minta Revisi** atau **Tolak Pengajuan** tanpa catatan ➔ **Ditolak** (catatan wajib diisi).
+
+---
+
+## 6. Skenario 5: Unduhan Aman, Manajemen Pengguna, & Jejak Audit
+
+1. **Format Nama Unduhan (`/evidence/download/{id}`):**
+   * Dokumen belum disetujui (diunduh pemiliknya) ➔ awalan **`DRAFT_`**.
+   * Dokumen disetujui dengan LK `ZI` dan `KIP` ➔ awalan **`KIP_ZI_`** (maksimal 4 kode urut abjad, panjang total $\le 150$ karakter, ekstensi utuh).
+   * Pegawai lain mengunduh dokumen milik Pegawai A yang masih `menunggu` ➔ **403 Forbidden**.
+2. **Super Admin — Manajemen Pengguna & Jejak Audit:**
+   * Di `/admin/users`, menonaktifkan atau menurunkan role satu-satunya Super Admin aktif terakhir ➔ **Ditolak**.
+   * Di `/admin/audit-logs`, seluruh aktivitas terekam kronologis tanpa tombol ubah/hapus dan dapat diekspor ke CSV.
