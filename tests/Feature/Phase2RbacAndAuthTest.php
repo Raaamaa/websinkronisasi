@@ -184,13 +184,13 @@ class Phase2RbacAndAuthTest extends TestCase
         );
 
         // First request is allowed
-        $this->actingAs($pegawai)->get('/admin/monitor-matrix')->assertStatus(200);
+        $this->actingAs($pegawai)->get('/admin/cari-dokumen')->assertStatus(200);
 
         // Admin deactivates pegawai
         $pegawai->update(['is_active' => false]);
 
         // Subsequent request immediately rejected with 403
-        $this->actingAs($pegawai)->get('/admin/monitor-matrix')->assertStatus(403);
+        $this->actingAs($pegawai)->get('/admin/cari-dokumen')->assertStatus(403);
         $this->assertGuest();
     }
 

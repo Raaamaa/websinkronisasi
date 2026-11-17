@@ -5,7 +5,26 @@
             $stats = $this->getStats();
             $documents = $this->getDocuments();
             $availableLks = $this->getAvailableLembarKerjas();
+            $isSuperAdmin = auth()->user()?->role === 'super_admin';
+            $storage = $this->getStorageUsage();
         @endphp
+
+        {{-- BANNER STORAGE WARNING KHUSUS SUPER ADMIN --}}
+        @if ($isSuperAdmin && $storage['is_warning'])
+            <div class="p-4 sm:p-5 rounded-2xl bg-rose-50 dark:bg-rose-950/80 border-2 border-rose-400 dark:border-rose-700 shadow-sm flex items-start gap-3.5">
+                <div class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0 mt-0.5">
+                    ⚠️
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-black text-rose-900 dark:text-rose-100">
+                        Peringatan Kapasitas Penyimpanan Disk Server
+                    </h3>
+                    <p class="text-xs text-rose-700 dark:text-rose-300 mt-1 leading-relaxed">
+                        Kapasitas penyimpanan disk server bukti dukung telah mencapai <strong>{{ $storage['percent'] }}%</strong> (Ambang batas sistem: {{ config('evidence.storage_warning_percent') }}%). Segera lakukan pembersihan dokumen kadaluarsa atau hubungi tim infrastruktur IT.
+                    </p>
+                </div>
+            </div>
+        @endif
 
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
             <div>

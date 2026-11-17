@@ -253,19 +253,4 @@ class Phase6MonitorAndVerificationTest extends TestCase
         $responseSuper = $this->actingAs($this->superAdmin)->get('/admin/verification-queue');
         $responseSuper->assertOk();
     }
-
-    /**
-     * 12. MON-01, RBAC.md: All roles (Super Admin, Admin, Pegawai) can access Monitor page.
-     */
-    public function test_all_roles_can_access_monitor_page(): void
-    {
-        $resSuper = $this->actingAs($this->superAdmin)->get('/admin/monitor-matrix');
-        $resSuper->assertOk();
-
-        $resAdmin = $this->actingAs($this->admin)->get('/admin/monitor-matrix');
-        $resAdmin->assertOk();
-
-        $resPegawai = $this->actingAs($this->pegawai)->get('/admin/monitor-matrix');
-        $resPegawai->assertOk();
-    }
 }

@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('ELKA - BPS RI')
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
-            ->homeUrl('/admin/monitor-matrix')
+            ->homeUrl(fn (): string => auth()->user()?->homeUrl() ?? '/login')
             ->darkMode(true)
             ->font('Plus Jakarta Sans')
             ->login()

@@ -22,6 +22,9 @@ class Dashboard extends BaseDashboard
 
     public function mount(): void
     {
-        redirect()->to('/admin/monitor-matrix');
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        redirect()->to($user?->homeUrl() ?? '/login');
     }
 }

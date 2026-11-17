@@ -4,7 +4,7 @@
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
                 <nav class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1.5 font-medium">
-                    <a href="/admin/monitor-matrix" class="hover:text-sky-600 dark:hover:text-sky-400 transition">Beranda</a>
+                    <a href="/admin/cari-dokumen" class="hover:text-sky-600 dark:hover:text-sky-400 transition">Beranda</a>
                     <span>/</span>
                     <a href="{{ $this->getResource()::getUrl('index') }}" class="hover:text-sky-600 dark:hover:text-sky-400 transition">Bukti Dukung</a>
                     <span>/</span>
@@ -217,7 +217,7 @@
                             <p class="text-xs text-amber-800 dark:text-amber-300/90 mt-1 leading-relaxed">
                                 Sistem secara ketat menolak dokumen yang identik berdasarkan kalkulasi hash SHA-256 untuk menjaga integritas data penilaian.
                             </p>
-                            <a href="{{ url('/admin/monitor-matrix') }}" class="inline-flex items-center gap-1 text-xs font-bold text-amber-900 dark:text-amber-200 hover:underline mt-2">
+                            <a href="{{ url('/admin/cari-dokumen') }}" class="inline-flex items-center gap-1 text-xs font-bold text-amber-900 dark:text-amber-200 hover:underline mt-2">
                                 <span>Lihat dokumen yang sudah ada di Monitor</span>
                                 <span>&rarr;</span>
                             </a>

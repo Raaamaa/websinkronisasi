@@ -9,6 +9,7 @@ use App\Models\DocumentLkLink;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\User;
+use App\Services\Monitor\MonitorMatrixService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -75,6 +76,20 @@ class VerificationQueuePage extends Page
     public function mount(): void
     {
         abort_if(! static::canAccess(), 403, 'Akses Ditolak: Anda tidak memiliki akses ke fitur Antrean Verifikasi.');
+    }
+
+    /**
+     * @return array{
+     *     total: float|int,
+     *     used: float|int,
+     *     free: float|int,
+     *     percent: float,
+     *     is_warning: bool
+     * }
+     */
+    public function getStorageUsage(): array
+    {
+        return app(MonitorMatrixService::class)->getStorageUsage();
     }
 
     /**

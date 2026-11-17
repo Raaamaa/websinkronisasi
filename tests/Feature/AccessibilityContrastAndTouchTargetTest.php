@@ -22,7 +22,7 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
 
     public function test_monitor_matrix_modal_actions_have_large_touch_targets(): void
     {
-        $viewContent = file_get_contents(resource_path('views/filament/pages/monitor-matrix.blade.php'));
+        $viewContent = file_get_contents(resource_path('views/filament/pages/cari-dokumen.blade.php'));
         $this->assertNotFalse($viewContent);
 
         $this->assertNotEmpty($viewContent);

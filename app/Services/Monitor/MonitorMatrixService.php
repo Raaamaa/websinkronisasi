@@ -17,14 +17,47 @@ class MonitorMatrixService
     /**
      * Apply period (year integer) or evaluation_interval (string) filter on Lembar Kerja query.
      */
-    protected function applyPeriodFilter(\Illuminate\Contracts\Database\Query\Builder|Builder $query, string|int $period): void
+    protected function applyPeriodFilter(\Illuminate\Contracts\Database\Query\Builder|Builder $query, string|int|null $period): void
     {
+        if ($period === null || $period === '') {
+            return;
+        }
+
         $raw = (string) $period;
         if (is_numeric($raw)) {
             $query->where('period', (int) $raw);
         } else {
             $query->where('evaluation_interval', $raw);
         }
+    }
+
+    /**
+     * Get server storage disk usage metrics for Super Admin warning banner.
+     *
+     * @return array{
+     *     total: float|int,
+     *     used: float|int,
+     *     free: float|int,
+     *     percent: float,
+     *     is_warning: bool
+     * }
+     */
+    public function getStorageUsage(): array
+    {
+        $storagePath = storage_path('app');
+        $total = @disk_total_space($storagePath) ?: 1;
+        $free = @disk_free_space($storagePath) ?: 0;
+        $used = max(0, $total - $free);
+        $percent = round(($used / $total) * 100, 1);
+        $warningThreshold = (int) config('evidence.storage_warning_percent', 80);
+
+        return [
+            'total' => $total,
+            'used' => $used,
+            'free' => $free,
+            'percent' => $percent,
+            'is_warning' => $percent >= $warningThreshold,
+        ];
     }
 
     /**
@@ -36,12 +69,12 @@ class MonitorMatrixService
      *     total_links: int
      * }
      */
-    public function getMatrixStats(string|int $period = '12 Bulan'): array
+    public function getMatrixStats(string|int|null $period = null): array
     {
         $totalLks = LembarKerja::query()
             ->where('is_active', true)
             ->whereNull('deleted_at')
-            ->when($period, fn ($q) => $this->applyPeriodFilter($q, $period))
+            ->when($period !== null && $period !== '', fn ($q) => $this->applyPeriodFilter($q, $period))
             ->count();
 
         $totalDocuments = EvidenceDocument::query()
@@ -54,7 +87,7 @@ class MonitorMatrixService
             ->whereHas('evidenceDocument', fn ($q) => $q->whereNull('deleted_at')->where('approval_status', 'disetujui'))
             ->whereHas('lembarKerja', function ($q) use ($period): void {
                 $q->where('is_active', true)->whereNull('deleted_at');
-                if ($period) {
+                if ($period !== null && $period !== '') {
                     $this->applyPeriodFilter($q, $period);
                 }
             })
@@ -73,7 +106,7 @@ class MonitorMatrixService
      *
      * @return array{internal: Collection<int, LembarKerja>, eksternal: Collection<int, LembarKerja>}
      */
-    public function getColumnGroups(string|int $period = '12 Bulan', ?string $category = null): array
+    public function getColumnGroups(string|int|null $period = null, ?string $category = null): array
     {
         $query = LembarKerja::query()
             ->where('is_active', true)
@@ -106,7 +139,7 @@ class MonitorMatrixService
      */
     public function getMatrixData(array $filters = []): array
     {
-        $period = $filters['period'] ?? '12 Bulan';
+        $period = $filters['period'] ?? null;
         $category = ! empty($filters['category']) ? (string) $filters['category'] : null;
         $columnGroups = $this->getColumnGroups($period, $category);
 
@@ -184,6 +217,7 @@ class MonitorMatrixService
                 'document_number' => $doc->document_number,
                 'year' => $doc->year,
                 'document_type' => $doc->document_type,
+                'has_file' => ! empty($doc->file_path),
                 'external_link' => $doc->external_link,
                 'selected_lk_ids' => array_values(array_unique($docSelectedLkIds[$doc->id] ?? [])),
                 'cells' => $cells,

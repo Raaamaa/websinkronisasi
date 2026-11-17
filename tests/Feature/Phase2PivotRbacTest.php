@@ -90,7 +90,6 @@ class Phase2PivotRbacTest extends TestCase
         $superAdmin = $this->createUser('super_admin');
 
         $this->actingAs($superAdmin)->get('/admin/verification-queue')->assertOk();
-        $this->actingAs($superAdmin)->get('/admin/monitor-matrix')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/users')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/audit-logs')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/evidence-documents')->assertOk();

@@ -387,7 +387,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         ]);
 
         // First request is allowed
-        $this->actingAs($targetUser)->get('/admin/monitor-matrix')->assertOk();
+        $this->actingAs($targetUser)->get('/admin/cari-dokumen')->assertOk();
 
         // Admin deactivates targetUser
         /** @var UserManagerService $manager */
@@ -395,7 +395,7 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $manager->toggleActiveStatus($this->superAdmin, $targetUser, false);
 
         // Subsequent request immediately rejected with 403
-        $this->actingAs($targetUser)->get('/admin/monitor-matrix')->assertForbidden();
+        $this->actingAs($targetUser)->get('/admin/cari-dokumen')->assertForbidden();
     }
 
     /**

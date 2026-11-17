@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Filament\Pages\CariDokumenPage;
-use App\Filament\Pages\MonitorMatrixPage;
 use App\Filament\Pages\VerificationQueuePage;
 use App\Filament\Resources\EvidenceDocumentResource;
 use App\Filament\Resources\EvidenceDocumentResource\Pages\CreateEvidenceDocument;
@@ -328,15 +327,11 @@ class Phase5UiAndWorkflowTest extends TestCase
         config(['evidence.storage_warning_percent' => 0]);
 
         $this->actingAs($this->superAdmin);
-        Livewire::test(MonitorMatrixPage::class)
+        Livewire::test(VerificationQueuePage::class)
             ->assertSee('Peringatan Kapasitas Penyimpanan');
 
         $this->actingAs($this->admin);
-        Livewire::test(MonitorMatrixPage::class)
-            ->assertDontSee('Peringatan Kapasitas Penyimpanan');
-
-        $this->actingAs($this->pegawaiA);
-        Livewire::test(MonitorMatrixPage::class)
+        Livewire::test(VerificationQueuePage::class)
             ->assertDontSee('Peringatan Kapasitas Penyimpanan');
     }
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\CariDokumenPage;
 use App\Filament\Pages\Dashboard;
-use App\Filament\Pages\MonitorMatrixPage;
 use App\Filament\Pages\VerificationQueuePage;
 use App\Models\AuditLog;
 use App\Models\EvidenceDocument;
@@ -90,15 +90,15 @@ class FilamentRbacAuthorizationMatrixTest extends TestCase
     public function test_page_can_access_enforces_permissions(): void
     {
         Auth::login($this->pegawai);
-        $this->assertTrue(MonitorMatrixPage::canAccess());
+        $this->assertTrue(CariDokumenPage::canAccess());
         $this->assertFalse(VerificationQueuePage::canAccess(), 'Pegawai dilarang mengakses VerificationQueuePage');
 
         Auth::login($this->admin);
-        $this->assertTrue(MonitorMatrixPage::canAccess());
+        $this->assertTrue(CariDokumenPage::canAccess());
         $this->assertTrue(VerificationQueuePage::canAccess());
 
         Auth::login($this->superAdmin);
-        $this->assertTrue(MonitorMatrixPage::canAccess());
+        $this->assertFalse(CariDokumenPage::canAccess(), 'Super Admin dilarang mengakses CariDokumenPage');
         $this->assertTrue(VerificationQueuePage::canAccess());
     }
 

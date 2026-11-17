@@ -128,6 +128,18 @@ class User extends Authenticatable implements FilamentUser, HasName
     }
 
     /**
+     * Default home URL inside panel based on user role.
+     */
+    public function homeUrl(): string
+    {
+        if ($this->isSuperAdmin()) {
+            return '/admin/verification-queue';
+        }
+
+        return '/admin/cari-dokumen';
+    }
+
+    /**
      * Check granular permission based on RBAC matrix.
      */
     public function hasPermission(string $permission): bool
