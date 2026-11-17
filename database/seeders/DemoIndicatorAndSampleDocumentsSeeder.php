@@ -7,8 +7,6 @@ namespace Database\Seeders;
 use App\Models\DocumentLkLink;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
-use App\Models\LkEvidenceItem;
-use App\Models\LkIndicator;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -18,122 +16,24 @@ class DemoIndicatorAndSampleDocumentsSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Data Indikator Resmi LK Periode Seluruh Interval (12 Bulan, 6 Bulan, 3 Bulan)
-        $lkData = [
-            'ZI' => [
-                'name' => 'LKE Zona Integritas',
-                'category' => 'internal',
-                'evaluation_interval' => '12 Bulan',
-                'indicators' => [
-                    [
-                        'code' => 'ZI-1.1',
-                        'title' => 'Pembentukan Tim Kerja Pembangunan Zona Integritas Menuju WBK/WBBM',
-                        'evidence_link' => 'https://drive.google.com/drive/folders/1BpsZI2026-WBK-WBBM-Tegal-TimKerja',
-                        'pic' => 'Subbagian Umum',
-                        'evidence_items' => [
-                            'SK Tim Kerja Pembangunan ZI Menuju WBK/WBBM Tahun 2026',
-                            'Surat Keputusan Pembentukan Tim Zona Integritas',
-                        ],
-                    ],
-                    [
-                        'code' => 'ZI-1.2',
-                        'title' => 'Rencana Kerja dan Rencana Aksi Pembangunan Zona Integritas',
-                        'evidence_link' => 'https://drive.google.com/drive/folders/1BpsZI2026-WBK-WBBM-Tegal-RencanaAksi',
-                        'pic' => 'Subbagian Umum',
-                        'evidence_items' => [
-                            'Dokumen Rencana Aksi Pembangunan Zona Integritas Tahun 2026',
-                        ],
-                    ],
-                ],
-            ],
-            'PEKPPP' => [
-                'name' => 'Pemantauan & Evaluasi Kinerja Penyelenggara Pelayanan Publik',
-                'category' => 'internal',
-                'evaluation_interval' => '6 Bulan',
-                'indicators' => [
-                    [
-                        'code' => 'PEKPPP-01',
-                        'title' => 'Penetapan Standar Pelayanan Statistik Terpadu (PST) dan Maklumat Pelayanan',
-                        'evidence_link' => 'https://drive.google.com/drive/folders/1BpsPEKPPP2026-StandarPelayananPublik',
-                        'pic' => 'Tim Pelayanan Statistik',
-                        'evidence_items' => [
-                            'SK Standar Pelayanan Statistik Terpadu PST BPS',
-                            'Maklumat Pelayanan Publik BPS Kabupaten Tegal',
-                        ],
-                    ],
-                ],
-            ],
-            'SAKIP' => [
-                'name' => 'Sistem Akuntabilitas Kinerja Instansi Pemerintah',
-                'category' => 'internal',
-                'evaluation_interval' => '12 Bulan',
-                'indicators' => [
-                    [
-                        'code' => 'SAKIP-01',
-                        'title' => 'Laporan Kinerja Instansi Pemerintah (LKjIP) dan Perjanjian Kinerja',
-                        'evidence_link' => 'https://drive.google.com/drive/folders/1BpsSAKIP2026-LKjIP-PerjanjianKinerja',
-                        'pic' => 'Tim IPDS & Evaluasi',
-                        'evidence_items' => [
-                            'Laporan Kinerja Instansi Pemerintah (LKjIP) Tahun 2026',
-                            'Perjanjian Kinerja Tahunan Kepala Kantor BPS',
-                        ],
-                    ],
-                ],
-            ],
-            'KIP' => [
-                'name' => 'Evaluasi Keterbukaan Informasi Publik (SAQ/PPID)',
-                'category' => 'internal',
-                'evaluation_interval' => '3 Bulan',
-                'indicators' => [
-                    [
-                        'code' => 'KIP-01',
-                        'title' => 'Penetapan Struktur PPID dan Penetapan Daftar Informasi Publik (DIP)',
-                        'evidence_link' => 'https://drive.google.com/drive/folders/1BpsKIP2026-PPID-DaftarInformasiPublik',
-                        'pic' => 'Pejabat Pengelola Informasi',
-                        'evidence_items' => [
-                            'SK PPID dan Daftar Informasi Publik (DIP) Tahun 2026',
-                            'Daftar Informasi Publik SAQ Keterbukaan Informasi',
-                        ],
-                    ],
-                ],
-            ],
+        // 1. Pastikan Lembar Kerja contoh tersedia bila seeder dijalankan terpisah
+        $lkDefaults = [
+            'ZI' => ['name' => 'LKE Zona Integritas', 'category' => 'internal', 'evaluation_interval' => '12 Bulan'],
+            'PEKPPP' => ['name' => 'Pemantauan & Evaluasi Kinerja Penyelenggara Pelayanan Publik', 'category' => 'internal', 'evaluation_interval' => '6 Bulan'],
+            'SAKIP' => ['name' => 'Sistem Akuntabilitas Kinerja Instansi Pemerintah', 'category' => 'internal', 'evaluation_interval' => '12 Bulan'],
         ];
 
-        foreach ($lkData as $code => $info) {
-            /** @var LembarKerja $lk */
-            $lk = LembarKerja::firstOrCreate(
+        foreach ($lkDefaults as $code => $info) {
+            LembarKerja::firstOrCreate(
                 ['code' => $code, 'period' => 2026],
                 [
                     'name' => $info['name'],
                     'category' => $info['category'],
                     'is_active' => true,
-                    'evaluation_interval' => $info['evaluation_interval'] ?? '12 Bulan',
-                    'description' => "Instrumen evaluasi {$info['name']} untuk periode ".($info['evaluation_interval'] ?? '12 Bulan').'.',
+                    'evaluation_interval' => $info['evaluation_interval'],
+                    'description' => "Instrumen evaluasi {$info['name']} untuk periode {$info['evaluation_interval']}.",
                 ]
             );
-
-            foreach ($info['indicators'] as $index => $indData) {
-                /** @var LkIndicator $indicator */
-                $indicator = LkIndicator::updateOrCreate(
-                    ['lk_id' => $lk->id, 'code' => $indData['code']],
-                    [
-                        'title' => $indData['title'],
-                        'order_index' => $index + 1,
-                        'evidence_link' => $indData['evidence_link'],
-                        'pic' => $indData['pic'],
-                    ]
-                );
-
-                foreach ($indData['evidence_items'] as $itemIdx => $itemName) {
-                    LkEvidenceItem::updateOrCreate(
-                        ['indicator_id' => $indicator->id, 'raw_template_name' => $itemName],
-                        [
-                            'resolved_name' => $itemName,
-                            'order_index' => $itemIdx + 1,
-                        ]
-                    );
-                }
-            }
         }
 
         // 2. Buat Berkas Fisik Contoh di direktori public/sample-documents/

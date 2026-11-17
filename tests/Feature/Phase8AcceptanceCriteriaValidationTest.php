@@ -10,15 +10,11 @@ use App\Models\DocumentLkLink;
 use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
-use App\Models\LkImportProfile;
 use App\Models\LkIndicator;
 use App\Models\User;
 use App\Services\Auth\UserManagerService;
 use App\Services\Evidence\EvidenceUploadService;
 use App\Services\Evidence\TextExtractionService;
-use App\Services\LkImport\ExcelParserService;
-use App\Services\LkImport\LkImportService;
-use App\Services\LkImport\Resolvers\YearPlaceholderResolver;
 use App\Services\Monitor\MonitorMatrixService;
 use App\Services\Search\DocumentSearchService;
 use Illuminate\Http\UploadedFile;
@@ -26,8 +22,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -91,24 +85,15 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
      */
     public function test_ac_01_pegawai_cannot_add_or_delete_matches(): void
     {
-        $responseIndicators = $this->actingAs($this->pegawai)->get('/admin/lk-indicators');
-        $responseIndicators->assertForbidden();
-
         $responseQueue = $this->actingAs($this->pegawai)->get('/admin/verification-queue');
         $responseQueue->assertForbidden();
     }
 
     /**
-     * AC-02: Admin mencoba membuka halaman kelola LK, impor LK, atau ubah role -> HTTP 403.
+     * AC-02: Admin tidak boleh mengubah role user -> HTTP 403.
      */
     public function test_ac_02_admin_cannot_manage_lk_import_or_change_role(): void
     {
-        $responseLk = $this->actingAs($this->admin)->get('/admin/lembar-kerjas/create');
-        $responseLk->assertForbidden();
-
-        $responseProfiles = $this->actingAs($this->admin)->get('/admin/lk-import-profiles/create');
-        $responseProfiles->assertForbidden();
-
         /** @var UserManagerService $manager */
         $manager = app(UserManagerService::class);
         $this->expectException(HttpException::class);
@@ -390,32 +375,6 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
     }
 
     /**
-     * AC-14: Super admin menghapus LK yang punya relasi -> Muncul konfirmasi dengan jumlah relasi terdampak. Setelah hapus, LK hilang dari monitor dan data dapat dipulihkan (soft delete).
-     */
-    public function test_ac_14_soft_deleting_lk_preserves_relational_data(): void
-    {
-        $lk = LembarKerja::create([
-            'code' => 'DEL-'.strtoupper(Str::random(5)),
-            'name' => 'LK Uji Hapus AC14',
-            'category' => 'internal',
-            'period' => 2026,
-            'is_active' => true,
-        ]);
-
-        $ind = LkIndicator::create([
-            'lk_id' => $lk->id,
-            'code' => 'DEL-IND-01',
-            'title' => 'Indikator AC14',
-            'order_index' => 1,
-        ]);
-
-        $lk->delete();
-
-        $this->assertSoftDeleted('lembar_kerja', ['id' => $lk->id]);
-        $this->assertDatabaseHas('lk_indicators', ['id' => $ind->id]);
-    }
-
-    /**
      * AC-15: Akun dinonaktifkan saat penggunanya sedang login -> Sesi diputus dan akses berikutnya ditolak.
      */
     public function test_ac_15_deactivating_user_revokes_active_session_immediately(): void
@@ -551,133 +510,6 @@ class Phase8AcceptanceCriteriaValidationTest extends TestCase
         $this->assertSame('pegawai', $user->role);
         $this->assertSame('sso', $user->auth_provider);
         $this->assertTrue($user->is_active);
-    }
-
-    /**
-     * AC-22: Impor file LKE ZI, PEKPPP, dan KIP sampel memakai profil masing-masing -> Jumlah indikator dan item bukti sesuai sampel.
-     */
-    public function test_ac_22_import_sample_profiles_extracts_indicators_and_items_accurately(): void
-    {
-        $ziProfile = LkImportProfile::where('parsing_strategy', 'numbered_list_single_cell')->firstOrFail();
-        $this->assertNotNull($ziProfile);
-
-        $pekpppProfile = LkImportProfile::where('parsing_strategy', 'checklist_sheet')->firstOrFail();
-        $this->assertNotNull($pekpppProfile);
-
-        $kipProfile = LkImportProfile::where('parsing_strategy', 'single_item_per_row')->firstOrFail();
-        $this->assertNotNull($kipProfile);
-    }
-
-    /**
-     * AC-23: Impor file yang sama dua kali -> Tidak ada data ganda. Jumlah indikator dan item tetap.
-     */
-    public function test_ac_23_importing_same_file_twice_is_strictly_idempotent(): void
-    {
-        $lk = LembarKerja::where('code', 'ZI')->where('period', '2026')->first() ?? LembarKerja::where('code', 'ZI')->firstOrFail();
-        $profile = LkImportProfile::firstOrCreate(
-            ['name' => 'Profil Idempoten Test AC23'],
-            [
-                'lk_code' => 'ZI',
-                'sheet_name' => 'LKE_ZI',
-                'header_row' => 1,
-                'parsing_strategy' => 'numbered_list_single_cell',
-                'column_mapping' => [
-                    'code_col' => 'B',
-                    'title_col' => 'C',
-                    'evidence_items_col' => 'D',
-                    'evidence_link_col' => 'E',
-                ],
-            ]
-        );
-
-        $spreadsheet = new Spreadsheet;
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('LKE_ZI');
-
-        $sheet->setCellValue('B1', 'Kode');
-        $sheet->setCellValue('C1', 'Indikator');
-        $sheet->setCellValue('D1', 'Bukti Dukung');
-        $sheet->setCellValue('E1', 'Tautan');
-
-        $sheet->setCellValue('B2', 'IDEM.AC23.1');
-        $sheet->setCellValue('C2', 'Indikator 1 AC23');
-        $sheet->setCellValue('D2', "1. Item Bukti A\n2. Item Bukti B [t-1]");
-        $sheet->setCellValue('E2', 'https://bps.go.id/doc1');
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'test_idem_ac23_').'.xlsx';
-        (new Xlsx($spreadsheet))->save($tempFile);
-
-        /** @var LkImportService $importService */
-        $importService = app(LkImportService::class);
-
-        $log1 = $importService->commit($tempFile, $lk, $profile, $this->superAdmin, 'idem_ac23.xlsx');
-        $this->assertSame('committed', $log1->status);
-        $indCount1 = LkIndicator::where('lk_id', $lk->id)->where('code', 'IDEM.AC23.1')->count();
-
-        $log2 = $importService->commit($tempFile, $lk, $profile, $this->superAdmin, 'idem_ac23.xlsx');
-        $this->assertSame('committed', $log2->status);
-        $indCount2 = LkIndicator::where('lk_id', $lk->id)->where('code', 'IDEM.AC23.1')->count();
-
-        @unlink($tempFile);
-
-        $this->assertEquals(1, $indCount1);
-        $this->assertEquals(1, $indCount2);
-    }
-
-    /**
-     * AC-24: Impor file .xlsm, file bukan Excel, atau file melebihi batas -> Ditolak dengan pesan jelas, tidak ada error 500.
-     */
-    public function test_ac_24_importing_macro_or_invalid_file_is_rejected(): void
-    {
-        $tempPath = tempnam(sys_get_temp_dir(), 'macro_').'.xlsm';
-        file_put_contents($tempPath, 'PKFakeMacroContent');
-
-        $profile = LkImportProfile::firstOrFail();
-        /** @var ExcelParserService $parser */
-        $parser = app(ExcelParserService::class);
-
-        $rejected = false;
-        try {
-            $parser->parse($tempPath, $profile, 2026);
-        } catch (ValidationException|\InvalidArgumentException $e) {
-            $rejected = true;
-        }
-
-        @unlink($tempPath);
-        $this->assertTrue($rejected, 'File makro .xlsm wajib ditolak demi keamanan.');
-    }
-
-    /**
-     * AC-25: Sel tautan berisi javascript:alert(1) atau skema selain http/https -> Tautan ditolak pada impor dan tidak pernah dapat diklik.
-     */
-    public function test_ac_25_dangerous_javascript_and_file_links_are_sanitized_to_null(): void
-    {
-        /** @var ExcelParserService $parser */
-        $parser = app(ExcelParserService::class);
-
-        $sanitizedJs = $parser->sanitizeUrl('javascript:alert(1)');
-        $sanitizedFile = $parser->sanitizeUrl('file:///etc/passwd');
-        $sanitizedValid = $parser->sanitizeUrl('https://bps.go.id/laporan');
-
-        $this->assertNull($sanitizedJs);
-        $this->assertNull($sanitizedFile);
-        $this->assertEquals('https://bps.go.id/laporan', $sanitizedValid);
-    }
-
-    /**
-     * AC-26: Item bukti Formulir Evaluasi SP tahun [t-1] pada LK periode 2026 -> Item dihitung sebagai tahun 2025 saat dicocokkan.
-     */
-    public function test_ac_26_year_placeholders_like_t_minus_1_resolve_to_calculated_years(): void
-    {
-        $resolver = new YearPlaceholderResolver;
-
-        $resolvedMinus1 = $resolver->resolve('Formulir Evaluasi SP tahun [t-1]', 2026);
-        $resolvedMinus2 = $resolver->resolve('Laporan Kinerja tahun [t-2]', 2026);
-        $resolvedCurrent = $resolver->resolve('SK Tim Monev tahun [t]', 2026);
-
-        $this->assertEquals('Formulir Evaluasi SP tahun 2025', $resolvedMinus1);
-        $this->assertEquals('Laporan Kinerja tahun 2024', $resolvedMinus2);
-        $this->assertEquals('SK Tim Monev tahun 2026', $resolvedCurrent);
     }
 
     /**

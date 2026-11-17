@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\DocumentLkLink;
-use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
-use App\Models\LkEvidenceItem;
-use App\Models\LkIndicator;
 use App\Models\User;
 use App\Services\Monitor\MonitorMatrixService;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +20,6 @@ class MonitorMatrixEagerLoadingTest extends TestCase
     protected function tearDown(): void
     {
         if (! empty($this->createdDocIds)) {
-            DocumentMatch::whereIn('document_id', $this->createdDocIds)->forceDelete();
             EvidenceDocument::whereIn('id', $this->createdDocIds)->forceDelete();
         }
 
@@ -53,22 +49,6 @@ class MonitorMatrixEagerLoadingTest extends TestCase
             ]
         );
 
-        $indicator = LkIndicator::firstOrCreate(
-            ['lk_id' => $lk->id, 'code' => 'ZI-EAGER-01'],
-            [
-                'title' => 'Indikator Utama ZI Eager Load',
-                'order_index' => 999,
-            ]
-        );
-
-        $item = LkEvidenceItem::firstOrCreate(
-            ['indicator_id' => $indicator->id, 'raw_template_name' => 'SK Tim Kerja Eager Load'],
-            [
-                'resolved_name' => 'SK Tim Kerja Eager Load 2026',
-                'order_index' => 1,
-            ]
-        );
-
         for ($i = 1; $i <= 15; $i++) {
             $doc = EvidenceDocument::create([
                 'id' => (string) Str::uuid(),
@@ -91,16 +71,6 @@ class MonitorMatrixEagerLoadingTest extends TestCase
                 'lk_id' => $lk->id,
                 'link_source' => 'admin',
             ]);
-
-            DocumentMatch::create([
-                'id' => (string) Str::uuid(),
-                'document_id' => $doc->id,
-                'indicator_id' => $indicator->id,
-                'matched_item_id' => $item->id,
-                'status' => 'auto',
-                'confidence_score' => 85.0,
-                'match_method' => 'title_similarity',
-            ]);
         }
 
         $service = app(MonitorMatrixService::class);
@@ -114,17 +84,6 @@ class MonitorMatrixEagerLoadingTest extends TestCase
         DB::disableQueryLog();
 
         $this->assertNotEmpty($matrixData['rows']);
-
-        $evidenceItemQueries = array_filter(
-            $queries,
-            fn (array $query): bool => str_contains((string) $query['query'], 'lk_evidence_items')
-        );
-
-        $this->assertLessThanOrEqual(
-            1,
-            count($evidenceItemQueries),
-            'Terjadi N+1 query ke lk_evidence_items! Ditemukan '.count($evidenceItemQueries).' query.'
-        );
 
         $this->assertLessThanOrEqual(
             10,

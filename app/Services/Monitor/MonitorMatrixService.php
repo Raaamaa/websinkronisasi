@@ -144,20 +144,16 @@ class MonitorMatrixService
         $links = DocumentLkLink::query()
             ->whereIn('document_id', $docIds)
             ->whereIn('link_source', DocumentLkLink::OFFICIAL_SOURCES)
-            ->with(['lembarKerja', 'indicator'])
+            ->with(['lembarKerja'])
             ->get();
 
         // Mapping: [doc_id][lk_code] = true (DISTINCT per LK)
         $docLkMap = [];
         $docSelectedLkIds = [];
-        $docLkDriveUrls = [];
         foreach ($links as $link) {
             if ($link->lembarKerja) {
                 $docLkMap[$link->document_id][$link->lembarKerja->code] = true;
                 $docSelectedLkIds[$link->document_id][] = $link->lk_id;
-                if (! empty($link->indicator?->evidence_link)) {
-                    $docLkDriveUrls[$link->document_id][$link->lembarKerja->code] = $link->indicator->evidence_link;
-                }
             }
         }
 
@@ -169,7 +165,7 @@ class MonitorMatrixService
             foreach ($lkCodes as $code) {
                 $hasMatch = ! empty($docLkMap[$doc->id][$code]);
                 $lk = $allLks->firstWhere('code', $code);
-                $driveUrl = $docLkDriveUrls[$doc->id][$code] ?? ($doc->external_link ?: null);
+                $driveUrl = $doc->external_link ?: null;
 
                 $cells[$code] = [
                     'has_match' => $hasMatch,

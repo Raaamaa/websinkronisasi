@@ -10,7 +10,6 @@ use App\Models\DocumentMatch;
 use App\Models\EvidenceDocument;
 use App\Models\LembarKerja;
 use App\Models\LkEvidenceItem;
-use App\Models\LkImportProfile;
 use App\Models\LkIndicator;
 use App\Models\User;
 use App\Services\Evidence\EvidenceUploadService;
@@ -264,72 +263,6 @@ class Phase7SearchAuditAndSettingsTest extends TestCase
         $this->assertCount(1, $matrixData['rows']);
         $this->assertEquals($doc->id, $matrixData['rows'][0]['document_id']);
         $this->assertEquals('✔', $matrixData['rows'][0]['cells']['ZI']['symbol']);
-    }
-
-    /**
-     * Slice 2: TSK-703 - Perekaman Jejak Audit Mutasi (AUDIT-01, AC-17).
-     */
-    public function test_audit_log_records_lembar_kerja_and_profile_mutations(): void
-    {
-        $this->actingAs($this->superAdmin);
-
-        // 1. Create Lembar Kerja
-        $lkCode = 'AUDIT-'.strtoupper(Str::random(6));
-        $lk = LembarKerja::create([
-            'code' => $lkCode,
-            'name' => 'Lembar Kerja Uji Audit',
-            'category' => 'internal',
-            'period' => 2026,
-            'is_active' => true,
-        ]);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'lk.created',
-            'entity_type' => 'LembarKerja',
-            'entity_id' => $lk->id,
-        ]);
-
-        // 2. Update Lembar Kerja
-        $lk->update(['name' => 'Nama LK Baru Setelah Diupdate']);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'lk.updated',
-            'entity_type' => 'LembarKerja',
-            'entity_id' => $lk->id,
-        ]);
-
-        // 3. Delete Lembar Kerja (Soft Delete)
-        $lk->delete();
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'lk.deleted',
-            'entity_type' => 'LembarKerja',
-            'entity_id' => $lk->id,
-        ]);
-
-        // 4. Create LkImportProfile
-        $profile = LkImportProfile::create([
-            'name' => 'Profil Uji Audit',
-            'lk_code' => 'ZI',
-            'parsing_strategy' => 'single_item_per_row',
-            'sheet_name' => 'Sheet1',
-            'header_row' => 1,
-            'column_mapping' => ['code' => 'A', 'name' => 'B'],
-        ]);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'lk_profile.created',
-            'entity_type' => 'LkImportProfile',
-            'entity_id' => (string) $profile->id,
-        ]);
-
-        $profile->delete();
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'lk_profile.deleted',
-            'entity_type' => 'LkImportProfile',
-            'entity_id' => (string) $profile->id,
-        ]);
     }
 
     public function test_audit_log_records_auth_login_and_logout_events(): void

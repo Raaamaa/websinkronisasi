@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\LembarKerja;
-use App\Models\LkImportProfile;
 use App\Models\SystemSetting;
 use App\Models\User;
+use Database\Seeders\InitialLkSeeder;
 use Database\Seeders\SuperAdminSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
@@ -55,21 +55,30 @@ class Phase1DatabaseAndSeedersTest extends TestCase
     }
 
     /**
-     * Test initial LK seeder creates 6 LK and corresponding profiles.
+     * Test initial LK seeder creates 6 LK idempotently without import profiles.
      */
     public function test_initial_lk_seeder_creates_all_six_master_lks(): void
     {
-        $expectedCodes = ['ZI', 'PEKPPP', 'KIP', 'SAKIP', 'DATA_SEKUNDER', 'DATA_SEKTORAL'];
+        $this->seed(InitialLkSeeder::class);
 
-        foreach ($expectedCodes as $code) {
-            $lk = LembarKerja::where('code', $code)->first();
+        $expected = [
+            'KIP' => ['category' => 'internal', 'interval' => '3 Bulan'],
+            'PEKPPP' => ['category' => 'internal', 'interval' => '6 Bulan'],
+            'ZI' => ['category' => 'internal', 'interval' => '12 Bulan'],
+            'SAKIP' => ['category' => 'internal', 'interval' => '12 Bulan'],
+            'DATA_SEKTORAL' => ['category' => 'eksternal', 'interval' => '1 Bulan'],
+            'DATA_SEKUNDER' => ['category' => 'eksternal', 'interval' => '1 Bulan'],
+        ];
+
+        $this->assertSame(6, LembarKerja::where('period', 2026)->where('is_active', true)->whereIn('code', array_keys($expected))->count());
+
+        foreach ($expected as $code => $meta) {
+            $lk = LembarKerja::where('code', $code)->where('period', 2026)->first();
             $this->assertNotNull($lk, "LK with code {$code} must exist");
-            $this->assertNotNull($lk->default_profile_id, "LK with code {$code} must have default_profile_id");
-
-            $profile = LkImportProfile::find($lk->default_profile_id);
-            $this->assertNotNull($profile, "Import profile for {$code} must exist");
-            $this->assertSame($code, $profile->lk_code);
-            $this->assertIsArray($profile->column_mapping);
+            $this->assertSame($meta['category'], $lk->category);
+            $this->assertSame($meta['interval'], $lk->evaluation_interval);
+            $this->assertTrue((bool) $lk->is_active);
+            $this->assertNull($lk->default_profile_id, "LK with code {$code} must have null default_profile_id");
         }
     }
 

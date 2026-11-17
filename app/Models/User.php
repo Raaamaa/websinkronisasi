@@ -142,9 +142,6 @@ class User extends Authenticatable implements FilamentUser, HasName
             'evidence.delete',
             'evidence.verify',
             'evidence.manage_markup',
-            'lk.manage',
-            'lk.indicator_manage',
-            'lk.manage_drive_links',
             'audit.view',
             'user.manage',
         ];
@@ -156,7 +153,6 @@ class User extends Authenticatable implements FilamentUser, HasName
             'evidence.upload',
             'evidence.verify',
             'evidence.manage_markup',
-            'lk.manage_drive_links',
         ];
 
         $pegawaiPermissions = [

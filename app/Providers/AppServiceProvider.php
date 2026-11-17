@@ -5,10 +5,6 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Listeners\AuditAuthEventsListener;
-use App\Models\LembarKerja;
-use App\Models\LkImportProfile;
-use App\Observers\LembarKerjaObserver;
-use App\Observers\LkImportProfileObserver;
 use App\Services\Auth\Contracts\SSOProviderInterface;
 use App\Services\Auth\Providers\BpsKeycloakOidcProvider;
 use App\Services\Auth\Providers\MockSSOProvider;
@@ -49,9 +45,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        LembarKerja::observe(LembarKerjaObserver::class);
-        LkImportProfile::observe(LkImportProfileObserver::class);
-
         Event::subscribe(AuditAuthEventsListener::class);
 
         FilamentView::registerRenderHook(

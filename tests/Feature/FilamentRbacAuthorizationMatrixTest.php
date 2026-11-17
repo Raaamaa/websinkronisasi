@@ -9,8 +9,6 @@ use App\Filament\Pages\MonitorMatrixPage;
 use App\Filament\Pages\VerificationQueuePage;
 use App\Models\AuditLog;
 use App\Models\EvidenceDocument;
-use App\Models\LembarKerja;
-use App\Models\LkImportProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -186,15 +184,5 @@ class FilamentRbacAuthorizationMatrixTest extends TestCase
             Gate::forUser($this->admin)->allows('delete', $this->superAdmin),
             'Admin dilarang menghapus Super Admin aktif terakhir (Invarian #4)'
         );
-    }
-
-    public function test_master_lk_and_system_settings_policies_are_super_admin_only(): void
-    {
-        $this->assertTrue(Gate::forUser($this->superAdmin)->allows('create', LembarKerja::class));
-        $this->assertFalse(Gate::forUser($this->admin)->allows('create', LembarKerja::class));
-        $this->assertFalse(Gate::forUser($this->pegawai)->allows('create', LembarKerja::class));
-
-        $this->assertTrue(Gate::forUser($this->superAdmin)->allows('viewAny', LkImportProfile::class));
-        $this->assertFalse(Gate::forUser($this->admin)->allows('viewAny', LkImportProfile::class));
     }
 }

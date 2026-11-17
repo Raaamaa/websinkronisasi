@@ -7,7 +7,6 @@ namespace Tests\Feature;
 use App\Filament\Pages\CariDokumenPage;
 use App\Filament\Pages\VerificationQueuePage;
 use App\Models\EvidenceDocument;
-use App\Models\LkIndicator;
 use App\Models\User;
 use App\Services\Auth\UserManagerService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -42,10 +41,12 @@ class Phase2PivotRbacTest extends TestCase
         $deletedSuperAdmin = $this->createUser('super_admin');
         $deletedSuperAdmin->delete();
 
-        // Super Admin: evidence.verify true; evidence.upload, evidence.search, drive.sync false
+        // Super Admin: evidence.verify true; evidence.upload, evidence.search, drive.sync, lk.* false
         $this->assertTrue($superAdmin->hasPermission('evidence.verify'));
         $this->assertTrue($superAdmin->hasPermission('evidence.delete'));
-        $this->assertTrue($superAdmin->hasPermission('lk.manage'));
+        $this->assertFalse($superAdmin->hasPermission('lk.manage'));
+        $this->assertFalse($superAdmin->hasPermission('lk.indicator_manage'));
+        $this->assertFalse($superAdmin->hasPermission('lk.manage_drive_links'));
         $this->assertTrue($superAdmin->hasPermission('audit.view'));
         $this->assertTrue($superAdmin->hasPermission('user.manage'));
         $this->assertTrue($superAdmin->hasPermission('monitor.view'));
@@ -54,10 +55,10 @@ class Phase2PivotRbacTest extends TestCase
         $this->assertFalse($superAdmin->hasPermission('drive.sync'));
         $this->assertFalse($superAdmin->hasPermission('match'.'.verify'));
 
-        // Admin: operational permissions + evidence.manage_markup + lk.manage_drive_links (drive.sync dihapus)
+        // Admin: operational permissions + evidence.manage_markup (drive.sync & lk.* dihapus)
         $this->assertTrue($admin->hasPermission('evidence.verify'));
         $this->assertTrue($admin->hasPermission('evidence.manage_markup'));
-        $this->assertTrue($admin->hasPermission('lk.manage_drive_links'));
+        $this->assertFalse($admin->hasPermission('lk.manage_drive_links'));
         $this->assertFalse($admin->hasPermission('drive.sync'));
         $this->assertTrue($admin->hasPermission('evidence.upload'));
         $this->assertTrue($admin->hasPermission('evidence.search'));
@@ -91,9 +92,6 @@ class Phase2PivotRbacTest extends TestCase
         $this->actingAs($superAdmin)->get('/admin/verification-queue')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/monitor-matrix')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/users')->assertOk();
-        $this->actingAs($superAdmin)->get('/admin/lembar-kerjas')->assertOk();
-        $this->actingAs($superAdmin)->get('/admin/lk-import-profiles')->assertOk();
-        $this->actingAs($superAdmin)->get('/admin/lk-indicators')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/audit-logs')->assertOk();
         $this->actingAs($superAdmin)->get('/admin/evidence-documents')->assertOk();
 
@@ -117,15 +115,10 @@ class Phase2PivotRbacTest extends TestCase
         $this->actingAs($admin)->get('/admin/evidence-documents/create')->assertOk();
         $this->actingAs($admin)->get('/admin/cari-dokumen')->assertOk();
         $this->actingAs($admin)->get('/admin/verification-queue')->assertOk();
-        $this->actingAs($admin)->get('/admin/lk-indicators')->assertOk();
 
-        // Admin dilarang akses Master Pengguna, Master LK, Import Profil, Audit, serta create/delete LK indicator
+        // Admin dilarang akses Master Pengguna & Audit
         $this->actingAs($admin)->get('/admin/users')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/lembar-kerjas')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/lk-import-profiles')->assertForbidden();
         $this->actingAs($admin)->get('/admin/audit-logs')->assertForbidden();
-        $this->assertFalse(Gate::forUser($admin)->allows('create', LkIndicator::class));
-        $this->assertFalse(Gate::forUser($admin)->allows('delete', new LkIndicator));
     }
 
     public function test_pegawai_access_and_evidence_document_policy_enforced_server_side(): void
@@ -201,11 +194,9 @@ class Phase2PivotRbacTest extends TestCase
         $this->assertFalse(Gate::forUser($pegawaiA)->allows('update', $approvedDoc));
         $this->assertFalse(Gate::forUser($pegawaiA)->allows('update', $otherPendingDoc));
 
-        // Pegawai dilarang ke antrean, LK, Master Pengguna, Audit
+        // Pegawai dilarang ke antrean, Master Pengguna, Audit
         $this->actingAs($pegawaiA)->get('/admin/verification-queue')->assertForbidden();
-        $this->actingAs($pegawaiA)->get('/admin/lk-indicators')->assertForbidden();
         $this->actingAs($pegawaiA)->get('/admin/users')->assertForbidden();
-        $this->actingAs($pegawaiA)->get('/admin/lembar-kerjas')->assertForbidden();
         $this->actingAs($pegawaiA)->get('/admin/audit-logs')->assertForbidden();
     }
 
