@@ -42,11 +42,14 @@
         {{-- Kotak Pencarian & Filter --}}
         <form wire:submit.prevent="search" class="vintage-card studio-glass-search studio-fade-in p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
             <div class="md:col-span-6 studio-search-wrap">
+                <svg class="studio-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
                 <input
                     type="text"
                     wire:model.live.debounce.300ms="query"
                     placeholder="Ketikkan nama dokumen, nomor SK, atau kata kunci..."
-                    class="w-full min-h-[56px] px-4 py-3 vintage-input studio-search-input" />
+                    class="w-full min-h-[56px] px-4 py-3 vintage-input studio-search-input studio-search-input-with-icon" />
                 <div
                     wire:loading.flex
                     wire:target="query"
@@ -61,7 +64,7 @@
             <div class="md:col-span-2">
                 <select
                     wire:model.live="document_type"
-                    class="w-full h-full min-h-[56px] px-3 py-2.5 vintage-input font-semibold">
+                    class="w-full h-full min-h-[56px] px-3 py-2.5 vintage-input studio-filter-pill font-semibold">
                     <option value="">Semua Jenis</option>
                     <option value="SK">Surat Keputusan (SK)</option>
                     <option value="SOP">SOP</option>
@@ -75,7 +78,7 @@
             <div class="md:col-span-2">
                 <select
                     wire:model.live="year"
-                    class="w-full h-full min-h-[56px] px-3 py-2.5 vintage-input font-semibold">
+                    class="w-full h-full min-h-[56px] px-3 py-2.5 vintage-input studio-filter-pill font-semibold">
                     <option value="">Semua Tahun</option>
                     @for ($y = (int) date('Y'); $y >= 2020; $y--)
                         <option value="{{ $y }}">{{ $y }}</option>
@@ -226,7 +229,7 @@
                         </thead>
                         <tbody class="text-base">
                             @forelse ($matrixData['rows'] as $row)
-                                <tr style="border-bottom: 1px solid var(--border-warm);">
+                                <tr class="studio-table-row" style="border-bottom: 1px solid var(--border-warm);">
                                     <td class="p-4 sticky left-0 z-10" style="background-color: var(--matrix-sticky-bg);">
                                         <div class="font-bold" style="color: var(--text-main);">
                                             {{ $row['document_name'] }}

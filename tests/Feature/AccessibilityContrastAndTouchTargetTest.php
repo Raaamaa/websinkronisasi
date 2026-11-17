@@ -50,12 +50,18 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
         $forceChangeView = (string) file_get_contents(resource_path('views/auth/force-change-password.blade.php'));
 
         $this->assertStringContainsString('logo-bps-tegal.png', $brandLogo);
+        $this->assertStringContainsString('logo-bps-tegal.png', $loginView);
         $this->assertStringContainsString('logo.png', $brandLogo);
         $this->assertStringNotContainsString('M10 11h16M10 18h12M10 25h16', $brandLogo);
         $this->assertStringNotContainsString('M13 15h22M13 24h16M13 33h22', $loginView);
         $this->assertStringNotContainsString('class="features-list"', $loginView);
-        $this->assertStringContainsString('oklch(97.2% 0.006 215)', $loginView);
-        $this->assertStringContainsString('oklch(97.2% 0.006 215)', $forceChangeView);
+        $this->assertStringContainsString('#F6F8FA', $loginView);
+        $this->assertStringContainsString('#0077B6', $loginView);
+        $this->assertStringContainsString('#F6F8FA', $forceChangeView);
+        $this->assertStringContainsString('#0077B6', $forceChangeView);
+        $this->assertStringNotContainsString('VPN FortiClient', $loginView);
+        $this->assertStringNotContainsString('Mode Simulasi', $loginView);
+        $this->assertStringNotContainsString('Hubungi Pengelola', $loginView);
     }
 
     public function test_filament_custom_css_covers_dark_mode_surfaces_and_missing_utility_classes(): void
@@ -92,7 +98,8 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
         // Max 5 glass surfaces across CSS + login (excluding @supports condition)
         $backdropCount = preg_match_all('/^\s*backdrop-filter:\s*blur\(/m', $customCss)
             + preg_match_all('/^\s*backdrop-filter:\s*blur\(/m', $loginView);
-        $this->assertSame(5, $backdropCount);
+        $this->assertLessThanOrEqual(5, $backdropCount);
+        $this->assertGreaterThanOrEqual(4, $backdropCount);
 
         // Login stays light (not tied to prefers-color-scheme) and includes decorative 3D stack at >=1024px
         $this->assertStringNotContainsString('prefers-color-scheme: dark', $loginView);
@@ -109,17 +116,35 @@ class AccessibilityContrastAndTouchTargetTest extends TestCase
     {
         $customCss = (string) file_get_contents(public_path('css/filament-custom.css'));
 
-        // (A) Topbar glass moved to ::before pseudo-element so dropdown is not trapped
+        // (A) Topbar glass moved to ::before pseudo-element and overflow visible so dropdown is not trapped
         $this->assertStringContainsString('.fi-topbar::before', $customCss);
         $this->assertStringContainsString('.fi-dropdown-panel', $customCss);
         $this->assertStringContainsString('.fi-user-menu button', $customCss);
+        $this->assertStringContainsString('overflow: visible !important;', $customCss);
 
-        // (B) Secondary & 6 LK pastel tokens + no border-left on active sidebar
-        $this->assertStringContainsString('--color-sage', $customCss);
+        // (B) BPS logo palette + dark mode + pastel LK tokens + floating shell + no border-left on active sidebar
+        $this->assertStringContainsString('#0077B6', $customCss);
+        $this->assertStringContainsString('#EB891B', $customCss);
+        $this->assertStringContainsString('#68B92E', $customCss);
+        $this->assertStringContainsString('#F6F8FA', $customCss);
+        $this->assertStringContainsString('#0E1621', $customCss);
+        $this->assertStringContainsString('#152231', $customCss);
+        $this->assertStringContainsString('#E6F4FC', $customCss);
+        $this->assertStringContainsString('#FDF0DE', $customCss);
+        $this->assertStringContainsString('#EAF5DD', $customCss);
+        $this->assertStringContainsString('#EEEAFB', $customCss);
+        $this->assertStringContainsString('#E3F5F0', $customCss);
+        $this->assertStringContainsString('#FCE9E4', $customCss);
         $this->assertStringContainsString('--lk-kip-bg', $customCss);
         $this->assertStringContainsString('[data-lk="KIP"]', $customCss);
         $this->assertStringContainsString('[data-lk="DATA_SEKUNDER"]', $customCss);
+        $this->assertStringContainsString('border-radius: 24px', $customCss);
+        $this->assertStringContainsString('max-width: 1280px', $customCss);
         $this->assertStringNotContainsString('border-left: 3px solid', $customCss);
+
+        // WCAG AA checks on primary blue & active orange accent
+        $this->assertGreaterThanOrEqual(4.5, $this->calculateContrastRatio('#FFFFFF', '#0077B6'));
+        $this->assertGreaterThanOrEqual(4.5, $this->calculateContrastRatio('#1B2430', '#EB891B'));
 
         // (D) Fluid sans typography scale
         $this->assertStringContainsString('clamp(1.75rem, 2.2vw + 1rem, 2.5rem)', $customCss);

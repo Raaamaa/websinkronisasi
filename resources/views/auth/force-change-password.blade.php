@@ -9,50 +9,49 @@
     <title>Wajib Ganti Kata Sandi: ELKA - BPS Kabupaten Tegal</title>
 
     <style>
-        /* Hallmark · shape: centered form screen · genre: editorial · theme: Studio (by request) · soft glass + depth */
-        /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: focus ring thickness, 2px single layer */
+        /* Hallmark · shape: centered form screen · genre: editorial · theme: Field Office base + BPS logo palette */
         :root {
             color-scheme: light;
-            --color-paper: oklch(97.2% 0.006 215);
-            --color-paper-2: oklch(94% 0.009 215);
-            --color-paper-3: oklch(90.5% 0.011 215);
-            --color-paper-hi: oklch(99% 0.004 215);
-            --color-ink: oklch(16% 0.032 250);
-            --color-ink-2: oklch(34% 0.022 245);
-            --color-muted: oklch(49% 0.018 240);
-            --color-focus: oklch(52% 0.15 48);
-            --font-display: "Hedvig Letters Serif", ui-serif, Georgia, serif;
-            --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+            --color-paper: #F6F8FA;
+            --color-paper-2: #EEF2F6;
+            --color-paper-3: #E4EAF1;
+            --color-paper-hi: #FFFFFF;
+            --color-ink: #0F1B2D;
+            --color-ink-2: #334155;
+            --color-muted: #526071;
+            --color-focus: #0077B6;
+            --font-display: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+            --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --radius-card: 20px;
             --radius-control: 14px;
             --radius-pill: 999px;
             --rule-hair: 1px;
-            --border-soft: rgba(20, 28, 44, 0.11);
-            --border-input: rgba(20, 28, 44, 0.22);
-            --btn-primary-from: #A44A28;
-            --btn-primary-to: #8F3D1F;
-            --btn-primary-hover-from: #984323;
-            --btn-primary-hover-to: #7E3419;
+            --border-soft: rgba(15, 27, 45, 0.10);
+            --border-input: rgba(15, 27, 45, 0.20);
+            --btn-primary-from: #0077B6;
+            --btn-primary-to: #00629A;
+            --btn-primary-hover-from: #00629A;
+            --btn-primary-hover-to: #005180;
             --btn-primary-ink: #FFFFFF;
-            --shadow-sheet: 0 2px 6px rgba(18, 24, 38, 0.04), 0 12px 28px -12px rgba(18, 24, 38, 0.10);
+            --shadow-sheet: 0 2px 6px rgba(15, 27, 45, 0.04), 0 12px 28px -12px rgba(15, 27, 45, 0.10);
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         html.dark {
             color-scheme: dark;
-            --color-paper: oklch(15% 0.010 215);
-            --color-paper-2: oklch(18.5% 0.012 215);
-            --color-paper-3: oklch(22% 0.014 215);
-            --color-paper-hi: oklch(19% 0.012 215);
-            --color-ink: oklch(94% 0.010 250);
-            --color-ink-2: oklch(82% 0.014 245);
-            --color-muted: oklch(70% 0.014 240);
-            --color-focus: oklch(74% 0.14 48);
-            --border-soft: rgba(255, 255, 255, 0.12);
-            --border-input: rgba(255, 255, 255, 0.22);
-            --btn-primary-hover-from: #B25734;
-            --btn-primary-hover-to: #984323;
-            --shadow-sheet: 0 2px 8px rgba(0, 0, 0, 0.25), 0 14px 32px -14px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            --color-paper: #0E1621;
+            --color-paper-2: #152231;
+            --color-paper-3: #1C2D40;
+            --color-paper-hi: #152231;
+            --color-ink: #EAF1F8;
+            --color-ink-2: #C2D0DF;
+            --color-muted: #9DB0C4;
+            --color-focus: #4DB8EE;
+            --border-soft: rgba(234, 241, 248, 0.12);
+            --border-input: rgba(234, 241, 248, 0.22);
+            --btn-primary-hover-from: #0086CE;
+            --btn-primary-hover-to: #006BA6;
+            --shadow-sheet: 0 2px 8px rgba(0, 0, 0, 0.28), 0 14px 32px -14px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         html {
@@ -84,16 +83,16 @@
             pointer-events: none;
             z-index: -1;
             background-image:
-                radial-gradient(46rem 34rem at 12% 10%, rgba(180, 92, 54, 0.085), transparent 70%),
-                radial-gradient(40rem 32rem at 86% 18%, rgba(214, 198, 172, 0.22), transparent 70%),
-                radial-gradient(44rem 34rem at 76% 86%, rgba(110, 152, 196, 0.11), transparent 70%);
+                radial-gradient(46rem 34rem at 12% 10%, rgba(0, 147, 221, 0.14), transparent 68%),
+                radial-gradient(42rem 32rem at 88% 18%, rgba(235, 137, 27, 0.12), transparent 68%),
+                radial-gradient(46rem 34rem at 76% 88%, rgba(104, 185, 46, 0.12), transparent 68%);
         }
 
         html.dark body::before {
             background-image:
-                radial-gradient(44rem 32rem at 12% 10%, rgba(164, 74, 40, 0.07), transparent 72%),
-                radial-gradient(38rem 30rem at 86% 18%, rgba(155, 140, 118, 0.05), transparent 72%),
-                radial-gradient(42rem 32rem at 76% 86%, rgba(78, 118, 162, 0.07), transparent 72%);
+                radial-gradient(46rem 34rem at 12% 10%, rgba(0, 147, 221, 0.13), transparent 72%),
+                radial-gradient(42rem 32rem at 88% 18%, rgba(235, 137, 27, 0.09), transparent 72%),
+                radial-gradient(46rem 34rem at 76% 88%, rgba(104, 185, 46, 0.10), transparent 72%);
         }
 
         *,
@@ -190,9 +189,9 @@
             padding: 12px 18px;
             background: linear-gradient(180deg, var(--btn-primary-from), var(--btn-primary-to));
             color: var(--btn-primary-ink);
-            border: var(--rule-hair) solid rgba(120, 48, 22, 0.28);
+            border: var(--rule-hair) solid rgba(0, 98, 154, 0.30);
             border-radius: var(--radius-pill);
-            box-shadow: 0 2px 6px rgba(143, 61, 31, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            box-shadow: 0 2px 6px rgba(0, 119, 182, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.22);
             font-family: var(--font-body);
             font-size: 1rem;
             font-weight: 700;

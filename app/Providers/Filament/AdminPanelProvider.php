@@ -31,12 +31,13 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('ELKA - BPS Kabupaten Tegal')
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
+            ->favicon(asset('images/logo-bps-tegal.png'))
             ->homeUrl(fn (): string => auth()->user()?->homeUrl() ?? '/login')
             ->darkMode(true)
             ->font('system-ui', provider: LocalFontProvider::class)
             ->login()
             ->colors([
-                'primary' => Color::hex('#B5532F'),
+                'primary' => Color::hex('#0077B6'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

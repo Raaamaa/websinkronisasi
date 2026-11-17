@@ -12,14 +12,11 @@
     };
 @endphp
 
-<div class="p-3.5 mx-2 my-2 vintage-section text-sm">
-    <div class="font-bold mb-1" style="color: var(--text-main);">
+<div class="p-3 mx-2 my-1.5 vintage-section text-xs">
+    <div class="font-bold mb-0.5" style="color: var(--text-main);">
         Panduan Singkat ({{ $roleLabel }})
     </div>
-    <p class="text-xs leading-relaxed" style="color: var(--text-secondary);">
+    <p class="leading-snug" style="color: var(--text-secondary);">
         {{ $guideText }}
     </p>
-    <div class="mt-2 pt-2 text-xs font-semibold" style="border-top: 1px solid var(--border-warm); color: var(--text-secondary);">
-        BPS Kabupaten Tegal
-    </div>
 </div>

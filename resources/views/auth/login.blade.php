@@ -15,70 +15,82 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>ELKA - BPS Kabupaten Tegal</title>
+    @if ($logoPath)
+        <link rel="icon" type="image/png" href="{{ $logoPath }}">
+    @endif
 
     <style>
-        /* Hallmark · shape: two-column auth + depth stack · genre: editorial · theme: Studio (by request) · soft glass + depth */
-        /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: muted terracotta on glass, verified 5.85:1+ */
+        /* Hallmark · shape: two-column auth + depth stack · genre: editorial · theme: Field Office base + BPS logo palette */
         :root {
             color-scheme: light;
-            --color-paper: oklch(97.2% 0.006 215);
-            --color-paper-2: oklch(94% 0.009 215);
-            --color-paper-3: oklch(90.5% 0.011 215);
-            --color-paper-hi: oklch(99% 0.004 215);
-            --color-ink: oklch(16% 0.032 250);
-            --color-ink-2: oklch(34% 0.022 245);
-            --color-muted: oklch(44% 0.018 240);
-            --color-focus: oklch(52% 0.15 48);
-            --color-sage: #2E6F65;
-            --color-sage-soft: rgba(46, 111, 101, 0.14);
-            --color-cobalt: #1D5A96;
-            --color-cobalt-soft: rgba(29, 90, 150, 0.14);
-            --font-display: "Hedvig Letters Serif", ui-serif, Georgia, serif;
+            --brand-blue: #0093DD;
+            --brand-orange: #EB891B;
+            --brand-green: #68B92E;
+
+            --color-paper: #F6F8FA;
+            --color-paper-2: #EEF2F6;
+            --color-paper-3: #E4EAF1;
+            --color-paper-hi: #FFFFFF;
+            --color-ink: #0F1B2D;
+            --color-ink-2: #334155;
+            --color-muted: #526071;
+            --color-focus: #0077B6;
+            --color-sage: #2D600B;
+            --color-sage-soft: #EAF5DD;
+            --color-cobalt: #004E7A;
+            --color-cobalt-soft: #E6F4FC;
+            --color-orange-text: #8A4500;
+            --color-orange-soft: #FDF0DE;
+            --font-display: ui-serif, Georgia, Cambria, "Times New Roman", serif;
             --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --radius-card: 20px;
             --radius-control: 14px;
             --radius-pill: 999px;
             --rule-hair: 1px;
-            --border-soft: rgba(20, 28, 44, 0.11);
-            --border-input: rgba(20, 28, 44, 0.22);
-            --glass-bg: rgba(255, 255, 255, 0.72);
-            --glass-border: rgba(255, 255, 255, 0.72);
-            --glass-subtle-bg: rgba(244, 246, 248, 0.68);
-            --btn-primary-from: #A44A28;
-            --btn-primary-to: #8F3D1F;
-            --btn-primary-hover-from: #984323;
-            --btn-primary-hover-to: #7E3419;
+            --border-soft: rgba(15, 27, 45, 0.10);
+            --border-input: rgba(15, 27, 45, 0.20);
+            --glass-bg: rgba(255, 255, 255, 0.78);
+            --glass-border: rgba(255, 255, 255, 0.85);
+            --glass-subtle-bg: rgba(246, 248, 250, 0.82);
+            --btn-primary-from: #0077B6;
+            --btn-primary-to: #00629A;
+            --btn-primary-hover-from: #00629A;
+            --btn-primary-hover-to: #005180;
             --btn-primary-ink: #FFFFFF;
-            --shadow-soft: 0 2px 6px rgba(18, 24, 38, 0.04), 0 12px 28px -12px rgba(18, 24, 38, 0.10);
-            --shadow-card-hover: 0 4px 10px rgba(18, 24, 38, 0.06), 0 18px 36px -14px rgba(18, 24, 38, 0.15);
+            --shadow-soft: 0 2px 6px rgba(15, 27, 45, 0.04), 0 12px 28px -12px rgba(15, 27, 45, 0.10);
+            --shadow-card-hover: 0 4px 12px rgba(15, 27, 45, 0.07), 0 20px 38px -14px rgba(15, 27, 45, 0.14);
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-            --bps-blue: var(--color-cobalt);
+            --bps-blue: #0077B6;
         }
 
         html.dark {
             color-scheme: dark;
-            --color-paper: oklch(15% 0.010 215);
-            --color-paper-2: oklch(18.5% 0.012 215);
-            --color-paper-3: oklch(22% 0.014 215);
-            --color-paper-hi: oklch(19% 0.012 215);
-            --color-ink: oklch(94% 0.010 250);
-            --color-ink-2: oklch(82% 0.014 245);
-            --color-muted: oklch(72% 0.014 240);
-            --color-focus: oklch(74% 0.14 48);
-            --color-sage: #6EC4B4;
-            --color-sage-soft: rgba(110, 196, 180, 0.16);
-            --color-cobalt: #7CB4EB;
-            --color-cobalt-soft: rgba(124, 180, 235, 0.16);
-            --border-soft: rgba(255, 255, 255, 0.12);
-            --border-input: rgba(255, 255, 255, 0.22);
-            --glass-bg: rgba(24, 29, 40, 0.76);
-            --glass-border: rgba(255, 255, 255, 0.13);
-            --glass-subtle-bg: rgba(34, 40, 52, 0.66);
-            --btn-primary-hover-from: #B25734;
-            --btn-primary-hover-to: #984323;
-            --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.25), 0 14px 32px -14px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.34), 0 20px 40px -14px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            --bps-blue: var(--color-cobalt);
+            --color-paper: #0E1621;
+            --color-paper-2: #152231;
+            --color-paper-3: #1C2D40;
+            --color-paper-hi: #152231;
+            --color-ink: #EAF1F8;
+            --color-ink-2: #C2D0DF;
+            --color-muted: #9DB0C4;
+            --color-focus: #4DB8EE;
+            --color-sage: #A8EB78;
+            --color-sage-soft: #193016;
+            --color-cobalt: #8FD4FF;
+            --color-cobalt-soft: #132B42;
+            --color-orange-text: #FFC178;
+            --color-orange-soft: #332413;
+            --border-soft: rgba(234, 241, 248, 0.12);
+            --border-input: rgba(234, 241, 248, 0.22);
+            --glass-bg: rgba(21, 34, 49, 0.82);
+            --glass-border: rgba(234, 241, 248, 0.14);
+            --glass-subtle-bg: rgba(28, 45, 64, 0.72);
+            --btn-primary-from: #0077B6;
+            --btn-primary-to: #00629A;
+            --btn-primary-hover-from: #0086CE;
+            --btn-primary-hover-to: #006BA6;
+            --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.28), 0 14px 32px -14px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.36), 0 20px 40px -14px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            --bps-blue: #4DB8EE;
         }
 
         *,
@@ -113,16 +125,16 @@
             pointer-events: none;
             z-index: -1;
             background-image:
-                radial-gradient(48rem 36rem at 10% 8%, rgba(214, 134, 96, 0.38), transparent 68%),
-                radial-gradient(44rem 34rem at 88% 16%, rgba(235, 212, 174, 0.48), transparent 68%),
-                radial-gradient(48rem 36rem at 74% 88%, rgba(146, 190, 224, 0.38), transparent 68%);
+                radial-gradient(46rem 34rem at 12% 10%, rgba(0, 147, 221, 0.16), transparent 68%),
+                radial-gradient(42rem 32rem at 88% 18%, rgba(235, 137, 27, 0.14), transparent 68%),
+                radial-gradient(46rem 34rem at 76% 88%, rgba(104, 185, 46, 0.14), transparent 68%);
         }
 
         html.dark body::before {
             background-image:
-                radial-gradient(46rem 34rem at 10% 8%, rgba(164, 74, 40, 0.14), transparent 72%),
-                radial-gradient(40rem 32rem at 88% 16%, rgba(170, 148, 114, 0.10), transparent 72%),
-                radial-gradient(46rem 34rem at 74% 88%, rgba(82, 132, 178, 0.14), transparent 72%);
+                radial-gradient(46rem 34rem at 12% 10%, rgba(0, 147, 221, 0.14), transparent 72%),
+                radial-gradient(42rem 32rem at 88% 18%, rgba(235, 137, 27, 0.10), transparent 72%),
+                radial-gradient(46rem 34rem at 76% 88%, rgba(104, 185, 46, 0.11), transparent 72%);
         }
 
         :focus-visible {
@@ -142,17 +154,17 @@
         }
 
         .panel-brand {
-            padding: 16px 20px;
+            padding: 14px 20px;
             border-bottom: var(--rule-hair) solid var(--border-soft);
-            background: linear-gradient(155deg, rgba(244, 232, 216, 0.72), rgba(232, 240, 246, 0.65));
+            background: linear-gradient(155deg, rgba(230, 244, 252, 0.85), rgba(253, 240, 222, 0.60) 55%, rgba(234, 245, 221, 0.72));
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            gap: 14px;
+            gap: 12px;
         }
 
         html.dark .panel-brand {
-            background: linear-gradient(155deg, rgba(32, 28, 30, 0.75), rgba(22, 28, 38, 0.75));
+            background: linear-gradient(155deg, rgba(19, 43, 66, 0.85), rgba(21, 34, 49, 0.82) 55%, rgba(25, 48, 22, 0.72));
         }
 
         .brand-main-block,
@@ -217,6 +229,11 @@
                 padding: 28px 44px;
                 border-bottom: none;
                 border-right: var(--rule-hair) solid var(--border-soft);
+            }
+
+            .brand-logo-img {
+                width: 52px;
+                height: 52px;
             }
 
             .brand-main-block {
@@ -292,8 +309,8 @@
         }
 
         .brand-point-tile-warm {
-            background-color: rgba(164, 74, 40, 0.14);
-            color: var(--btn-primary-from);
+            background-color: var(--color-orange-soft);
+            color: var(--color-orange-text);
         }
 
         .brand-point-tile-sage {
@@ -309,7 +326,7 @@
         .login-doc-stack {
             position: relative;
             width: 240px;
-            height: 158px;
+            height: 150px;
             perspective: 720px;
         }
 
@@ -317,8 +334,8 @@
             position: absolute;
             left: 50%;
             top: 50%;
-            width: 122px;
-            height: 138px;
+            width: 118px;
+            height: 132px;
             border-radius: 16px;
             background-color: var(--color-paper-hi);
             border: var(--rule-hair) solid var(--border-soft);
@@ -349,24 +366,38 @@
         }
 
         .login-doc-sheet-1 {
+            background-color: #E6F4FC;
+            border-color: #B3DCF5;
             transform: translate(-84%, -48%) rotateX(14deg) rotateY(-14deg) rotateZ(-9deg);
-            opacity: 0.78;
+            opacity: 0.92;
             animation: loginFloat1 7s ease-in-out infinite;
         }
 
+        .login-doc-sheet-1::before {
+            background-color: var(--brand-blue);
+        }
+
         .login-doc-sheet-2 {
+            background-color: #FDF0DE;
+            border-color: #F4D0A0;
             transform: translate(-18%, -46%) rotateX(12deg) rotateY(12deg) rotateZ(8deg);
-            opacity: 0.88;
+            opacity: 0.94;
             animation: loginFloat2 7.5s ease-in-out infinite;
         }
 
+        .login-doc-sheet-2::before {
+            background-color: var(--brand-orange);
+        }
+
         .login-doc-sheet-3 {
+            background-color: #EAF5DD;
+            border-color: #BBE09A;
             transform: translate(-50%, -52%) rotateX(10deg) rotateY(-4deg);
             animation: loginFloat3 6.5s ease-in-out infinite;
         }
 
         .login-doc-sheet-3::before {
-            background: linear-gradient(90deg, var(--btn-primary-from), var(--btn-primary-to));
+            background-color: var(--brand-green);
         }
 
         @keyframes loginFloat1 {
@@ -467,10 +498,10 @@
             min-height: 56px;
             padding: 12px 18px;
             border-radius: var(--radius-pill);
-            border: var(--rule-hair) solid rgba(120, 48, 22, 0.28);
+            border: var(--rule-hair) solid rgba(0, 98, 154, 0.30);
             background: linear-gradient(180deg, var(--btn-primary-from), var(--btn-primary-to));
             color: var(--btn-primary-ink);
-            box-shadow: 0 2px 6px rgba(143, 61, 31, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            box-shadow: 0 2px 6px rgba(0, 119, 182, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.22);
             font-size: 1rem;
             font-weight: 700;
             text-decoration: none;
@@ -485,29 +516,6 @@
 
         .btn-sso:active {
             transform: scale(0.97);
-        }
-
-        .notice-vpn-card {
-            background-color: var(--glass-subtle-bg);
-            border: var(--rule-hair) solid var(--border-soft);
-            border-radius: var(--radius-control);
-            padding: 8px 12px;
-            font-size: 0.9375rem;
-            color: var(--color-ink-2);
-        }
-
-        .notice-vpn-text {
-            margin: 0;
-            line-height: 1.4;
-        }
-
-        .mock-sso-link {
-            text-align: center;
-            font-size: 0.8125rem;
-            color: var(--color-muted);
-            font-weight: 500;
-            text-decoration: underline;
-            text-underline-offset: 2px;
         }
 
         .auth-divider {
@@ -627,24 +635,11 @@
             color: #991B1B;
         }
 
-        .auth-helpdesk {
-            text-align: center;
-            font-size: 0.9375rem;
-            color: var(--color-ink-2);
-        }
-
-        .auth-helpdesk a {
-            color: var(--bps-blue);
-            font-weight: 600;
-        }
-
         .auth-footer-clean {
-            display: flex;
-            justify-content: space-between;
+            text-align: center;
             font-size: 0.875rem;
             color: var(--color-muted);
-            padding-top: 6px;
-            border-top: var(--rule-hair) solid var(--border-soft);
+            padding-top: 8px;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -737,18 +732,8 @@
                         <span>Login SSO BPS &rarr;</span>
                     </a>
 
-                    <div class="notice-vpn-card">
-                        <p class="notice-vpn-text">
-                            Bila membuka dari luar kantor, nyalakan <strong>VPN FortiClient</strong> terlebih dahulu sebelum klik Login SSO BPS.
-                        </p>
-                    </div>
-
-                    <a href="{{ route('auth.sso.mock_login') }}" class="mock-sso-link">
-                        Mode Simulasi SSO (Uji Coba Mandiri)
-                    </a>
-
                     <div class="auth-divider">
-                        <span>atau masuk dengan akun pengelola</span>
+                        <span>atau</span>
                     </div>
 
                     <form method="POST" action="{{ route('login', [], false) }}" class="auth-form-local">
@@ -811,13 +796,8 @@
                     </form>
                 </div>
 
-                <div class="auth-helpdesk">
-                    Butuh bantuan akun? <a href="mailto:bps3328@bps.go.id">Hubungi Pengelola BPS Kabupaten Tegal</a>
-                </div>
-
                 <footer class="auth-footer-clean">
-                    <span>&copy; {{ date('Y') }} BPS Kabupaten Tegal</span>
-                    <span>ELKA</span>
+                    &copy; {{ date('Y') }} BPS Kabupaten Tegal
                 </footer>
             </div>
         </section>

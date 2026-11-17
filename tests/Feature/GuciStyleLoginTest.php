@@ -34,7 +34,10 @@ class GuciStyleLoginTest extends TestCase
         $response->assertSee('ELKA');
         $response->assertSee('BPS Kabupaten Tegal');
         $response->assertSee('Login SSO BPS');
-        $response->assertSee('VPN FortiClient');
+        $response->assertSee('Masuk sebagai Pengelola');
+        $response->assertDontSee('VPN FortiClient');
+        $response->assertDontSee('Mode Simulasi');
+        $response->assertDontSee('Hubungi Pengelola');
     }
 
     /**
