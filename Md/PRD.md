@@ -31,7 +31,7 @@
 
 ## 2. Pengguna dan Peran (3 Role)
 
-Rincian izin granular terdapat pada [`Md/RBAC.md`](file:///home/hashirama/websinkronisasi/Md/RBAC.md).
+Rincian izin granular terdapat pada [`Md/RBAC.md`](RBAC.md).
 
 1. **Pegawai (`pegawai`) — Menu: *Cari Dokumen* & *Unggah Bukti*:**
    * Masuk melalui SSO BPS (`BpsKeycloakOidcProvider`). Saat login pertama kali, akun dibuat otomatis (*auto-provisioning*).

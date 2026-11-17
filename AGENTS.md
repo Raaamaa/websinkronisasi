@@ -9,16 +9,16 @@ Dokumen ini merupakan panduan utama bagi AI Coding Agent dan pengembang yang bek
 
 Websinkronisasi (ELKA) adalah aplikasi web internal **BPS Kabupaten Tegal** berbentuk **Perpustakaan Bukti Dukung** (6 Lembar Kerja sebagai rak penyimpanan, dan dokumen bukti dukung sebagai buku) untuk mengumpulkan, memeriksa keabsahan, mencari, dan memetakan dokumen kantor (SK, SOP, laporan, data) ke 6 Lembar Kerja (LK): `KIP`, `PEKPPP`, `ZI`, `SAKIP`, `DATA_SEKTORAL`, dan `DATA_SEKUNDER`.
 
-Sebelum menulis atau memodifikasi kode, agen **wajib membaca dan merujuk** berkas-berkas spesifikasi berikut yang berada di direktori [`Md/`](file:///home/hashirama/websinkronisasi/Md):
+Sebelum menulis atau memodifikasi kode, agen **wajib membaca dan merujuk** berkas-berkas spesifikasi berikut yang berada di direktori [`Md/`](Md):
 
 | Dokumen | Deskripsi & Cakupan |
 |---|---|
-| [**`Md/PRD.md`**](file:///home/hashirama/websinkronisasi/Md/PRD.md) | Kebutuhan produk final: Perpustakaan Bukti Dukung 6 LK, alur unggah-verifikasi-persetujuan, pencarian & matriks gabungan (`CariDokumenPage`), cek berkas sebelum unggah, dan kriteria penerimaan. |
-| [**`Md/DATABASE.md`**](file:///home/hashirama/websinkronisasi/Md/DATABASE.md) | Skema DDL PostgreSQL, kolom persetujuan pada `evidence_documents`, tabel `document_lk_links`, tabel historis pasif, constraint database, dan trigger imutabilitas audit. |
-| [**`Md/RBAC.md`**](file:///home/hashirama/websinkronisasi/Md/RBAC.md) | Matriks hak akses 3 role (`super_admin`, `admin`, `pegawai`) sesuai `User::hasPermission`, `EvidenceDocumentPolicy`, redirect peran `User::homeUrl()`, dan SSO abstraction interface. |
-| [**`Md/MATCHING_ALGORITHM.md`**](file:///home/hashirama/websinkronisasi/Md/MATCHING_ALGORITHM.md) | Spesifikasi pendeteksi duplikasi SHA-256 dan kemiripan dokumen (`DocumentSimilarityService`: hash identik, nama mirip, isi mirip maks 5 kandidat + skor non-blocking; keputusan di tangan manusia). |
-| [**`Md/ARCHITECTURE.md`**](file:///home/hashirama/websinkronisasi/Md/ARCHITECTURE.md) | Arsitektur sistem berlapis (Layered Clean Architecture), alur unggah-verifikasi, cek berkas sementara tanpa simpan, ekstraksi teks latar belakang, unduhan aman berawalan kode LK resmi, dan struktur folder aktual. |
-| [**`Md/TASKS.md`**](file:///home/hashirama/websinkronisasi/Md/TASKS.md) | Ringkasan tahapan implementasi (Fase 1 s.d. Fase 15) dan gerbang verifikasi (*verification gates*). |
+| [**`Md/PRD.md`**](Md/PRD.md) | Kebutuhan produk final: Perpustakaan Bukti Dukung 6 LK, alur unggah-verifikasi-persetujuan, pencarian & matriks gabungan (`CariDokumenPage`), cek berkas sebelum unggah, dan kriteria penerimaan. |
+| [**`Md/DATABASE.md`**](Md/DATABASE.md) | Skema DDL PostgreSQL, kolom persetujuan pada `evidence_documents`, tabel `document_lk_links`, tabel historis pasif, constraint database, dan trigger imutabilitas audit. |
+| [**`Md/RBAC.md`**](Md/RBAC.md) | Matriks hak akses 3 role (`super_admin`, `admin`, `pegawai`) sesuai `User::hasPermission`, `EvidenceDocumentPolicy`, redirect peran `User::homeUrl()`, dan SSO abstraction interface. |
+| [**`Md/MATCHING_ALGORITHM.md`**](Md/MATCHING_ALGORITHM.md) | Spesifikasi pendeteksi duplikasi SHA-256 dan kemiripan dokumen (`DocumentSimilarityService`: hash identik, nama mirip, isi mirip maks 5 kandidat + skor non-blocking; keputusan di tangan manusia). |
+| [**`Md/ARCHITECTURE.md`**](Md/ARCHITECTURE.md) | Arsitektur sistem berlapis (Layered Clean Architecture), alur unggah-verifikasi, cek berkas sementara tanpa simpan, ekstraksi teks latar belakang, unduhan aman berawalan kode LK resmi, dan struktur folder aktual. |
+| [**`Md/TASKS.md`**](Md/TASKS.md) | Ringkasan tahapan implementasi (Fase 1 s.d. Fase 15) dan gerbang verifikasi (*verification gates*). |
 
 ---
 
@@ -68,7 +68,7 @@ Sebelum menulis atau memodifikasi kode, agen **wajib membaca dan merujuk** berka
 
 ## 4. Penggunaan Skill Agen dalam Proyek
 
-Repositori ini dilengkapi skill di [`.agents/skills/`](file:///home/hashirama/websinkronisasi/.agents/skills). Agen memanfaatkan skill relevan sesuai jenis tugas:
+Repositori ini dilengkapi skill di [`.agents/skills/`](.agents/skills). Agen memanfaatkan skill relevan sesuai jenis tugas:
 
 | Kebutuhan Tugas | Skill yang Digunakan | Peran & Alasan |
 |---|---|---|
@@ -83,7 +83,7 @@ Repositori ini dilengkapi skill di [`.agents/skills/`](file:///home/hashirama/we
 
 ## 5. Alur Kerja & Ringkasan Fase Proyek
 
-Seluruh tahapan pembangunan dan penyederhanaan mengikuti [`Md/TASKS.md`](file:///home/hashirama/websinkronisasi/Md/TASKS.md):
+Seluruh tahapan pembangunan dan penyederhanaan mengikuti [`Md/TASKS.md`](Md/TASKS.md):
 * **Fase 1–8:** Fondasi database & backfill, RBAC & SSO BPS, pencarian & kemiripan, unggah aman & revisi, antarmuka antrean/matriks/cari, unduhan aman kode LK resmi, dan baseline awal.
 * **Fase 9–14:** Penyeragaman batas unggah **20 MB** & penghapusan integrasi API Google Drive, penghapusan mesin pencocokan dokumen-ke-indikator, penghapusan UI Master LK/Impor Excel/Indikator (6 LK via `InitialLkSeeder`), penggabungan halaman **Cari Dokumen** (`CariDokumenPage` + matriks 6 LK + cek berkas sementara + ubah LK Admin + banner storage Super Admin di `VerificationQueuePage`), penegakan RBAC halaman **Unggah Bukti** & redirect `User::homeUrl()`, serta tema antarmuka **Vintage Hangat** BPS Kabupaten Tegal.
 * **Fase 15:** Sinkronisasi seluruh 11 berkas dokumentasi aktif agar 100% selaras dengan kondisi kode produksi.

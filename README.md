@@ -84,4 +84,4 @@ Untuk mencegah kehilangan data, jadwalkan pencadangan rutin ke disk terpisah ata
 | **Memeriksa Status Kontainer & Worker** | `docker compose ps` |
 | **Menjalankan Suite Pengujian Otomatis** | `timeout -k 10s 300s docker compose exec -T app php artisan test` |
 
-Panduan pemakaian sehari-hari untuk Pegawai, Admin, dan Super Admin tersedia di [**`carapenggunaan.md`**](file:///home/hashirama/websinkronisasi/carapenggunaan.md), serta panduan uji manual tersedia di [**`skenario_testing.md`**](file:///home/hashirama/websinkronisasi/skenario_testing.md).
+Panduan pemakaian sehari-hari untuk Pegawai, Admin, dan Super Admin tersedia di [**`carapenggunaan.md`**](carapenggunaan.md), serta panduan uji manual tersedia di [**`skenario_testing.md`**](skenario_testing.md).
